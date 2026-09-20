@@ -92,10 +92,14 @@ BEGIN
       v_new_name text := COALESCE(v_auth.raw_user_meta_data->>'name', v_auth.raw_user_meta_data->>'full_name', 'صاحب المنشأة');
       v_new_facility text := COALESCE(v_auth.raw_user_meta_data->>'facility_name', 'مؤسسة ' || v_new_name);
       v_new_role text := COALESCE(v_auth.raw_user_meta_data->>'role', (CASE WHEN v_auth.raw_user_meta_data->>'account_type' = 'employee' THEN 'cashier' ELSE 'owner' END));
+      v_new_activity text := COALESCE(v_auth.raw_user_meta_data->>'activity_type', 'retail');
     BEGIN
       INSERT INTO public.organizations (id, name, currency, activity_type, transport_token, is_active, created_at, updated_at)
-      VALUES (v_new_org_id, v_new_facility, 'EGP', 'retail', gen_random_uuid()::text, true, now(), now())
-      ON CONFLICT (id) DO UPDATE SET is_active = true, updated_at = now();
+      VALUES (v_new_org_id, v_new_facility, 'EGP', v_new_activity, gen_random_uuid()::text, true, now(), now())
+      ON CONFLICT (id) DO UPDATE SET 
+        is_active = true,
+        activity_type = COALESCE(public.organizations.activity_type, EXCLUDED.activity_type),
+        updated_at = now();
 
       INSERT INTO public.branches (id, org_id, code, name, is_main, is_active, created_at, updated_at)
       VALUES (v_new_branch_id, v_new_org_id, 'BR-01', 'الفرع الرئيسي', true, true, now(), now())

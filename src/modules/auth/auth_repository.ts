@@ -395,6 +395,7 @@ export class AuthRepository {
               const rawName = authUser.user_metadata?.name || authUser.user_metadata?.full_name || 'صاحب المنشأة';
               const facilityName = authUser.user_metadata?.facility_name || `مؤسسة ${rawName}`;
               const role = authUser.user_metadata?.role || (authUser.user_metadata?.account_type === 'employee' ? 'cashier' : 'owner');
+              const activityType = authUser.user_metadata?.activity_type || 'retail';
 
               const regResponse = await fetch('/api/auth/register-user', {
                 method: 'POST',
@@ -405,6 +406,7 @@ export class AuthRepository {
                   fullName: rawName,
                   orgId: targetOrgId,
                   orgName: facilityName,
+                  activityType,
                   transportToken: targetTransportToken,
                   branchId: targetBranchId,
                   warehouseId: targetWarehouseId,

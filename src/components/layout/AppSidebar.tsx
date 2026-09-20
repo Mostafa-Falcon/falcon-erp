@@ -58,6 +58,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import type { Branch } from '@/types';
+import { getDomainProfile } from '@/core/constants/domain_profiles';
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -76,9 +77,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
   const { currentUser, activeBranchId, setActiveBranchId } = useSessionStore();
   const [orgName, setOrgName] = useState('لوجيسكا ERP');
-  const [orgActivity, setOrgActivity] = useState('منظومة الإدارة وتخطيط الموارد');
+  const [orgActivity, setOrgActivity] = useState('retail');
   const [branchName, setBranchName] = useState('الفرع الرئيسي');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const domain = getDomainProfile(orgActivity);
 
   // Branch switcher state
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -134,30 +137,30 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
     { id: 'monitoring', label: 'لوحة المتابعة', icon: <Icons.Monitoring />, href: '/monitoring' },
     {
       id: 'items',
-      label: 'الأصناف',
+      label: domain.itemsCategoryLabel,
       icon: <Icons.Items />,
       subItems: [
-        { label: 'قائمة الأصناف', href: '/items', icon: <Package className="w-4 h-4" /> },
-        { label: 'إضافة صنف', href: '/items/new', icon: <PlusCircle className="w-4 h-4" /> },
-        { label: 'طباعة الملصقات', href: '/items/barcode', icon: <Printer className="w-4 h-4" /> },
+        { label: domain.itemsListLabel, href: '/items', icon: <Package className="w-4 h-4" /> },
+        { label: domain.itemsAddLabel, href: '/items/new', icon: <PlusCircle className="w-4 h-4" /> },
+        { label: 'طباعة الملصقات والباركود', href: '/items/barcode', icon: <Printer className="w-4 h-4" /> },
         { label: 'تحويل مخزون', href: '/inventory/transfer', icon: <ArrowLeftRight className="w-4 h-4" /> },
-        { label: 'الجرد الفعلي', href: '/inventory/stocktake', icon: <ClipboardCheck className="w-4 h-4" /> },
-        { label: 'المخزون التالف', href: '/inventory/damages', icon: <Trash2 className="w-4 h-4" /> },
-        { label: 'تنبيهات الصلاحية', href: '/inventory/expiry-alerts', icon: <Bell className="w-4 h-4" /> },
-        { label: 'الشركة المصنعة', href: '/items/brands', icon: <Building2 className="w-4 h-4" /> },
-        { label: 'المجموعات العامة', href: '/items/categories', icon: <FolderTree className="w-4 h-4" /> },
+        { label: 'الجرد الفعلي للمخزون', href: '/inventory/stocktake', icon: <ClipboardCheck className="w-4 h-4" /> },
+        { label: 'المخزون التالف والمنتهي', href: '/inventory/damages', icon: <Trash2 className="w-4 h-4" /> },
+        { label: domain.expiryAlertsLabel, href: '/inventory/expiry-alerts', icon: <Bell className="w-4 h-4" /> },
+        { label: domain.brandsLabel, href: '/items/brands', icon: <Building2 className="w-4 h-4" /> },
+        { label: 'المجموعات والتصنيفات', href: '/items/categories', icon: <FolderTree className="w-4 h-4" /> },
         { label: 'أنواع المنتجات', href: '/items/types', icon: <Tags className="w-4 h-4" /> },
         { label: 'مجموعات التسعير', href: '/items/price-groups', icon: <BadgeDollarSign className="w-4 h-4" /> },
-        { label: 'بدائل الأصناف', href: '/items/substitutes', icon: <Copy className="w-4 h-4" /> },
+        { label: domain.substitutesLabel, href: '/items/substitutes', icon: <Copy className="w-4 h-4" /> },
         { label: 'ضمانات الأصناف', href: '/items/warranties', icon: <ShieldCheck className="w-4 h-4" /> },
         { label: 'العروض والخصومات', href: '/items/discounts', icon: <Tag className="w-4 h-4" /> },
         { label: 'تسويات المخزون', href: '/inventory/adjustments', icon: <SlidersHorizontal className="w-4 h-4" /> },
         { label: 'تبادل الأصناف', href: '/items/exchange', icon: <Repeat2 className="w-4 h-4" /> },
         { label: 'رصيد أول المدة', href: '/items/opening-balance', icon: <ArrowRightToLine className="w-4 h-4" /> },
-        { label: 'تحديث جماعي', href: '/items/bulk-update', icon: <FileDown className="w-4 h-4" /> },
+        { label: 'تحديث جماعي للأسعار', href: '/items/bulk-update', icon: <FileDown className="w-4 h-4" /> },
         { label: 'أرشيف الأصناف', href: '/items/archive', icon: <Archive className="w-4 h-4" /> },
-        { label: 'صحة المخزون', href: '/inventory/health', icon: <HeartPulse className="w-4 h-4" /> },
-        { label: 'استيراد بيانات', href: '/items/import', icon: <FileUp className="w-4 h-4" /> },
+        { label: 'صحة المخزون والركود', href: '/inventory/health', icon: <HeartPulse className="w-4 h-4" /> },
+        { label: 'استيراد وتصدير بيانات', href: '/items/import', icon: <FileUp className="w-4 h-4" /> },
       ],
     },
     {
@@ -174,7 +177,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
       label: 'المبيعات',
       icon: <Icons.Sales />,
       subItems: [
-        { label: 'نقطة البيع (POS)', href: '/sales/pos' },
+        { label: domain.posTitle, href: '/sales/pos' },
         { label: 'فواتير المبيعات', href: '/sales/invoices' },
         { label: 'مرتجعات المبيعات', href: '/sales/returns' },
         { label: 'ورديات الكاشير', href: '/sales/shifts' },
@@ -306,9 +309,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
                 <span className="font-black text-slate-900 dark:text-white text-base leading-tight truncate">
                   {orgName}
                 </span>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
-                  {orgActivity}
-                </span>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border truncate shadow-2xs",
+                    domain.badgeStyle
+                  )}>
+                    <span>{domain.icon}</span>
+                    <span className="truncate">{domain.nameAr}</span>
+                  </span>
+                </div>
               </div>
             </div>
 

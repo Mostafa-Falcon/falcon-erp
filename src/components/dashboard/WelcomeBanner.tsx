@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Zap,
 } from 'lucide-react';
+import { getDomainProfile } from '@/core/constants/domain_profiles';
 
 interface KpiStats {
   todaySales: number;
@@ -31,6 +32,7 @@ interface KpiStats {
 export const WelcomeBanner: React.FC = () => {
   const { currentUser, activeBranchId } = useSessionStore();
   const [branchName, setBranchName] = useState<string | null>(null);
+  const [domainType, setDomainType] = useState<string>('retail');
   const [stats, setStats] = useState<KpiStats>({
     todaySales: 0,
     salesCount: 0,
@@ -40,6 +42,8 @@ export const WelcomeBanner: React.FC = () => {
     lowStockCount: 0,
     treasuryBalance: 0,
   });
+
+  const domain = getDomainProfile(domainType);
 
   useEffect(() => {
     const orgId = currentUser?.org_id;
@@ -51,6 +55,12 @@ export const WelcomeBanner: React.FC = () => {
       try {
         const { db } = await import('@/core/db/app_database');
         
+        // 0. Load organization domain/activity
+        const org = await db.organizations.get(orgId);
+        if (org && isSubscribed) {
+          if (org.activity_type) setDomainType(org.activity_type);
+        }
+
         // 1. Branch info
         const bid = activeBranchId || currentUser?.branch_id;
         if (bid) {
@@ -146,6 +156,11 @@ export const WelcomeBanner: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
+                <span>{domain.icon}</span>
+                <span>{domain.nameAr}</span>
+              </span>
+              <span>•</span>
               <span className="flex items-center gap-1">
                 <Store className="w-3.5 h-3.5 text-slate-400" />
                 <span>{branchName || 'الفرع الرئيسي'}</span>
@@ -169,7 +184,7 @@ export const WelcomeBanner: React.FC = () => {
           <Link href="/sales/pos" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto h-10 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black shadow-xs hover:shadow-sm transition-all gap-2 cursor-pointer text-xs sm:text-sm">
               <Icons.CashRegister />
-              <span>نقطة البيع (POS)</span>
+              <span>{domain.posTitle}</span>
               <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-md font-mono">F1</span>
             </Button>
           </Link>
