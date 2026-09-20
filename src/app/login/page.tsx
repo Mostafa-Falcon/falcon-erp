@@ -12,6 +12,7 @@ import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
 import { AuthRepository } from '@/modules/auth/auth_repository';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { toast } from 'sonner';
+import { db } from '@/core/db/app_database';
 import { Layers, Eye, EyeOff, Lock, User, Sun, Moon, LogIn } from 'lucide-react';
 
 export default function LoginPage() {
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isRegistrationEnabled, setIsRegistrationEnabled] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -38,6 +40,13 @@ export default function LoginPage() {
         document.documentElement.setAttribute('data-theme', 'light');
       }
     }
+
+    // Check if registration is enabled
+    db.app_settings.get('enable_registration').then((setting) => {
+      if (setting && setting.value === 'false') {
+        setIsRegistrationEnabled(false);
+      }
+    }).catch(() => {});
   }, []);
 
   const toggleTheme = () => {
@@ -253,14 +262,16 @@ export default function LoginPage() {
             </form>
           </CardContent>
 
-          <CardFooter className="flex justify-center border-t border-slate-100 dark:border-slate-800/80 pt-4 pb-4">
-            <p className="text-xs font-semibold text-muted-foreground">
-              ليس لديك حساب؟{' '}
-              <Link href="/register" className="text-primary font-bold hover:underline mr-1">
-                إنشاء حساب جديد
-              </Link>
-            </p>
-          </CardFooter>
+          {isRegistrationEnabled && (
+            <CardFooter className="flex justify-center border-t border-slate-100 dark:border-slate-800/80 pt-4 pb-4">
+              <p className="text-xs font-semibold text-muted-foreground">
+                ليس لديك حساب؟{' '}
+                <Link href="/register" className="text-primary font-bold hover:underline mr-1">
+                  إنشاء حساب جديد
+                </Link>
+              </p>
+            </CardFooter>
+          )}
           </Card>
         </div>
       </div>

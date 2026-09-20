@@ -36,14 +36,30 @@ export default function RegisterPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // If already authenticated, redirect to home and prevent returning to register
+  // If already authenticated, redirect to home; if registration disabled, redirect to login
   useEffect(() => {
-    const storedUser = AuthRepository.getCurrentUser();
-    if (storedUser || currentUser) {
-      router.replace('/');
-    } else {
+    const checkRegistrationAndAuth = async () => {
+      const storedUser = AuthRepository.getCurrentUser();
+      if (storedUser || currentUser) {
+        router.replace('/');
+        return;
+      }
+
+      try {
+        const setting = await db.app_settings.get('enable_registration');
+        if (setting && setting.value === 'false') {
+          toast.error('التسجيل الذاتي مغلق حالياً، يتم إنشاء الحسابات وإدارتها عبر إدارة النظام فقط.');
+          router.replace('/login');
+          return;
+        }
+      } catch (err) {
+        console.warn('Could not check registration setting:', err);
+      }
+
       setIsCheckingAuth(false);
-    }
+    };
+
+    checkRegistrationAndAuth();
   }, [currentUser, router]);
 
   useEffect(() => {

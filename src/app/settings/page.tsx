@@ -8,6 +8,8 @@ import { useSessionStore } from '@/core/state/useSessionStore';
 import { useSyncStore } from '@/core/state/useSyncStore';
 import { SettingsRepository } from '@/modules/settings/settings_repository';
 import { toast } from 'sonner';
+import { db } from '@/core/db/app_database';
+import { AuthRepository } from '@/modules/auth/auth_repository';
 import {
   Save,
   Building2,
@@ -24,7 +26,13 @@ import {
   CalendarDays,
   ShieldCheck,
   CheckCircle2,
-  Percent
+  Percent,
+  Lock,
+  Eye,
+  EyeOff,
+  KeyRound,
+  User as UserIcon,
+  UserPlus
 } from 'lucide-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -64,6 +72,18 @@ export default function SettingsPage() {
   const [enableSounds, setEnableSounds] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [allowExpiredSales, setAllowExpiredSales] = useState(false);
+  const [enableRegistration, setEnableRegistration] = useState(true);
+
+  // Owner profile state
+  const [ownerFullName, setOwnerFullName] = useState(currentUser?.full_name || '');
+  const [ownerUsername, setOwnerUsername] = useState(currentUser?.username || '');
+  const [ownerPhone, setOwnerPhone] = useState(currentUser?.phone || '');
+  const [ownerEmail, setOwnerEmail] = useState(currentUser?.email || '');
+  const [ownerNewPassword, setOwnerNewPassword] = useState('');
+  const [ownerConfirmPassword, setOwnerConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isUpdatingOwnerProfile, setIsUpdatingOwnerProfile] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -93,12 +113,25 @@ export default function SettingsPage() {
         const vatSetting = appSettings.find((s) => s.id === 'vat_rate');
         const enableTaxSetting = appSettings.find((s) => s.id === 'enable_tax');
         const taxInclusiveSetting = appSettings.find((s) => s.id === 'is_tax_inclusive');
+        const regSetting = appSettings.find((s) => s.id === 'enable_registration');
 
         setEnableSounds(soundSetting ? soundSetting.value === 'true' : true);
         setAllowExpiredSales(expiredSetting ? expiredSetting.value === 'true' : false);
+        setEnableRegistration(regSetting ? regSetting.value === 'true' : true);
         setVatRate(vatSetting?.value || '14');
         setEnableTax(enableTaxSetting ? enableTaxSetting.value === 'true' : false);
         setIsTaxInclusive(taxInclusiveSetting ? taxInclusiveSetting.value === 'true' : false);
+
+        // Fetch fresh owner user data from Dexie
+        if (currentUser?.id) {
+          const userRec = await db.users.get(currentUser.id);
+          if (userRec) {
+            setOwnerFullName(userRec.full_name || '');
+            setOwnerUsername(userRec.username || '');
+            setOwnerPhone(userRec.phone || '');
+            setOwnerEmail(userRec.email || '');
+          }
+        }
 
         // Check local storage for dark mode state
         const savedTheme = localStorage.getItem('falcon_theme');
@@ -113,7 +146,58 @@ export default function SettingsPage() {
     };
 
     fetchSettings();
-  }, [orgId]);
+  }, [orgId, currentUser?.id]);
+
+  // Update Owner Profile & Password handler
+  const handleUpdateOwnerProfile = async () => {
+    if (!currentUser?.id) {
+      toast.error('لم يتم العثور على جلسة مستخدم نشطة');
+      return;
+    }
+    if (!ownerFullName.trim()) {
+      toast.error('الاسم الكامل لصاحب المنشأة مطلوب');
+      return;
+    }
+    if (!ownerUsername.trim()) {
+      toast.error('اسم المستخدم مطلوب');
+      return;
+    }
+    if (ownerNewPassword) {
+      if (ownerNewPassword.length < 4) {
+        toast.error('كلمة المرور يجب ألا تقل عن 4 خانات أو أرقام');
+        return;
+      }
+      if (ownerNewPassword !== ownerConfirmPassword) {
+        toast.error('كلمتا المرور غير متطابقتين');
+        return;
+      }
+    }
+
+    try {
+      setIsUpdatingOwnerProfile(true);
+      const res = await AuthRepository.updateOwnerProfile({
+        userId: currentUser.id,
+        fullName: ownerFullName.trim(),
+        username: ownerUsername.trim(),
+        phone: ownerPhone.trim() || undefined,
+        newPassword: ownerNewPassword ? ownerNewPassword.trim() : undefined,
+      });
+
+      if (res.success && res.user) {
+        useSessionStore.getState().setCurrentUser(res.user);
+        setOwnerNewPassword('');
+        setOwnerConfirmPassword('');
+        toast.success('تم تحديث بيانات حساب صاحب المنشأة وكلمة المرور بنجاح');
+      } else {
+        toast.error(res.error || 'فشل تحديث بيانات الحساب');
+      }
+    } catch (err) {
+      console.error('Error updating owner profile:', err);
+      toast.error('حدث خطأ أثناء تحديث بيانات الحساب');
+    } finally {
+      setIsUpdatingOwnerProfile(false);
+    }
+  };
 
   // Save changes handler
   const handleSaveChanges = async () => {
@@ -143,7 +227,8 @@ export default function SettingsPage() {
         SettingsRepository.setSetting(orgId, 'allow_expired_sales', String(allowExpiredSales), 'السماح ببيع المنتجات منتهية الصلاحية'),
         SettingsRepository.setSetting(orgId, 'enable_tax', String(enableTax), 'تفعيل ضريبة القيمة المضافة (اختيارية)'),
         SettingsRepository.setSetting(orgId, 'is_tax_inclusive', String(isTaxInclusive), 'هل الأسعار المعروضة شاملة الضريبة'),
-        SettingsRepository.setSetting(orgId, 'vat_rate', vatRate, 'نسبة ضريبة القيمة المضافة الافتراضية (%)')
+        SettingsRepository.setSetting(orgId, 'vat_rate', vatRate, 'نسبة ضريبة القيمة المضافة الافتراضية (%)'),
+        SettingsRepository.setSetting(orgId, 'enable_registration', String(enableRegistration), 'إتاحة صفحة إنشاء حساب جديد (/register)')
       ]);
 
       toast.success('تم حفظ التغييرات وإعدادات النظام بنجاح');
@@ -461,6 +546,160 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Card: Owner Account & Security */}
+          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
+                  <UserIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-900 dark:text-white">بيانات حساب صاحب المنشأة والأمان</h3>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                    تعديل الاسم واسم المستخدم ورقم الهاتف وكلمة المرور الخاصة بحسابك (البريد الإلكتروني ثابت)
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={handleUpdateOwnerProfile}
+                disabled={isUpdatingOwnerProfile}
+                className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black px-4 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                {isUpdatingOwnerProfile ? 'جاري الحفظ...' : 'حفظ بيانات الحساب وكلمة المرور'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                  الاسم الكامل لصاحب المنشأة <span className="text-red-500">*</span>
+                </label>
+                <div className="relative group">
+                  <Input
+                    type="text"
+                    value={ownerFullName}
+                    onChange={(e) => setOwnerFullName(e.target.value)}
+                    placeholder="الاسم الكامل"
+                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+                  />
+                  <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Username */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                  اسم المستخدم لتسجيل الدخول <span className="text-red-500">*</span>
+                </label>
+                <div className="relative group">
+                  <Input
+                    type="text"
+                    value={ownerUsername}
+                    onChange={(e) => setOwnerUsername(e.target.value)}
+                    placeholder="username"
+                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
+                    dir="ltr"
+                  />
+                  <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                  رقم هاتف صاحب الحساب
+                </label>
+                <div className="relative group">
+                  <Input
+                    type="text"
+                    value={ownerPhone}
+                    onChange={(e) => setOwnerPhone(e.target.value)}
+                    placeholder="01XXXXXXXXX"
+                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
+                    dir="ltr"
+                  />
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Email - Strictly Read-Only */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    البريد الإلكتروني الأساسي
+                  </label>
+                  <span className="text-[9px] px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-900/40 flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" />
+                    غير قابل للتعديل
+                  </span>
+                </div>
+                <div className="relative group">
+                  <Input
+                    type="email"
+                    value={ownerEmail}
+                    readOnly
+                    disabled
+                    placeholder="email@domain.com"
+                    className="h-10 bg-slate-100/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono cursor-not-allowed opacity-90"
+                    dir="ltr"
+                  />
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+
+              {/* New Password */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                  كلمة المرور الجديدة (اتركها فارغة إذا لم ترد التغيير)
+                </label>
+                <div className="relative group">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={ownerNewPassword}
+                    onChange={(e) => setOwnerNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+                  />
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm New Password */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                  تأكيد كلمة المرور الجديدة
+                </label>
+                <div className="relative group">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={ownerConfirmPassword}
+                    onChange={(e) => setOwnerConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+                  />
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Card 2: Contact & Taxes Info */}
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
             <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
@@ -732,6 +971,34 @@ export default function SettingsPage() {
                   <span
                     className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
                       allowExpiredSales ? 'right-0.5' : 'right-[22px]'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Preference 4: Allow / Hide Registration Page */}
+              <div className="flex items-center justify-between gap-4 py-2 border-t border-slate-50 dark:border-slate-800/40 pt-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
+                    <UserPlus className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">إتاحة صفحة إنشاء حساب جديد (/register)</h4>
+                    <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-relaxed">
+                      عند التعطيل، يتم إخفاء رابط التسجيل من صفحة الدخول، وتحويل أي محاولة للوصول المباشر إليها لحصر إنشاء الحسابات عبر إدارة النظام فقط.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEnableRegistration(!enableRegistration)}
+                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
+                    enableRegistration ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
+                      enableRegistration ? 'right-0.5' : 'right-[22px]'
                     }`}
                   />
                 </button>

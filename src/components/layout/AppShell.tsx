@@ -13,6 +13,7 @@ import { notifyCloudDataChanged } from '@/core/sync/sync_events';
 import { networkListener } from '@/core/sync/network_listener';
 import { restoreOrgTransportToken } from '@/core/supabase/supabase_client';
 import { ensureCleanLookupState } from '@/core/db/seed';
+import { AccountSuspensionGuard } from '@/components/auth/AccountSuspensionGuard';
 
 interface AppShellProps {
   title?: string;
@@ -176,33 +177,35 @@ export const AppShell: React.FC<AppShellProps> = ({
   }
 
   return (
-    <div className="flex h-screen w-full bg-[#f4f6f9] dark:bg-[#0b0f19] overflow-hidden transition-colors duration-200 select-none">
-      <AppSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <AccountSuspensionGuard>
+      <div className="flex h-screen w-full bg-[#f4f6f9] dark:bg-[#0b0f19] overflow-hidden transition-colors duration-200 select-none">
+        <AppSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <AppHeader
-          sidebarOpen={sidebarOpen}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          isDark={isDark}
-          onToggleTheme={toggleTheme}
-          title={title}
-        />
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <AppHeader
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            isDark={isDark}
+            onToggleTheme={toggleTheme}
+            title={title}
+          />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 flex flex-col gap-6">
-          {!hideHeaderBanner && (title || actions) && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#131b2e] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-1">{title}</h2>
-                {subtitle && (
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subtitle}</p>
-                )}
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 flex flex-col gap-6">
+            {!hideHeaderBanner && (title || actions) && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#131b2e] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-1">{title}</h2>
+                  {subtitle && (
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subtitle}</p>
+                  )}
+                </div>
+                {actions && <div className="shrink-0">{actions}</div>}
               </div>
-              {actions && <div className="shrink-0">{actions}</div>}
-            </div>
-          )}
-          {children}
-        </main>
+            )}
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </AccountSuspensionGuard>
   );
 };

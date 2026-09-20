@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured, setOrgTransportToken, restoreOrgTranspo
 import { networkListener } from '@/core/sync/network_listener';
 import { PullSyncService } from '@/core/sync/pull_sync_service';
 import { syncCoordinator } from '@/core/sync/sync_coordinator';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import type { User, Organization, Branch } from '@/types';
 
 export class AuthRepository {
@@ -21,6 +22,15 @@ export class AuthRepository {
       .first();
 
     if (user) {
+      // 1. Verify that organization and user are active
+      const org = await db.organizations.get(user.org_id);
+      if (org && org.is_active === false) {
+        throw new Error('تم إيقاف حساب هذه المنشأة من قبل إدارة المنظومة. يرجى مراجعة الدعم الفني.');
+      }
+      if (user.is_active === false) {
+        throw new Error('تم إيقاف هذا المستخدم من قبل إدارة المنظومة.');
+      }
+
       await restoreOrgTransportToken();
       this.saveSession(user);
 
@@ -228,6 +238,14 @@ export class AuthRepository {
 
       // If user exists locally and password/PIN matches local record
       if (localUser && localUser.pin_code_hash === cleanPassword) {
+        const org = await db.organizations.get(localUser.org_id);
+        if (org && org.is_active === false) {
+          return { user: null, error: 'تم إيقاف حساب هذه المنشأة من قبل إدارة المنظومة. يرجى مراجعة الدعم الفني.' };
+        }
+        if (localUser.is_active === false) {
+          return { user: null, error: 'تم إيقاف هذا المستخدم من قبل إدارة المنظومة.' };
+        }
+
         await restoreOrgTransportToken();
         this.saveSession(localUser);
 
@@ -240,6 +258,17 @@ export class AuthRepository {
         }
 
         return { user: localUser };
+      }
+
+      // Check if user was deactivated locally
+      const inactiveUser = await db.users
+        .filter((u) => (
+          (u.username.toLowerCase() === cleanIdentifier || u.email?.toLowerCase() === cleanIdentifier) &&
+          !u.is_active
+        ))
+        .first();
+      if (inactiveUser && inactiveUser.pin_code_hash === cleanPassword) {
+        return { user: null, error: 'تم إيقاف هذا المستخدم من قبل إدارة المنظومة.' };
       }
 
       // 2. Multi-device cloud login: query falcon_authenticate_device RPC
@@ -345,7 +374,7 @@ export class AuthRepository {
             activity_type: cloudOrg.activity_type || 'retail',
             currency: cloudOrg.currency || 'EGP',
             transport_token: transportToken,
-            is_active: true,
+            is_active: cloudOrg.is_active !== undefined ? cloudOrg.is_active : true,
             created_at: cloudOrg.created_at || now,
             updated_at: cloudOrg.updated_at || now,
             sync_status: 'synced',
@@ -450,5 +479,69 @@ export class AuthRepository {
     if (isSupabaseConfigured()) {
       await supabase.auth.signOut().catch(() => {});
     }
+  }
+
+  /**
+   * Updates owner or current user profile information and optional password.
+   * Email is strictly protected and immutable as per security guidelines.
+   */
+  public static async updateOwnerProfile(params: {
+    userId: string;
+    fullName: string;
+    username: string;
+    phone?: string;
+    newPassword?: string;
+  }): Promise<{ success: boolean; user?: User; error?: string }> {
+    const user = await db.users.get(params.userId);
+    if (!user) {
+      return { success: false, error: 'المستخدم غير موجود' };
+    }
+
+    const now = new Date().toISOString();
+    const updatedUser: User = {
+      ...user,
+      full_name: params.fullName.trim(),
+      username: params.username.trim(),
+      phone: params.phone?.trim() || undefined,
+      pin_code_hash: params.newPassword ? params.newPassword.trim() : user.pin_code_hash,
+      updated_at: now,
+      sync_status: 'pending',
+    };
+
+    // 1. Update in local Dexie and enqueue sync for public.users
+    await db.transaction('rw', [db.users, db.sync_queue], async () => {
+      await db.users.put(updatedUser);
+      await SyncQueueManager.enqueue('users', user.id, 'update', updatedUser);
+    });
+
+    // 2. Update session in local storage
+    this.saveSession(updatedUser);
+
+    // 3. If password changed and online, update auth.users on Supabase for multi-device sync
+    if (params.newPassword && user.email) {
+      try {
+        await fetch('/api/auth/provision-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'ensure',
+            email: user.email,
+            password: params.newPassword.trim(),
+            fullName: updatedUser.full_name,
+            orgId: updatedUser.org_id,
+            role: updatedUser.role,
+          }),
+        });
+
+        // Also update client session password if active
+        if (isSupabaseConfigured()) {
+          await supabase.auth.updateUser({ password: params.newPassword.trim() }).catch(() => {});
+        }
+      } catch (cloudErr) {
+        console.warn('[AuthRepository] Cloud password sync warning:', cloudErr);
+      }
+    }
+
+    return { success: true, user: updatedUser };
   }
 }
