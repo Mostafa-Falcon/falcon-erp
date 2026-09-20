@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ResetPeriodModal } from '@/components/settings/ResetPeriodModal';
 
 import { useRouter } from 'next/navigation';
 
@@ -41,6 +42,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isPeriodResetOpen, setIsPeriodResetOpen] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Identity state
@@ -308,14 +310,36 @@ export default function SettingsPage() {
               <h3 className="text-xs font-black uppercase tracking-wider">منطقة الخطر والعمليات المتقدمة</h3>
             </div>
 
-            {/* Sub-Action 1: Reset Operations */}
+            {/* Sub-Action 1: Reset by Date Range (New Feature) */}
+            <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 rounded-xl p-3.5 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-md bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
+                  <CalendarDays className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-red-900 dark:text-red-300">تصفير المبيعات والمشتريات حسب المدة</h4>
+                  <p className="text-[10px] font-medium text-red-700/80 dark:text-red-400/80 leading-relaxed mt-1">
+                    حذف فواتير المبيعات، المشتريات، والمرتجعات خلال فترة يحددها صاحب المنشأة، مع معاينة حية للأعداد وخيارات متقدمة للمخزون والخزينة.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setIsPeriodResetOpen(true)}
+                className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                تحديد المدة وتصفير العمليات
+              </Button>
+            </div>
+
+            {/* Sub-Action 2: Reset Operations & Inventory */}
             <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-3.5 space-y-3">
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-md bg-amber-500 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
                   🔄
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-amber-800 dark:text-amber-400">تصفير العمليات والمخزون</h4>
+                  <h4 className="text-xs font-black text-amber-800 dark:text-amber-400">تصفير العمليات والمخزون بالكامل</h4>
                   <p className="text-[10px] font-medium text-amber-600/90 dark:text-amber-500/80 leading-relaxed mt-1">
                     يمسح فواتير المبيعات، المشتريات، المرتجعات، المصروفات، والتشغيلات، ويصفر كميات المخزون إلى 0، مع الحفاظ التام على كروت الأصناف والمنتجات، العملاء، الموردين، والفروع.
                   </p>
@@ -326,7 +350,7 @@ export default function SettingsPage() {
                 disabled={isResetting}
                 className="w-full h-9 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
               >
-                {isResetting ? 'جاري تصفير البيانات...' : 'تصفير العمليات والمخزون الآن'}
+                {isResetting ? 'جاري تصفير البيانات...' : 'تصفير العمليات والمخزون بالكامل'}
               </Button>
             </div>
 
@@ -719,6 +743,20 @@ export default function SettingsPage() {
         </div>
 
       </div>
+
+      {/* Period Reset Modal for Sales & Purchases */}
+      <ResetPeriodModal
+        isOpen={isPeriodResetOpen}
+        onClose={() => setIsPeriodResetOpen(false)}
+        orgId={orgId}
+        userId={currentUser?.id}
+        userName={currentUser?.full_name || currentUser?.username}
+        currency={currency}
+        onSuccess={() => {
+          // Trigger re-render / reload if needed
+          window.dispatchEvent(new Event('storage'));
+        }}
+      />
     </AppShell>
   );
 }
