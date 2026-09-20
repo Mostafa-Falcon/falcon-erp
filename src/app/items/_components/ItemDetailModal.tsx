@@ -56,14 +56,43 @@ export function ItemDetailModal({
   const baseUName = unitName(product.base_unit_id);
 
   // Multi-unit formatted stock breakdown
-  const secUnit = productUnits[0];
   let stockBreakdownText = '';
-  if (secUnit && secUnit.conversion_factor && secUnit.conversion_factor > 1) {
-    const factor = secUnit.conversion_factor;
-    const baseQty = Math.floor(currentStock / factor);
-    const remQty = Math.round(currentStock % factor);
-    const secUName = unitsById[secUnit.unit_id]?.name || 'وحدة فرعية';
-    stockBreakdownText = `${baseQty} ${baseUName} + ${remQty} ${secUName}`;
+  if (productUnits.length >= 2) {
+    const u2 = productUnits[0];
+    const u3 = productUnits[1];
+    const u2Name = unitsById[u2.unit_id]?.name || 'شريط';
+    const u3Name = unitsById[u3.unit_id]?.name || 'قرص';
+    const f2 = u2.conversion_factor && u2.conversion_factor > 0 ? u2.conversion_factor : 1;
+    const f3 = u3.conversion_factor && u3.conversion_factor > 0 ? u3.conversion_factor : 1;
+
+    if (currentStock <= 0) {
+      stockBreakdownText = `0 ${baseUName} + 0 ${u2Name}`;
+    } else {
+      const totalPills = Math.round(currentStock * f2 * f3);
+      const boxes = Math.floor(totalPills / (f2 * f3));
+      const remAfterBoxes = totalPills % (f2 * f3);
+      const strips = Math.floor(remAfterBoxes / f3);
+      const pills = remAfterBoxes % f3;
+      if (pills > 0) {
+        stockBreakdownText = `${boxes} ${baseUName} + ${strips} ${u2Name} + ${pills} ${u3Name}`;
+      } else {
+        stockBreakdownText = `${boxes} ${baseUName} + ${strips} ${u2Name}`;
+      }
+    }
+  } else if (productUnits.length === 1) {
+    const u2 = productUnits[0];
+    const u2Name = unitsById[u2.unit_id]?.name || 'شريط';
+    const f2 = u2.conversion_factor && u2.conversion_factor > 0 ? u2.conversion_factor : 1;
+    if (currentStock <= 0) {
+      stockBreakdownText = `0 ${baseUName} + 0 ${u2Name}`;
+    } else if (f2 > 1) {
+      const totalStrips = Math.round(currentStock * f2);
+      const boxes = Math.floor(totalStrips / f2);
+      const strips = totalStrips % f2;
+      stockBreakdownText = `${boxes} ${baseUName} + ${strips} ${u2Name}`;
+    } else {
+      stockBreakdownText = `${formatNumber(currentStock)} ${baseUName}`;
+    }
   } else {
     stockBreakdownText = `${formatNumber(currentStock)} ${baseUName}`;
   }

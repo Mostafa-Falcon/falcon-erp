@@ -7,15 +7,18 @@ import type { CatalogStats } from './types';
 
 interface ItemKpiCardsProps {
   stats: CatalogStats;
+  isPharmacy?: boolean;
 }
 
-export function ItemKpiCards({ stats }: ItemKpiCardsProps) {
+export function ItemKpiCards({ stats, isPharmacy }: ItemKpiCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
       {/* 1. إجمالي الأصناف (Blue Soft Card) */}
       <div className="bg-[#f0f7ff] dark:bg-blue-950/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center justify-between">
         <div className="flex flex-col">
-          <span className="text-xs font-black text-slate-600 dark:text-slate-300">إجمالي الأصناف</span>
+          <span className="text-xs font-black text-slate-600 dark:text-slate-300">
+            {isPharmacy ? 'إجمالي الأدوية' : 'إجمالي الأصناف'}
+          </span>
           <span className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5">
             {formatNumber(stats.total)}
           </span>

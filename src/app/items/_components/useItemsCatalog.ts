@@ -37,6 +37,7 @@ export function useItemsCatalog() {
   const [stockMap, setStockMap] = useState<Record<string, number>>({});
   const [stockLevels, setStockLevels] = useState<StockLevel[]>([]);
   const [batchesByProduct, setBatchesByProduct] = useState<Record<string, ProductBatch[]>>({});
+  const [isPharmacy, setIsPharmacy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
@@ -83,7 +84,7 @@ export function useItemsCatalog() {
     if (!orgId) return;
     try {
       const { db } = await import('@/core/db/app_database');
-      const [prods, inactives, cats, brs, unts, allProductUnits, whs, sLevels, allBatches] =
+      const [prods, inactives, cats, brs, unts, allProductUnits, whs, sLevels, allBatches, org] =
         await Promise.all([
           ProductRepository.getAll(orgId),
           db.products.where('org_id').equals(orgId).and((p) => !p.is_active).toArray(),
@@ -94,7 +95,12 @@ export function useItemsCatalog() {
           InventoryRepository.getWarehouses(orgId),
           db.stock_levels.where('org_id').equals(orgId).toArray(),
           db.product_batches.toArray(),
+          db.organizations.get(orgId),
         ]);
+
+      if (org && org.activity_type === 'pharmacy') {
+        setIsPharmacy(true);
+      }
 
       const allProds = [...prods, ...inactives.filter((p) => !prods.some((x) => x.id === p.id))];
 
@@ -538,6 +544,7 @@ export function useItemsCatalog() {
     unitName,
     handleExportCsv,
     detailProduct,
+    isPharmacy,
     reload: loadData,
   };
 }

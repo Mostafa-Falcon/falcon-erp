@@ -129,23 +129,44 @@ export function useProductPricing({
     }
 
     const nextNumber = unitLevels.length + 1;
+    let defName = '';
+    let defFactor = '1';
+    let autoSale = '';
+    let autoPurchase = '';
+
+    if (nextNumber === 2) {
+      defName = 'شريط';
+      defFactor = '3';
+      const baseSale = parseFloat(unitLevels[0]?.salePrice || '0');
+      const baseCost = parseFloat(unitLevels[0]?.purchasePrice || '0');
+      if (baseSale > 0) autoSale = (baseSale / 3).toFixed(2);
+      if (baseCost > 0) autoPurchase = (baseCost / 3).toFixed(2);
+    } else if (nextNumber === 3) {
+      defName = 'قرص';
+      defFactor = '10';
+      const l2Sale = parseFloat(unitLevels[1]?.salePrice || '0');
+      const l2Cost = parseFloat(unitLevels[1]?.purchasePrice || '0');
+      if (l2Sale > 0) autoSale = (l2Sale / 10).toFixed(2);
+      if (l2Cost > 0) autoPurchase = (l2Cost / 10).toFixed(2);
+    }
+
     const newLevel: UnitLevelItem = {
       id: `level-${Date.now()}`,
-      unitName: '',
-      conversionFactor: '1',
+      unitName: defName,
+      conversionFactor: defFactor,
       openingStock: '',
       allowSale: true,
-      purchasePrice: '',
+      purchasePrice: autoPurchase,
       discountValue: '',
       discountType: 'percent',
       dualPricing: false,
-      salePrice: '',
+      salePrice: autoSale,
       oldSalePrice: '',
-      newSalePrice: '',
+      newSalePrice: autoSale,
     };
 
     setUnitLevels((prev) => [...prev, newLevel]);
-    toast.success(`تمت إضافة المستوى رقم (${nextNumber})`);
+    toast.success(`تمت إضافة المستوى رقم (${nextNumber}): ${defName || 'وحدة فرعية'}`);
   };
 
   const updateUnitLevel = (idx: number, patch: Partial<UnitLevelItem>) => {

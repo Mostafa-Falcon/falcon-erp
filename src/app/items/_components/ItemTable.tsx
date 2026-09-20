@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/popover';
 import {
   Package,
+  Pill,
   Star,
   MoreVertical,
   Eye,
@@ -76,6 +77,7 @@ interface ItemTableProps {
   onToggleQuickPos: (p: Product) => void;
   onArchive: (p: Product) => void;
   density?: 'compact' | 'medium' | 'relaxed';
+  isPharmacy?: boolean;
 }
 
 export function ItemTable({
@@ -101,6 +103,7 @@ export function ItemTable({
   onToggleQuickPos,
   onArchive,
   density = 'medium',
+  isPharmacy = false,
 }: ItemTableProps) {
   const [copiedSku, setCopiedSku] = React.useState<string | null>(null);
 
@@ -145,17 +148,56 @@ export function ItemTable({
 
     const baseUName = unitName(p.base_unit_id);
     const secUnits = productUnitsByProduct[p.id] || [];
-    const secUnit = secUnits[0];
 
     let stockText = '';
-    if (secUnit && secUnit.conversion_factor && secUnit.conversion_factor > 1) {
-      const factor = secUnit.conversion_factor;
-      const baseQty = Math.floor(stock / factor);
-      const remQty = Math.round(stock % factor);
-      const secUName = unitsById[secUnit.unit_id]?.name || 'وحدة';
-      stockText = `${baseQty} ${baseUName} + ${remQty} ${secUName}`;
+    if (secUnits.length >= 2) {
+      // 3 Levels (e.g. علبة + شريط + قرص)
+      const u2 = secUnits[0];
+      const u3 = secUnits[1];
+      const u2Name = unitsById[u2.unit_id]?.name || 'شريط';
+      const u3Name = unitsById[u3.unit_id]?.name || 'قرص';
+      const f2 = u2.conversion_factor && u2.conversion_factor > 0 ? u2.conversion_factor : 1;
+      const f3 = u3.conversion_factor && u3.conversion_factor > 0 ? u3.conversion_factor : 1;
+
+      if (stock <= 0) {
+        stockText = `0 ${baseUName} + 0 ${u2Name}`;
+      } else {
+        const totalPills = Math.round(stock * f2 * f3);
+        const boxes = Math.floor(totalPills / (f2 * f3));
+        const remAfterBoxes = totalPills % (f2 * f3);
+        const strips = Math.floor(remAfterBoxes / f3);
+        const pills = remAfterBoxes % f3;
+        if (pills > 0) {
+          stockText = `${boxes} ${baseUName} + ${strips} ${u2Name} + ${pills} ${u3Name}`;
+        } else {
+          stockText = `${boxes} ${baseUName} + ${strips} ${u2Name}`;
+        }
+      }
+    } else if (secUnits.length === 1) {
+      // 2 Levels (e.g. علبة + شريط)
+      const u2 = secUnits[0];
+      const u2Name = unitsById[u2.unit_id]?.name || 'شريط';
+      const f2 = u2.conversion_factor && u2.conversion_factor > 0 ? u2.conversion_factor : 1;
+
+      if (stock <= 0) {
+        stockText = `0 ${baseUName} + 0 ${u2Name}`;
+      } else {
+        if (f2 > 1) {
+          const totalStrips = Math.round(stock * f2);
+          const boxes = Math.floor(totalStrips / f2);
+          const strips = totalStrips % f2;
+          stockText = `${boxes} ${baseUName} + ${strips} ${u2Name}`;
+        } else {
+          stockText = `${formatNumber(stock)} ${baseUName}`;
+        }
+      }
     } else {
-      stockText = `${formatNumber(stock)} ${baseUName}`;
+      // 1 Level (e.g. علبة)
+      if (stock <= 0) {
+        stockText = `0 ${baseUName}`;
+      } else {
+        stockText = `${formatNumber(stock)} ${baseUName}`;
+      }
     }
 
     // Colors matching stock health
@@ -355,8 +397,8 @@ export function ItemTable({
                     <TableCell className={rowPadding}>
                       <div className="flex items-center gap-3">
                         {/* Product Icon Box */}
-                        <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-900/60 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform shadow-2xs">
-                          <Package className="w-4 h-4" />
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-900/60 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform shadow-2xs">
+                          {isPharmacy ? <Pill className="w-4 h-4" /> : <Package className="w-4 h-4" />}
                         </div>
 
                         <div className="flex flex-col min-w-0">
@@ -420,20 +462,38 @@ export function ItemTable({
                       </TableCell>
                     )}
 
-                    {/* 4. سعر البيع والوحدة الصغرى */}
+                    {/* 4. سعر البيع والوحدات المتعددة (علبة / شريط / قرص) */}
                     {visibleColumns.salePrice && (
                       <TableCell className={cn('text-center', rowPadding)}>
-                        <div className="flex flex-col items-center">
-                          <span className="font-black text-sm text-emerald-600 dark:text-emerald-400 font-mono">
-                            {formatNumber(p.sale_price)}{' '}
-                            <span className="text-[10px] font-sans font-bold text-slate-400">
-                              ج.م / {unitName(p.base_unit_id)}
+                        <div className="flex flex-col items-center gap-0.5">
+                          {/* Level 1: علبة */}
+                          <div className="flex items-center gap-1 font-mono">
+                            <span className="font-black text-xs text-emerald-600 dark:text-emerald-400">
+                              {formatNumber(p.sale_price)}
                             </span>
-                          </span>
-                          {secUnit && secUnit.sale_price && (
-                            <span className="text-[10px] font-mono text-slate-400 font-bold mt-0.5">
-                              {formatNumber(secUnit.sale_price)} ج.م / {unitsById[secUnit.unit_id]?.name || 'فرعي'}
+                            <span className="text-[10px] font-sans font-bold text-slate-500 dark:text-slate-400">
+                              ج.م {unitName(p.base_unit_id)}
                             </span>
+                          </div>
+
+                          {/* Level 2: شريط */}
+                          {secUnits[0] && secUnits[0].sale_price !== undefined && (
+                            <div className="flex items-center gap-1 text-[10px] font-mono text-teal-700 dark:text-teal-400 font-bold">
+                              <span>{formatNumber(secUnits[0].sale_price)}</span>
+                              <span className="text-[9px] font-sans text-slate-400">
+                                ج.م {unitsById[secUnits[0].unit_id]?.name || 'شريط'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Level 3: قرص / كبسولة */}
+                          {secUnits[1] && secUnits[1].sale_price !== undefined && (
+                            <div className="flex items-center gap-1 text-[10px] font-mono text-sky-700 dark:text-sky-400 font-bold">
+                              <span>{formatNumber(secUnits[1].sale_price)}</span>
+                              <span className="text-[9px] font-sans text-slate-400">
+                                ج.م {unitsById[secUnits[1].unit_id]?.name || 'قرص'}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </TableCell>

@@ -172,6 +172,42 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
                 </div>
               </div>
 
+              {/* شريط معادلة التحويل والحساب التلقائي للصيدليات والمستويات */}
+              {!isFirst && (
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/50 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-blue-900 dark:text-blue-200">
+                    <span className="text-[11px] font-black">معادلة التفكيك:</span>
+                    <span className="font-mono bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800 text-xs shadow-2xs">
+                      1 {unitLevels[idx - 1]?.unitName || (idx === 1 ? 'علبة' : 'شريط')} = {lvl.conversionFactor || (idx === 1 ? '3' : '10')} {lvl.unitName || (idx === 1 ? 'شريط' : 'قرص')}
+                    </span>
+                  </div>
+
+                  {unitLevels[idx - 1]?.salePrice && parseFloat(unitLevels[idx - 1].salePrice) > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const factor = parseFloat(lvl.conversionFactor) || (idx === 1 ? 3 : 10);
+                        const prevSale = parseFloat(unitLevels[idx - 1].salePrice);
+                        const prevCost = parseFloat(unitLevels[idx - 1].purchasePrice || '0');
+                        if (factor > 0) {
+                          updateUnitLevel(idx, {
+                            salePrice: (prevSale / factor).toFixed(2),
+                            newSalePrice: (prevSale / factor).toFixed(2),
+                            purchasePrice: prevCost > 0 ? (prevCost / factor).toFixed(2) : lvl.purchasePrice,
+                          });
+                        }
+                      }}
+                      className="h-7 px-3 text-[11px] font-black text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg cursor-pointer gap-1 transition-colors"
+                    >
+                      <TrendingUp className="w-3 h-3 text-blue-600" />
+                      <span>تحديث السعر تلقائياً (قسمة على المعامل)</span>
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {/* السطر 2: سعر الشراء، الخصم، وسويتش تسعير مزدوج */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 <div>

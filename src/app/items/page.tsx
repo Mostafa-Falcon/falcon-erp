@@ -26,8 +26,12 @@ function ItemsCatalogContent() {
 
   return (
     <AppShell
-      title="قائمة الأصناف والمخزون"
-      subtitle="إدارة المخزون، تتبع الكميات، والرقابة الحية على الأصناف"
+      title={catalog.isPharmacy ? "قائمة الأدوية والمخزون" : "قائمة الأصناف والمخزون"}
+      subtitle={
+        catalog.isPharmacy
+          ? "نظام إدارة الصيدليات المحترف (PHARMA ERP) - إدارة الأدوية والمستحضرات، تتبع الصلاحيات والتشغيلات، والرقابة على الأرصدة والجرعات"
+          : "إدارة المخزون، تتبع الكميات، والرقابة الحية على الأصناف"
+      }
       actions={
         <div className="flex items-center gap-2">
           {/* Header tabs */}
@@ -38,7 +42,7 @@ function ItemsCatalogContent() {
               className="h-8 px-3 text-xs font-black rounded-lg bg-white dark:bg-[#131b2e] shadow-xs text-slate-900 dark:text-white flex items-center gap-1.5"
             >
               <Boxes className="w-3.5 h-3.5 text-[#558b2f]" />
-              <span>جميع الأصناف</span>
+              <span>{catalog.isPharmacy ? 'جميع الأدوية' : 'جميع الأصناف'}</span>
             </Button>
             <Link href="/reports/inventory">
               <Button
@@ -55,7 +59,7 @@ function ItemsCatalogContent() {
           <Link href="/items/new">
             <Button className="h-10 px-5 bg-[#558b2f] hover:bg-[#436d25] text-white text-xs font-black rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95">
               <Plus className="w-4 h-4" />
-              <span>إضافة صنف جديد</span>
+              <span>{catalog.isPharmacy ? 'إضافة دواء جديد' : 'إضافة صنف جديد'}</span>
             </Button>
           </Link>
         </div>
@@ -63,7 +67,7 @@ function ItemsCatalogContent() {
     >
       <div className="space-y-4">
         {/* 1. Top KPI Cards */}
-        <ItemKpiCards stats={catalog.stats} />
+        <ItemKpiCards stats={catalog.stats} isPharmacy={catalog.isPharmacy} />
 
         {/* 2. Quick Filter Chips & Advanced Filter Toggle */}
         <ItemFilterTabs
@@ -144,6 +148,7 @@ function ItemsCatalogContent() {
             onOpenOpeningStock={(p) => catalog.setOpeningStockProduct(p)}
             onToggleQuickPos={catalog.toggleQuickPos}
             onArchive={catalog.archiveProduct}
+            isPharmacy={catalog.isPharmacy}
           />
 
           {catalog.filteredProducts.length > 0 && (
