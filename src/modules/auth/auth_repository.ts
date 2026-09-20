@@ -271,7 +271,7 @@ export class AuthRepository {
         return { user: null, error: 'تم إيقاف هذا المستخدم من قبل إدارة المنظومة.' };
       }
 
-      // 2. Multi-device cloud login: query falcon_authenticate_device RPC
+      // 2. Multi-device cloud login: query falcon_authenticate_device RPC or fallback to Supabase Auth
       if (networkListener.getStatus() && isSupabaseConfigured()) {
         try {
           const { data, error } = await supabase.rpc('falcon_authenticate_device', {
@@ -291,34 +291,155 @@ export class AuthRepository {
             this.saveSession(data.user);
             await this.establishAuthSession(data.user.email || cleanIdentifier, cleanPassword);
             return { user: data.user };
-          } else if (data && !data.success) {
+          } else if (data && !data.success && data.error && !data.error.includes('غير موجود') && !data.error.includes('كلمة المرور غير صحيحة')) {
+            // E.g. account suspension or organization inactive error
             return { user: null, error: data.error };
           }
         } catch (cloudErr) {
           console.warn('[AuthRepository] Cloud authentication error:', cloudErr);
         }
 
-        // Optional fallback: Supabase Auth standard signInWithPassword
+        // External/Workstation Hub fallback: Authenticate via Supabase Auth
+        // Handles users created from Logixa Workstation Hub or whose passwords were changed externally
         try {
           const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: cleanIdentifier,
             password: cleanPassword,
           });
 
-          if (!authError && authData.user) {
-            let user = await db.users.get(authData.user.id);
-            if (!user) {
-              user = await db.users.where('email').equals(cleanIdentifier).first();
+          if (authError) {
+            if (authError.message.toLowerCase().includes('banned') || authError.message.toLowerCase().includes('disabled')) {
+              return { user: null, error: 'تم إيقاف هذا الحساب من قبل إدارة المنظومة. يرجى مراجعة الدعم الفني.' };
             }
-            if (user) {
-              await restoreOrgTransportToken();
-              this.saveSession(user);
-              this.ensureOrgInAuthMetadata(authData.user, cleanPassword).catch(() => {});
-              return { user };
+          } else if (authData?.user) {
+            const authUser = authData.user;
+
+            // Check if user is suspended in auth.users
+            if (authUser.banned_until && new Date(authUser.banned_until) > new Date()) {
+              await supabase.auth.signOut().catch(() => {});
+              return { user: null, error: 'تم إيقاف هذا الحساب من قبل إدارة المنظومة. يرجى مراجعة الدعم الفني.' };
+            }
+
+            // Check if user exists in public.users
+            const { data: cloudUser } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', authUser.id)
+              .maybeSingle();
+
+            if (cloudUser) {
+              if (cloudUser.is_active === false) {
+                await supabase.auth.signOut().catch(() => {});
+                return { user: null, error: 'تم إيقاف هذا المستخدم من قبل إدارة المنظومة.' };
+              }
+
+              const { data: cloudOrg } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('id', cloudUser.org_id)
+                .maybeSingle();
+
+              if (cloudOrg && cloudOrg.is_active === false) {
+                await supabase.auth.signOut().catch(() => {});
+                return { user: null, error: 'تم إيقاف حساب هذه المنشأة من قبل إدارة المنظومة. يرجى مراجعة الدعم الفني.' };
+              }
+
+              // Update password/PIN hash in public.users if changed from Workstation Hub
+              if (cloudUser.pin_code_hash !== cleanPassword) {
+                await supabase
+                  .from('users')
+                  .update({ pin_code_hash: cleanPassword, updated_at: new Date().toISOString() })
+                  .eq('id', cloudUser.id);
+                cloudUser.pin_code_hash = cleanPassword;
+              }
+
+              let branch: Branch | null = null;
+              if (cloudUser.branch_id) {
+                const { data: branchData } = await supabase
+                  .from('branches')
+                  .select('*')
+                  .eq('id', cloudUser.branch_id)
+                  .maybeSingle();
+                branch = branchData;
+              }
+              if (!branch) {
+                const { data: mainBranch } = await supabase
+                  .from('branches')
+                  .select('*')
+                  .eq('org_id', cloudUser.org_id)
+                  .eq('is_main', true)
+                  .maybeSingle();
+                branch = mainBranch;
+              }
+
+              await this.bootstrapDeviceFromCloud(
+                cloudUser,
+                cloudOrg,
+                branch,
+                cloudOrg?.transport_token || '',
+                cleanPassword
+              );
+
+              this.saveSession(cloudUser);
+              this.ensureOrgInAuthMetadata(authUser, cleanPassword).catch(() => {});
+              PullSyncService.pullAll(cloudUser.org_id).catch(() => {});
+              return { user: cloudUser };
+            } else {
+              // User was created directly in Supabase Auth (e.g. from Logixa Workstation Hub)
+              // Auto-provision ERP organization and initial branches/warehouses/treasury
+              const targetOrgId = authUser.user_metadata?.org_id || crypto.randomUUID();
+              const targetBranchId = crypto.randomUUID();
+              const targetWarehouseId = crypto.randomUUID();
+              const targetTreasuryId = crypto.randomUUID();
+              const targetTransportToken = crypto.randomUUID();
+              const rawName = authUser.user_metadata?.name || authUser.user_metadata?.full_name || 'صاحب المنشأة';
+              const facilityName = authUser.user_metadata?.facility_name || `مؤسسة ${rawName}`;
+              const role = authUser.user_metadata?.role || (authUser.user_metadata?.account_type === 'employee' ? 'cashier' : 'owner');
+
+              const regResponse = await fetch('/api/auth/register-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: cleanIdentifier,
+                  password: cleanPassword,
+                  fullName: rawName,
+                  orgId: targetOrgId,
+                  orgName: facilityName,
+                  transportToken: targetTransportToken,
+                  branchId: targetBranchId,
+                  warehouseId: targetWarehouseId,
+                  treasuryId: targetTreasuryId,
+                  userId: authUser.id,
+                  role,
+                }),
+              });
+
+              if (regResponse.ok) {
+                await this.ensureOrgInAuthMetadata(authUser, cleanPassword).catch(() => {});
+
+                const { data: postBootData } = await supabase.rpc('falcon_authenticate_device', {
+                  p_identifier: cleanIdentifier,
+                  p_password: cleanPassword,
+                });
+
+                if (postBootData?.success && postBootData.user) {
+                  await this.bootstrapDeviceFromCloud(
+                    postBootData.user,
+                    postBootData.organization,
+                    postBootData.branch,
+                    postBootData.transport_token,
+                    cleanPassword
+                  );
+
+                  this.saveSession(postBootData.user);
+                  PullSyncService.pullAll(postBootData.user.org_id).catch(() => {});
+                  return { user: postBootData.user };
+                }
+              }
             }
           }
-        } catch {
-          // Cloud auth network failed, fall through to informative error
+        } catch (fallbackErr) {
+          console.warn('[AuthRepository] Fallback auth failed:', fallbackErr);
         }
       }
 

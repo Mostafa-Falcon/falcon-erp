@@ -67,8 +67,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const getRoleLabel = () => {
     if (!currentUser) return 'مستخدم';
     switch (currentUser.role) {
+      case 'owner':
       case 'super_admin':
         return 'صاحب المنشأة';
+      case 'admin':
+        return 'مدير النظام';
       case 'manager':
         return 'مدير فرع';
       case 'cashier':

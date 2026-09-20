@@ -59,6 +59,7 @@ export function ShiftsManager() {
   const [branchName, setBranchName] = useState('');
 
   const isOwnerOrAdmin =
+    currentUser?.role === 'owner' ||
     currentUser?.role === 'admin' ||
     currentUser?.role === 'super_admin' ||
     currentUser?.role === 'manager';
@@ -144,7 +145,7 @@ export function ShiftsManager() {
 
   const isUserOwnerOrAdmin = (userId: string) => {
     const u = users.find((x) => x.id === userId);
-    return u?.role === 'admin' || u?.role === 'super_admin' || u?.role === 'manager';
+    return u?.role === 'owner' || u?.role === 'admin' || u?.role === 'super_admin' || u?.role === 'manager';
   };
 
   const formatShiftDate = (dateStr?: string | null) => {

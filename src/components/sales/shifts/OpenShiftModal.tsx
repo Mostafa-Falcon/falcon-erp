@@ -174,7 +174,7 @@ export function OpenShiftModal({
     }
   };
 
-  const isOwnerOrAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const isOwnerOrAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {

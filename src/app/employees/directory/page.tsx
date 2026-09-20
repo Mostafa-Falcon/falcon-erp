@@ -159,8 +159,8 @@ function EmployeesContent() {
   };
 
   const handleDelete = async (emp: User) => {
-    if (emp.role === 'super_admin') return;
-    if (!confirm('هل أنت متأكد من حذف هذا الموظف؟ سيتم إلغاء وصوله للنظام.')) return;
+    if (emp.role === 'super_admin' || emp.role === 'owner') return;
+    if (!window.confirm(`هل أنت متأكد من حذف الموظف "${emp.full_name}"؟`)) return;
     try {
       await EmployeeRepository.deleteEmployee(emp.id);
       await loadData();
@@ -171,6 +171,7 @@ function EmployeesContent() {
 
   const getRoleBadge = (roleName: UserRole) => {
     switch (roleName) {
+      case 'owner':
       case 'super_admin':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">صاحب المنشأة</span>;
       case 'admin':
@@ -359,7 +360,7 @@ function EmployeesContent() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الدور الوظيفي والصلاحية</Label>
-              {editTarget.role === 'super_admin' ? (
+              {editTarget.role === 'super_admin' || editTarget.role === 'owner' ? (
                 <Input type="text" value="صاحب المنشأة (غير قابل للتعديل)" disabled className="h-10 bg-slate-50 dark:bg-slate-900 text-xs" />
               ) : (
                 <Select value={eRole} onValueChange={(val) => setERole(val as UserRole)}>
@@ -378,7 +379,7 @@ function EmployeesContent() {
             </div>
             <div>
               <Label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الفرع المخصص</Label>
-              {editTarget.role === 'super_admin' ? (
+              {editTarget.role === 'super_admin' || editTarget.role === 'owner' ? (
                 <Input type="text" value={branchName(editTarget.branch_id)} disabled className="h-10 bg-slate-50 dark:bg-slate-900 text-xs" />
               ) : (
                 <Select value={eBranchId} onValueChange={setEBranchId}>

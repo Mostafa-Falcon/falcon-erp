@@ -110,6 +110,7 @@ export const WelcomeBanner: React.FC = () => {
 
   const getRoleLabel = () => {
     switch (currentUser?.role) {
+      case 'owner':
       case 'super_admin':
         return 'صاحب المنشأة';
       case 'admin':

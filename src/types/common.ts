@@ -42,7 +42,7 @@ export interface Branch {
   sync_status?: 'synced' | 'pending' | 'failed';
 }
 
-export type UserRole = 'super_admin' | 'admin' | 'manager' | 'cashier' | 'accountant' | 'warehouse_keeper' | 'supervisor' | 'delivery';
+export type UserRole = 'owner' | 'super_admin' | 'admin' | 'manager' | 'cashier' | 'accountant' | 'warehouse_keeper' | 'supervisor' | 'delivery';
 
 export interface User {
   id: EntityId;
