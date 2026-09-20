@@ -38,6 +38,7 @@ function EmployeesContent() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
   // Edit form
@@ -90,9 +91,10 @@ function EmployeesContent() {
         emp.username.toLowerCase().includes(q) ||
         (emp.phone || '').includes(q);
       const matchesRole = roleFilter === 'all' || emp.role === roleFilter;
-      return matchesSearch && matchesRole;
+      const matchesBranch = branchFilter === 'all' || emp.branch_id === branchFilter;
+      return matchesSearch && matchesRole && matchesBranch;
     });
-  }, [employees, searchQuery, roleFilter]);
+  }, [employees, searchQuery, roleFilter, branchFilter]);
 
   const stats = useMemo(() => {
     const active = employees.filter((e) => e.is_active).length;
@@ -202,15 +204,34 @@ function EmployeesContent() {
         {/* Filters */}
         <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 space-y-3">
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="w-full sm:w-72">
-              <Input
-                type="text"
-                placeholder="بحث بالاسم أو الهاتف أو المستخدم..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs pr-9"
-                icon={<Icons.Search />}
-              />
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto flex-1 max-w-xl">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="بحث بالاسم أو الهاتف أو المستخدم..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs pr-9"
+                  icon={<Icons.Search />}
+                />
+              </div>
+              {branches.length > 0 && (
+                <div className="w-full sm:w-44">
+                  <Select value={branchFilter} onValueChange={setBranchFilter}>
+                    <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                      <SelectValue placeholder="تصفية حسب الفرع" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-white dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
+                      <SelectItem value="all">كل الفروع ({branches.length})</SelectItem>
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
               {[

@@ -62,7 +62,9 @@ export function usePosData() {
         effectiveBranchId
           ? db.warehouses.where('org_id').equals(orgId).and((w) => w.is_active && w.branch_id === effectiveBranchId).toArray()
           : db.warehouses.where('org_id').equals(orgId).and((w) => w.is_active).toArray(),
-        db.treasuries.where('org_id').equals(orgId).and((t) => t.is_active).toArray(),
+        effectiveBranchId
+          ? db.treasuries.where('org_id').equals(orgId).and((t) => t.is_active && (!t.branch_id || t.branch_id === effectiveBranchId)).toArray()
+          : db.treasuries.where('org_id').equals(orgId).and((t) => t.is_active).toArray(),
         ContactsRepository.getContacts(orgId),
         db.products.where('org_id').equals(orgId).and((p) => p.is_active).toArray(),
         db.units.where('org_id').equals(orgId).toArray(),
