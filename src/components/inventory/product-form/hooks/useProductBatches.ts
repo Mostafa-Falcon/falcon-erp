@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Product } from '@/types';
 import type { FormBatchEntry, ItemTypeMode } from '../types';
+import { generateAutoBatchNumber } from '../utils';
 
 interface UseProductBatchesProps {
   initial?: Product;
@@ -17,18 +18,23 @@ export function useProductBatches({
   );
   const [batchEntries, setBatchEntries] = useState<FormBatchEntry[]>([]);
 
-  // إضافة صف تاريخ صلاحية جديد
+  // إضافة صف تاريخ صلاحية جديد ورقم تشغيلة تلقائي
   const handleAddBatch = () => {
     const today = new Date();
     const nextYear = today.getFullYear() + 1;
+    const yStr = String(nextYear);
+    const mStr = String(today.getMonth() + 1).padStart(2, '0');
+    const dStr = String(today.getDate()).padStart(2, '0');
+    const autoBatchNum = generateAutoBatchNumber(yStr, mStr);
+
     const newBatch: FormBatchEntry = {
       id: uuidv4(),
       quantity: '1',
       unitLevelId: itemTypeMode === 'unit' ? 'level-1' : 'weight',
-      day: String(today.getDate()).padStart(2, '0'),
-      month: String(today.getMonth() + 1).padStart(2, '0'),
-      year: String(nextYear),
-      batchNumber: '',
+      day: dStr,
+      month: mStr,
+      year: yStr,
+      batchNumber: autoBatchNum,
     };
     setBatchEntries((prev) => [...prev, newBatch]);
   };

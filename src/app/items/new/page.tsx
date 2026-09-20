@@ -23,6 +23,7 @@ function NewItemContent() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [initial, setInitial] = useState<Product | undefined>();
   const [initialUnits, setInitialUnits] = useState<ProductUnit[]>([]);
+  const [isPharmacy, setIsPharmacy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -33,12 +34,14 @@ function NewItemContent() {
     const load = async () => {
       try {
         await ensureCleanLookupState();
-        const [cats, brs, ptypes, uns, whs] = await Promise.all([
+        const { db } = await import('@/core/db/app_database');
+        const [cats, brs, ptypes, uns, whs, org] = await Promise.all([
           ProductRepository.getCategories(currentUser.org_id),
           ProductRepository.getBrands(currentUser.org_id),
           ProductRepository.getProductTypes(currentUser.org_id),
           ProductRepository.getAllUnits(currentUser.org_id),
           ProductRepository.getAllWarehouses(currentUser.org_id),
+          db.organizations.get(currentUser.org_id),
         ]);
         if (!mounted) return;
         setCategories(cats);
@@ -46,6 +49,9 @@ function NewItemContent() {
         setProductTypes(ptypes);
         setUnits(uns);
         setWarehouses(whs);
+        if (org && org.activity_type === 'pharmacy') {
+          setIsPharmacy(true);
+        }
 
         if (editId) {
           const product = await ProductRepository.getById(editId);
@@ -72,13 +78,13 @@ function NewItemContent() {
 
   if (notFound) {
     return (
-      <AppShell title="الصنف غير موجود" subtitle="ربما تم حذف هذا الصنف أو أنك لا تملك صلاحية الوصول له">
+      <AppShell title={isPharmacy ? "الدواء غير موجود" : "الصنف غير موجود"} subtitle="ربما تم حذف هذا السجل أو أنك لا تملك صلاحية الوصول له">
         <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-10 text-center">
           <button
             onClick={() => router.push('/items')}
             className="text-xs font-bold text-[#558b2f] hover:underline cursor-pointer"
           >
-            العودة لدليل الأصناف
+            {isPharmacy ? 'العودة لدليل الأدوية' : 'العودة لدليل الأصناف'}
           </button>
         </div>
       </AppShell>
@@ -87,7 +93,7 @@ function NewItemContent() {
 
   if (isLoading) {
     return (
-      <AppShell title={editId ? 'تعديل الصنف' : 'إضافة صنف جديد'}>
+      <AppShell title={isPharmacy ? (editId ? 'تعديل الدواء' : 'إضافة دواء جديد') : (editId ? 'تعديل الصنف' : 'إضافة صنف جديد')}>
         <div className="flex items-center justify-center py-24">
           <div className="w-8 h-8 border-3 border-[#558b2f] border-t-transparent rounded-full animate-spin" />
         </div>
@@ -97,8 +103,16 @@ function NewItemContent() {
 
   return (
     <AppShell
-      title={editId ? 'تعديل الصنف' : 'إضافة صنف جديد'}
-      subtitle={editId ? 'تعديل بيانات ووحّد الصنف الموجود' : 'إنشاء صنف جديد في دليل الأصناف مع الوحدات والتسعير'}
+      title={
+        isPharmacy
+          ? editId ? 'تعديل بيانات الدواء' : 'إضافة دواء / مستحضر جديد'
+          : editId ? 'تعديل الصنف' : 'إضافة صنف جديد'
+      }
+      subtitle={
+        isPharmacy
+          ? editId ? 'تعديل بيانات الدواء والمادة الفعالة والوحدات والتسعير' : 'إنشاء دواء جديد بالعلبة والشريط والقرص مع المادة الفعالة وتاريخ الصلاحية'
+          : editId ? 'تعديل بيانات ووحدات الصنف الموجود' : 'إنشاء صنف جديد في دليل الأصناف مع الوحدات والتسعير'
+      }
     >
       <ProductForm
         orgId={currentUser!.org_id!}
@@ -109,6 +123,7 @@ function NewItemContent() {
         warehouses={warehouses}
         initial={initial}
         initialUnits={initialUnits}
+        isPharmacy={isPharmacy}
         onSaved={() => {
           router.push('/items');
           router.refresh();

@@ -23,16 +23,32 @@ export function useProductForm({
   warehouses = [],
   initial,
   initialUnits = [],
+  isPharmacy: isPharmacyProp,
   onSaved,
   onCancel,
 }: ProductFormProps) {
   const isEdit = !!initial;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isPharmacy, setIsPharmacy] = useState(isPharmacyProp || false);
+
+  useEffect(() => {
+    if (isPharmacyProp !== undefined) {
+      setIsPharmacy(isPharmacyProp);
+    } else if (orgId) {
+      db.organizations.get(orgId).then((org) => {
+        if (org && org.activity_type === 'pharmacy') {
+          setIsPharmacy(true);
+        }
+      }).catch(console.error);
+    }
+  }, [isPharmacyProp, orgId]);
+
   // =========================================================================
   // 1. شريط التخصيص العلوي
   // =========================================================================
   const [showSpecs, setShowSpecs] = useState(() => {
+    if ((isPharmacyProp || isPharmacy) && !initial) return true;
     if (!initial) return false;
     return !!(
       initial.name_en ||
@@ -52,6 +68,7 @@ export function useProductForm({
     );
   });
   const [showExpiry, setShowExpiry] = useState(() => {
+    if ((isPharmacyProp || isPharmacy) && !initial) return true;
     if (!initial) return false;
     return !!(initial.tracks_expiry || initial.tracks_batch);
   });
@@ -145,6 +162,7 @@ export function useProductForm({
     initial,
     initialUnits,
     units,
+    isPharmacy,
   });
 
   const {
@@ -161,6 +179,29 @@ export function useProductForm({
   });
 
   const [isSaving, setIsSaving] = useState(false);
+
+  // =========================================================================
+  // 3.1 إعدادات نمط الصيدلية عند إنشاء دواء جديد
+  // =========================================================================
+  useEffect(() => {
+    if (isPharmacy) {
+      if (itemTypeMode !== 'unit') {
+        setItemTypeMode('unit');
+      }
+      if (!initial) {
+        setShowSpecs(true);
+        setShowExpiry(true);
+        setEnableExpiryTracking(true);
+      }
+    }
+  }, [isPharmacy, initial, itemTypeMode, setEnableExpiryTracking]);
+
+  // توليد تاريخ صلاحية ورقم تشغيلة تلقائي عند التفعيل إذا كانت القائمة فارغة
+  useEffect(() => {
+    if (enableExpiryTracking && batchEntries.length === 0 && !initial) {
+      handleAddBatch();
+    }
+  }, [enableExpiryTracking, batchEntries.length, initial, handleAddBatch]);
 
   // =========================================================================
   // 4. مزامنة بيانات الصنف عند الدخول في وضع التعديل (Edit Hydration)
@@ -480,6 +521,7 @@ export function useProductForm({
 
   return {
     isEdit,
+    isPharmacy,
     fileInputRef,
     // Bar
     showSpecs,

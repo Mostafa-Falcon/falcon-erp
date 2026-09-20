@@ -11,6 +11,16 @@ export function generateSku(name: string): string {
   return `${prefix}-${rand}`;
 }
 
+/**
+ * توليد رقم تشغيلة (Batch / Lot No.) تلقائي مميز للدفعة أو الدواء
+ */
+export function generateAutoBatchNumber(year?: string, month?: string): string {
+  const y = (year && year.trim()) || String(new Date().getFullYear() + 1);
+  const m = (month && month.trim()) || String(new Date().getMonth() + 1).padStart(2, '0');
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `LOT-${y}${m}-${rand}`;
+}
+
 export interface PriceCalculationResult {
   grossCost: number;
   discountAmount: number;

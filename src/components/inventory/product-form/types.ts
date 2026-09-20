@@ -17,6 +17,7 @@ export interface ProductFormProps {
   warehouses?: Warehouse[];
   initial?: Product;
   initialUnits?: ProductUnit[];
+  isPharmacy?: boolean;
   onSaved: () => void;
   onCancel: () => void;
 }

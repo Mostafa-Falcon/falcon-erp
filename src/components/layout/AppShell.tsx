@@ -190,19 +190,21 @@ export const AppShell: React.FC<AppShellProps> = ({
             title={title}
           />
 
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 flex flex-col gap-6">
-            {!hideHeaderBanner && (title || actions) && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#131b2e] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-1">{title}</h2>
-                  {subtitle && (
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subtitle}</p>
-                  )}
+          <main className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-3 sm:p-4 lg:p-6 space-y-4 min-h-full">
+              {!hideHeaderBanner && (title || actions) && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#131b2e] px-4 py-3.5 sm:px-5 sm:py-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-0.5 truncate">{title}</h2>
+                    {subtitle && (
+                      <p className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">{subtitle}</p>
+                    )}
+                  </div>
+                  {actions && <div className="shrink-0 self-start sm:self-center">{actions}</div>}
                 </div>
-                {actions && <div className="shrink-0">{actions}</div>}
-              </div>
-            )}
-            {children}
+              )}
+              {children}
+            </div>
           </main>
         </div>
       </div>

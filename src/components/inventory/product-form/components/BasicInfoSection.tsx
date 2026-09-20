@@ -34,6 +34,7 @@ interface BasicInfoSectionProps {
   handleRemoveAlternateBarcode: (idx: number) => void;
   shelfLocation: string;
   setShelfLocation: (val: string) => void;
+  isPharmacy?: boolean;
 }
 
 export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
@@ -57,12 +58,13 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   handleRemoveAlternateBarcode,
   shelfLocation,
   setShelfLocation,
+  isPharmacy = false,
 }) => {
   return (
     <Card className="border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#131b2e] shadow-xs overflow-hidden rounded-2xl">
       <CardContent className="p-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* صندوق صورة الصنف */}
+          {/* صندوق صورة الصنف / الدواء */}
           <div className="lg:col-span-3 flex flex-col items-center justify-center">
             <Input
               type="file"
@@ -80,7 +82,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={imageUrl}
-                    alt={name || 'صورة الصنف'}
+                    alt={name || (isPharmacy ? 'صورة الدواء' : 'صورة الصنف')}
                     className="w-full h-full object-cover rounded-xl"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -104,7 +106,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                     <ImagePlus className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                    صورة الصنف
+                    {isPharmacy ? 'صورة علبة الدواء' : 'صورة الصنف'}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-0.5">
                     انقر للرفع (PNG, JPG)
@@ -114,7 +116,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
             </div>
           </div>
 
-          {/* الحقول الأساسية: الاسم والباركود والرف والمواصفات */}
+          {/* الحقول الأساسية: الاسم والباركود والرف والمواصفات / المادة الفعالة */}
           <div className="lg:col-span-9 space-y-4">
             {/* السطر الأول: الاسم الرئيسي مع المواصفات إن فُعّلت */}
             <div
@@ -124,14 +126,18 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
             >
               <div>
                 <Label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
-                  اسم الصنف *
+                  {isPharmacy ? 'اسم الدواء / التجاري *' : 'اسم الصنف *'}
                 </Label>
                 <Input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="مثال: قميص قطن، جبن، شاي، لابتوب..."
+                  placeholder={
+                    isPharmacy
+                      ? 'مثال: بنادول إكسترا 500 مجم / Panadol Extra...'
+                      : 'مثال: قميص قطن، جبن، شاي، لابتوب...'
+                  }
                   className="h-11 text-xs font-bold rounded-xl"
                 />
               </div>
@@ -139,27 +145,36 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
               {showSpecs && (
                 <>
                   <div>
-                    <Label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
-                      الوصف الإضافي / المواصفات
+                    <Label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                      <span>{isPharmacy ? 'المادة الفعالة / الاسم العلمي *' : 'الوصف الإضافي / المواصفات'}</span>
+                      {isPharmacy && (
+                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-md">
+                          للبدائل والمثائل
+                        </span>
+                      )}
                     </Label>
                     <Input
                       type="text"
                       value={scientificName}
                       onChange={(e) => setScientificName(e.target.value)}
-                      placeholder="وصف إضافي، ماركة، أو مواصفات فنية وموديل"
+                      placeholder={
+                        isPharmacy
+                          ? 'مثال: Paracetamol 500mg + Caffeine 65mg (Active Ingredient)'
+                          : 'وصف إضافي، ماركة، أو مواصفات فنية وموديل'
+                      }
                       className="h-11 text-xs rounded-xl"
                     />
                   </div>
 
                   <div>
                     <Label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
-                      اسم الصنف (بالإنجليزي)
+                      {isPharmacy ? 'الاسم بالإنجليزي (Trade Name EN)' : 'اسم الصنف (بالإنجليزي)'}
                     </Label>
                     <Input
                       type="text"
                       value={nameEn}
                       onChange={(e) => setNameEn(e.target.value)}
-                      placeholder="Product Name in English"
+                      placeholder={isPharmacy ? 'e.g. Panadol Extra 500mg' : 'Product Name in English'}
                       dir="ltr"
                       className="h-11 text-xs text-left rounded-xl"
                     />
@@ -173,7 +188,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
               <div className={showSpecs ? 'sm:col-span-7' : 'sm:col-span-12'}>
                 <div className="flex items-center justify-between mb-1.5">
                   <Label className="text-xs font-black text-slate-700 dark:text-slate-300">
-                    الباركود الرئيسي
+                    {isPharmacy ? 'الباركود الرئيسي للدواء (EAN / GS1)' : 'الباركود الرئيسي'}
                   </Label>
                   <Button
                     type="button"
@@ -191,7 +206,11 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                     type="text"
                     value={sku}
                     onChange={(e) => setSku(e.target.value)}
-                    placeholder="الباركود الدولي أو المحلي (اختياري)"
+                    placeholder={
+                      isPharmacy
+                        ? 'امسح باركود العلبة بماسح الباركود أو ادخله يدوياً'
+                        : 'الباركود الدولي أو المحلي (اختياري)'
+                    }
                     className="h-11 text-xs font-mono rounded-xl pl-9"
                   />
                   <Barcode className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
@@ -242,14 +261,18 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
               {showSpecs && (
                 <div className="sm:col-span-5">
                   <Label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
-                    مكان التخزين / الرف / القسم
+                    {isPharmacy ? 'مكان الدواء / الرف / الثلاجة' : 'مكان التخزين / الرف / القسم'}
                   </Label>
                   <div className="relative">
                     <Input
                       type="text"
                       value={shelfLocation}
                       onChange={(e) => setShelfLocation(e.target.value)}
-                      placeholder="مثال: رف A-12 / قسم 3"
+                      placeholder={
+                        isPharmacy
+                          ? 'مثال: رف A-12 / ثلاجة أدوية / درج 3'
+                          : 'مثال: رف A-12 / قسم 3'
+                      }
                       className="h-11 text-xs rounded-xl pl-9"
                     />
                     <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />

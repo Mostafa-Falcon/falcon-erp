@@ -42,9 +42,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body className="h-full overflow-hidden">
         <DirectionProvider dir="rtl">
-          {children}
+          <div className="h-full overflow-hidden">
+            {children}
+          </div>
           <Toaster />
         </DirectionProvider>
       </body>

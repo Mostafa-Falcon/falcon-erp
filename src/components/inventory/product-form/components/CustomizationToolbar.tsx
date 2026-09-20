@@ -1,5 +1,5 @@
 import React from 'react';
-import { SlidersHorizontal, FileText, Settings, Clock, Check } from 'lucide-react';
+import { SlidersHorizontal, FileText, Settings, Clock, Check, Pill } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface CustomizationToolbarProps {
@@ -10,6 +10,7 @@ interface CustomizationToolbarProps {
   showExpiry: boolean;
   setShowExpiry: (val: boolean) => void;
   setEnableExpiryTracking: (val: boolean) => void;
+  isPharmacy?: boolean;
 }
 
 export const CustomizationToolbar: React.FC<CustomizationToolbarProps> = ({
@@ -20,6 +21,7 @@ export const CustomizationToolbar: React.FC<CustomizationToolbarProps> = ({
   showExpiry,
   setShowExpiry,
   setEnableExpiryTracking,
+  isPharmacy = false,
 }) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
@@ -29,7 +31,14 @@ export const CustomizationToolbar: React.FC<CustomizationToolbarProps> = ({
           <span>تخصيص واجهة الإدخال:</span>
         </div>
 
-        {/* تبديل: المواصفات الإضافية */}
+        {isPharmacy && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            <Pill className="w-3.5 h-3.5 text-emerald-600" />
+            <span>نمط أدوية ومستحضرات الصيدلية</span>
+          </span>
+        )}
+
+        {/* تبديل: المواصفات / المادة الفعالة */}
         <Button
           type="button"
           variant={showSpecs ? 'default' : 'outline'}
@@ -42,7 +51,7 @@ export const CustomizationToolbar: React.FC<CustomizationToolbarProps> = ({
           }`}
         >
           <FileText className="w-3.5 h-3.5 ml-1" />
-          <span>المواصفات الإضافية</span>
+          <span>{isPharmacy ? 'المادة الفعالة والاسم العلمي' : 'المواصفات الإضافية'}</span>
           {showSpecs && <Check className="w-3 h-3 mr-1" />}
         </Button>
 
@@ -80,13 +89,15 @@ export const CustomizationToolbar: React.FC<CustomizationToolbarProps> = ({
           }`}
         >
           <Clock className="w-3.5 h-3.5 ml-1" />
-          <span>تتبع الصلاحية</span>
+          <span>تتبع الصلاحية والتشغيلات</span>
           {showExpiry && <Check className="w-3 h-3 mr-1" />}
         </Button>
       </div>
 
       <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-        قم بتفعيل ما تحتاجه فقط لتبسيط وتسريع عملية الإدخال
+        {isPharmacy
+          ? 'في نمط الصيدلية: المادة الفعالة وتتبع تواريخ الصلاحية مفعّلة لضمان الإدارة الدقيقة للأدوية'
+          : 'قم بتفعيل ما تحتاجه فقط لتبسيط وتسريع عملية الإدخال'}
       </p>
     </div>
   );

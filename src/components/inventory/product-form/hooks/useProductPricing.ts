@@ -7,12 +7,14 @@ interface UseProductPricingProps {
   initial?: Product;
   initialUnits?: ProductUnit[];
   units: Unit[];
+  isPharmacy?: boolean;
 }
 
 export function useProductPricing({
   initial,
   initialUnits = [],
   units,
+  isPharmacy = false,
 }: UseProductPricingProps) {
   // =========================================================================
   // 1. حالة وحدات القطع (مستويات الوحدات)
@@ -71,7 +73,7 @@ export function useProductPricing({
     return [
       {
         id: 'level-1',
-        unitName: '',
+        unitName: isPharmacy ? 'علبة' : '',
         conversionFactor: '1',
         openingStock: '',
         allowSale: true,

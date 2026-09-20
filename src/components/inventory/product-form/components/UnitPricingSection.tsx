@@ -13,13 +13,28 @@ interface UnitPricingSectionProps {
   handleAddSmallerUnit: () => void;
   updateUnitLevel: (idx: number, patch: Partial<UnitLevelItem>) => void;
   removeUnitLevel: (idx: number) => void;
+  isPharmacy?: boolean;
 }
+
+const PHARMACY_QUICK_UNITS = [
+  'علبة',
+  'شريط',
+  'قرص',
+  'كبسولة',
+  'أمبول',
+  'زجاجة',
+  'مرهم',
+  'قطرة',
+  'بخاخة',
+  'كيس',
+];
 
 export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
   unitLevels,
   handleAddSmallerUnit,
   updateUnitLevel,
   removeUnitLevel,
+  isPharmacy = false,
 }) => {
   return (
     <>
@@ -34,6 +49,16 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
           lvl.discountValue,
           lvl.discountType
         );
+
+        let unitLabelText = isFirst
+          ? 'اسم الوحدة (الأساسية / الكبرى)'
+          : `اسم الوحدة (المستوى ${idx + 1})`;
+
+        if (isPharmacy) {
+          if (idx === 0) unitLabelText = 'الوحدة الكبرى (العلبة)';
+          else if (idx === 1) unitLabelText = 'الوحدة الفرعية (الشريط)';
+          else if (idx === 2) unitLabelText = 'وحدة التجزئة (القرص / الكبسولة)';
+        }
 
         return (
           <Card
@@ -56,7 +81,7 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
 
                   <div className="flex-1">
                     <Label className="block text-[11px] font-black text-slate-500 mb-1">
-                      اسم الوحدة {isFirst ? '(الأساسية / الكبرى)' : `(المستوى ${idx + 1})`}
+                      {unitLabelText}
                     </Label>
                     <Input
                       type="text"
@@ -65,12 +90,38 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
                         updateUnitLevel(idx, { unitName: e.target.value })
                       }
                       placeholder={
-                        isFirst
+                        isPharmacy
+                          ? isFirst
+                            ? 'مثال: علبة'
+                            : idx === 1
+                            ? 'مثال: شريط'
+                            : 'مثال: قرص أو كبسولة'
+                          : isFirst
                           ? 'مثال: قطعة، كرتونة، كجم...'
                           : 'مثال: باكت، شريط، جرام...'
                       }
                       className="h-10 text-xs font-bold"
                     />
+
+                    {/* أزرار سريعة لاختيار وحدات الدواء للصيدلية */}
+                    {isPharmacy && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {PHARMACY_QUICK_UNITS.map((uName) => (
+                          <button
+                            key={uName}
+                            type="button"
+                            onClick={() => updateUnitLevel(idx, { unitName: uName })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
+                              lvl.unitName === uName
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700'
+                            }`}
+                          >
+                            {uName}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {!isFirst && (
@@ -176,7 +227,9 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
               {!isFirst && (
                 <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/50 text-xs">
                   <div className="flex items-center gap-2 font-bold text-blue-900 dark:text-blue-200">
-                    <span className="text-[11px] font-black">معادلة التفكيك:</span>
+                    <span className="text-[11px] font-black">
+                      {isPharmacy ? 'معادلة تفكيك الدواء:' : 'معادلة التفكيك:'}
+                    </span>
                     <span className="font-mono bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800 text-xs shadow-2xs">
                       1 {unitLevels[idx - 1]?.unitName || (idx === 1 ? 'علبة' : 'شريط')} = {lvl.conversionFactor || (idx === 1 ? '3' : '10')} {lvl.unitName || (idx === 1 ? 'شريط' : 'قرص')}
                     </span>
@@ -384,7 +437,11 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
           className="w-full h-12 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border-dashed border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-black flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all"
         >
           <Plus className="w-4 h-4" />
-          <span>إضافة وحدة أصغر (المستوى {unitLevels.length + 1})</span>
+          <span>
+            {isPharmacy
+              ? `إضافة وحدة دوائية أصغر (مثل: ${unitLevels.length === 1 ? 'شريط' : 'قرص'})`
+              : `إضافة وحدة أصغر (المستوى ${unitLevels.length + 1})`}
+          </span>
         </Button>
       )}
     </>

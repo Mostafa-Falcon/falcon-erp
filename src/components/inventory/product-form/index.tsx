@@ -16,6 +16,8 @@ import { LookupManageModal } from './components/LookupManageModal';
 
 export const ProductForm: React.FC<ProductFormProps> = (props) => {
   const {
+    isEdit,
+    isPharmacy,
     fileInputRef,
     // Bar
     showSpecs,
@@ -116,7 +118,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
   } = useProductForm(props);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" dir="rtl">
+    <form onSubmit={handleSubmit} className="space-y-5 pb-4" dir="rtl">
       {/* 1. شريط تخصيص واجهة الإدخال */}
       <CustomizationToolbar
         showSpecs={showSpecs}
@@ -126,12 +128,14 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
         showExpiry={showExpiry}
         setShowExpiry={setShowExpiry}
         setEnableExpiryTracking={setEnableExpiryTracking}
+        isPharmacy={isPharmacy}
       />
 
       {/* 2. نوع الصنف وطبيعة البيع (قطع أو وزن بالميزان) */}
       <ItemTypeSelector
         itemTypeMode={itemTypeMode}
         setItemTypeMode={setItemTypeMode}
+        isPharmacy={isPharmacy}
       />
 
       {/* 3. كرت البيانات الأساسية والباركود والصورة */}
@@ -156,6 +160,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
         handleRemoveAlternateBarcode={handleRemoveAlternateBarcode}
         shelfLocation={shelfLocation}
         setShelfLocation={setShelfLocation}
+        isPharmacy={isPharmacy}
       />
 
       {/* 4. الشاشة الوسطى: التصنيفات والإعدادات (يسار) والوحدات والتسعير (يمين) */}
@@ -173,6 +178,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
             setProductType={setProductType}
             uniqueProductTypes={uniqueProductTypes}
             setActiveModal={setActiveModal}
+            isPharmacy={isPharmacy}
           />
 
           {showAdvanced && (
@@ -201,6 +207,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
               handleAddSmallerUnit={handleAddSmallerUnit}
               updateUnitLevel={updateUnitLevel}
               removeUnitLevel={removeUnitLevel}
+              isPharmacy={isPharmacy}
             />
           ) : (
             <WeightPricingSection
@@ -239,6 +246,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
           handleAddBatch={handleAddBatch}
           handleUpdateBatch={handleUpdateBatch}
           handleRemoveBatch={handleRemoveBatch}
+          isPharmacy={isPharmacy}
         />
       )}
 
@@ -247,6 +255,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
         isSaving={isSaving}
         onCancel={onCancel}
         handleResetForm={handleResetForm}
+        isPharmacy={isPharmacy}
       />
 
       {/* 7. نافذة الإضافة والإدارة المنبثقة للتصنيفات والشركات والأنواع */}

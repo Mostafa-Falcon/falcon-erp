@@ -24,6 +24,7 @@ interface ClassificationsSectionProps {
   setProductType: (val: string) => void;
   uniqueProductTypes: ProductTypeItem[];
   setActiveModal: (type: ModalType) => void;
+  isPharmacy?: boolean;
 }
 
 export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
@@ -37,21 +38,22 @@ export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
   setProductType,
   uniqueProductTypes,
   setActiveModal,
+  isPharmacy = false,
 }) => {
   return (
     <Card className="border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#131b2e] shadow-xs rounded-2xl">
       <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
         <CardTitle className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-          <span>التصنيفات والبيانات</span>
+          <span>{isPharmacy ? 'تصنيفات الدواء والشركة' : 'التصنيفات والبيانات'}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
-        {/* 1. الشركة / الماركة / المورد */}
+        {/* 1. الشركة / الماركة / المصنع */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <Label className="text-xs font-black text-slate-600 dark:text-slate-400">
-              الشركة المصنعة / الماركة
+              {isPharmacy ? 'شركة الأدوية المصنعة / المورد' : 'الشركة المصنعة / الماركة'}
             </Label>
             <Button
               type="button"
@@ -66,7 +68,7 @@ export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
           </div>
           <Select value={brandId} onValueChange={setBrandId}>
             <SelectTrigger className="w-full h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold">
-              <SelectValue placeholder="اختر من القائمة..." />
+              <SelectValue placeholder={isPharmacy ? 'اختر شركة الأدوية...' : 'اختر من القائمة...'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">بدون تحديد</SelectItem>
@@ -79,11 +81,11 @@ export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
           </Select>
         </div>
 
-        {/* 2. المجموعة / التصنيف */}
+        {/* 2. المجموعة / التصنيف / الشكل الصيدلاني */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <Label className="text-xs font-black text-slate-600 dark:text-slate-400">
-              المجموعة / التصنيف
+              {isPharmacy ? 'المجموعة الدوائية / الشكل الصيدلاني' : 'المجموعة / التصنيف'}
             </Label>
             <Button
               type="button"
@@ -98,7 +100,7 @@ export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
           </div>
           <Select value={categoryId} onValueChange={setCategoryId}>
             <SelectTrigger className="w-full h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold">
-              <SelectValue placeholder="اختر من القائمة..." />
+              <SelectValue placeholder={isPharmacy ? 'اختر المجموعة الدوائية...' : 'اختر من القائمة...'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">بدون تحديد</SelectItem>
@@ -115,7 +117,7 @@ export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <Label className="text-xs font-black text-slate-600 dark:text-slate-400">
-              نوع المنتج
+              {isPharmacy ? 'تصنيف الدواء / نوع المستحضر' : 'نوع المنتج'}
             </Label>
             <Button
               type="button"
@@ -130,7 +132,7 @@ export const ClassificationsSection: React.FC<ClassificationsSectionProps> = ({
           </div>
           <Select value={productType} onValueChange={setProductType}>
             <SelectTrigger className="w-full h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold">
-              <SelectValue placeholder="اختر من القائمة..." />
+              <SelectValue placeholder={isPharmacy ? 'اختر نوع المستحضر...' : 'اختر من القائمة...'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">بدون تحديد</SelectItem>
