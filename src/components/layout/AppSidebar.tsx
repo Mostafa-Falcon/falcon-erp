@@ -59,6 +59,7 @@ import {
 } from 'lucide-react';
 import type { Branch } from '@/types';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
+import { getSubscriptionProfile, getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -78,10 +79,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const { currentUser, activeBranchId, setActiveBranchId } = useSessionStore();
   const [orgName, setOrgName] = useState('لوجيسكا ERP');
   const [orgActivity, setOrgActivity] = useState('retail');
+  const [orgSubscription, setOrgSubscription] = useState('standard');
   const [branchName, setBranchName] = useState('الفرع الرئيسي');
   const [searchQuery, setSearchQuery] = useState('');
 
   const domain = getDomainProfile(orgActivity);
+  const subProfile = getSubscriptionProfile(orgSubscription);
 
   // Branch switcher state
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -98,6 +101,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
         if (org) {
           setOrgName(org.name);
           if (org.activity_type) setOrgActivity(org.activity_type);
+          if (org.subscription_tier) setOrgSubscription(org.subscription_tier);
         }
 
         // Fetch all active branches
@@ -244,7 +248,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
       label: 'الإعدادات',
       icon: <Icons.Settings />,
       subItems: [
-        { label: 'إعدادات النظام', href: '/settings', icon: <Settings className="w-4 h-4" /> },
+        { label: 'إعدادات المنشأة والنظام', href: '/settings', icon: <Settings className="w-4 h-4" /> },
+        { label: 'تفضيلات وتخصيص النظام', href: '/settings/preferences', icon: <SlidersHorizontal className="w-4 h-4" /> },
         { label: 'الفروع والمناطق', href: '/settings/branches', icon: <Store className="w-4 h-4" /> },
         { label: 'سياسات المخزون', href: '/settings/inventory', icon: <Archive className="w-4 h-4" /> },
         { label: 'إعدادات الباركود', href: '/settings/barcode', icon: <QrCode className="w-4 h-4" /> },
@@ -255,7 +260,35 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const filteredNavItems = navItems.filter((item) => {
+  const perms = getSubscriptionPermissions(orgSubscription);
+
+  // Filter top-level modules and sub-items based on subscription permissions
+  const allowedNavItems = navItems.filter((item) => {
+    // 1. Module 'employees' (HR / الموظفين والمستخدمين) requires perms.canManageEmployees
+    if (item.id === 'employees' && !perms.canManageEmployees) {
+      return false;
+    }
+    // 2. Module 'purchases' (المشتريات) requires perms.canExecutePurchases
+    if (item.id === 'purchases' && !perms.canExecutePurchases) {
+      return false;
+    }
+    // 3. Module 'accounts' requires non-trial
+    if (item.id === 'accounts' && orgSubscription === 'trial') {
+      return false;
+    }
+    return true;
+  }).map((item) => {
+    // Hide 'الفروع والمناطق' under Settings if perms.canManageBranches is false
+    if (item.id === 'settings' && !perms.canManageBranches && item.subItems) {
+      return {
+        ...item,
+        subItems: item.subItems.filter((sub) => sub.href !== '/settings/branches'),
+      };
+    }
+    return item;
+  });
+
+  const filteredNavItems = allowedNavItems.filter((item) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     const matchesItem = item.label.toLowerCase().includes(q);
@@ -263,7 +296,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
     return matchesItem || matchesSub;
   });
 
-  const activeParentId = navItems.find(item =>
+  const activeParentId = allowedNavItems.find(item =>
     item.subItems?.some(sub => {
       const baseHref = sub.href.split('?')[0];
       return pathname === sub.href || pathname === baseHref || (baseHref !== '/' && pathname.startsWith(baseHref));
@@ -309,13 +342,21 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
                 <span className="font-black text-slate-900 dark:text-white text-base leading-tight truncate">
                   {orgName}
                 </span>
-                <div className="flex items-center gap-1.5 mt-1">
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <span className={cn(
                     "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border truncate shadow-2xs",
                     domain.badgeStyle
                   )}>
                     <span>{domain.icon}</span>
                     <span className="truncate">{domain.nameAr}</span>
+                  </span>
+
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border truncate shadow-2xs",
+                    subProfile.badgeStyle
+                  )} title={subProfile.description}>
+                    <span>{subProfile.icon}</span>
+                    <span className="truncate">{subProfile.badgeName}</span>
                   </span>
                 </div>
               </div>

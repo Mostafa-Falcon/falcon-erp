@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import { useRouter } from 'next/navigation';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -40,6 +41,10 @@ function EmployeesContent() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [branchFilter, setBranchFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [subTier, setSubTier] = useState('standard');
+  const [isExpired, setIsExpired] = useState(false);
+
+  const perms = getSubscriptionPermissions(subTier, isExpired);
 
   // Edit form
   const [editTarget, setEditTarget] = useState<User | null>(null);
@@ -58,14 +63,19 @@ function EmployeesContent() {
     if (!orgId) return;
     try {
       const { db } = await import('@/core/db/app_database');
-      const [empList, branchList, deptList] = await Promise.all([
+      const [empList, branchList, deptList, orgRec] = await Promise.all([
         EmployeeRepository.getEmployeesByOrg(orgId),
         db.branches.where('org_id').equals(orgId).toArray(),
         DepartmentRepository.getAll(orgId),
+        db.organizations.get(orgId),
       ]);
       setEmployees(empList);
       setBranches(branchList);
       setDepartments(deptList);
+      if (orgRec) {
+        setSubTier(orgRec.subscription_tier || 'standard');
+        setIsExpired(orgRec.subscription_expires_at ? new Date(orgRec.subscription_expires_at) < new Date() : false);
+      }
     } catch (err) {
       console.error('Failed to load employees:', err);
     } finally {
@@ -254,9 +264,15 @@ function EmployeesContent() {
                 </button>
               ))}
             </div>
-            <Button onClick={openAddModal} className="h-10 px-4 bg-[#558b2f] hover:bg-[#436d25] text-white rounded-lg text-xs font-bold flex items-center gap-1.5">
-              <Icons.Plus /> إضافة موظف جديد
-            </Button>
+            {perms.canManageEmployees ? (
+              <Button onClick={openAddModal} className="h-10 px-4 bg-[#558b2f] hover:bg-[#436d25] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+                <Icons.Plus /> إضافة موظف جديد
+              </Button>
+            ) : (
+              <div className="px-3.5 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold flex items-center gap-2">
+                <span>صاحب المنشأة (متاح فتح نفس الحساب على أجهزة متعددة)</span>
+              </div>
+            )}
           </div>
 
           {/* Table */}

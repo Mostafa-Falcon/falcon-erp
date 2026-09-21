@@ -2,6 +2,8 @@ import { db } from '@/core/db/app_database';
 import { supabase, isSupabaseConfigured } from '@/core/supabase/supabase_client';
 import { networkListener } from './network_listener';
 import { SyncQueueManager } from './sync_queue_manager';
+import { PullSyncService } from './pull_sync_service';
+import { AuthRepository } from '@/modules/auth/auth_repository';
 import type { SyncQueueItem } from '@/types';
 
 /**
@@ -57,7 +59,7 @@ const TABLE_SYNC_ORDER: Record<string, number> = {
  */
 const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
   organizations: new Set([
-    'id', 'name', 'legal_name', 'activity_type', 'tax_number', 'commercial_reg_no',
+    'id', 'name', 'legal_name', 'activity_type', 'subscription_tier', 'subscription_expires_at', 'tax_number', 'commercial_reg_no',
     'currency', 'phone', 'email', 'address', 'logo_url', 'transport_token',
     'is_active', 'created_at', 'updated_at',
   ]),
@@ -395,6 +397,12 @@ export class SyncCoordinator {
     let pushedCount = 0;
 
     try {
+      // Pull latest org profile & settings from cloud
+      const currentAuthUser = AuthRepository.getCurrentUser();
+      if (currentAuthUser?.org_id) {
+        PullSyncService.pullAll(currentAuthUser.org_id).catch(() => {});
+      }
+
       // جلب العناصر المعلقة
       const pendingItems = await SyncQueueManager.getPendingItems(50);
       if (pendingItems.length === 0) {

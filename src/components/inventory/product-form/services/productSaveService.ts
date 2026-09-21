@@ -1,4 +1,6 @@
 import { ProductRepository } from '@/modules/inventory/product_repository';
+import { db } from '@/core/db/app_database';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import type {
   Product,
   ProductUnit,
@@ -91,6 +93,29 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
     batchEntries,
     warehouses = [],
   } = payload;
+
+  // فحص اشتراك المنشأة والحد الأقصى المسموح به لإضافة الأصناف
+  const org = await db.organizations.get(orgId);
+  if (org) {
+    if (!org.is_active) {
+      throw new Error('حساب المنشأة غير فعال حالياً.');
+    }
+    const isExpired = org.subscription_expires_at
+      ? new Date(org.subscription_expires_at) < new Date()
+      : false;
+    const perms = getSubscriptionPermissions(org.subscription_tier, isExpired);
+    if (!perms.canAddProducts) {
+      throw new Error(perms.reasonIfBlocked || 'إضافة الأصناف غير متاحة في حسابك الحالي.');
+    }
+    if (!isEdit && perms.maxProductsLimit) {
+      const currentProductsCount = await db.products.where('org_id').equals(orgId).count();
+      if (currentProductsCount >= perms.maxProductsLimit) {
+        throw new Error(
+          `وصلت للحد الأقصى لإضافة الأصناف في الحساب التجريبي (${perms.maxProductsLimit} أصناف). يرجى ترقية الاشتراك لإضافة عدد غير محدود.`
+        );
+      }
+    }
+  }
 
   let baseU = units.find((u) =>
     itemTypeMode === 'weight'

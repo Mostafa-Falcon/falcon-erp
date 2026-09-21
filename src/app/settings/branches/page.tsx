@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { SettingsRepository } from '@/modules/settings/settings_repository';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import type { Branch } from '@/types';
 import { toast } from 'sonner';
 import {
@@ -41,7 +42,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { useRouter } from 'next/navigation';
+
 export default function BranchesSettingsPage() {
+  const router = useRouter();
   const { currentUser } = useSessionStore();
   const orgId = currentUser?.org_id || '';
 
@@ -50,6 +54,10 @@ export default function BranchesSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [pageSize, setPageSize] = useState('25');
+  const [subTier, setSubTier] = useState('standard');
+  const [isExpired, setIsExpired] = useState(false);
+
+  const perms = getSubscriptionPermissions(subTier, isExpired);
 
   // Dialog / Modal state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -77,8 +85,16 @@ export default function BranchesSettingsPage() {
     if (!orgId) return;
     try {
       setIsLoading(true);
-      const list = await SettingsRepository.getBranches(orgId);
+      const { db } = await import('@/core/db/app_database');
+      const [list, orgRec] = await Promise.all([
+        SettingsRepository.getBranches(orgId),
+        db.organizations.get(orgId),
+      ]);
       setBranches(list);
+      if (orgRec) {
+        setSubTier(orgRec.subscription_tier || 'standard');
+        setIsExpired(orgRec.subscription_expires_at ? new Date(orgRec.subscription_expires_at) < new Date() : false);
+      }
     } catch (err) {
       console.error('Error loading branches:', err);
       toast.error('حدث خطأ أثناء تحميل الفروع');
@@ -91,8 +107,29 @@ export default function BranchesSettingsPage() {
     loadBranches();
   }, [orgId]);
 
+  useEffect(() => {
+    if (!orgId) return;
+    const checkBranchAccess = async () => {
+      const { db } = await import('@/core/db/app_database');
+      const org = await db.organizations.get(orgId);
+      const permsCheck = getSubscriptionPermissions(
+        org?.subscription_tier,
+        org?.subscription_expires_at ? new Date(org.subscription_expires_at) < new Date() : false
+      );
+      if (!permsCheck.canManageBranches) {
+        toast.error('إدارة الفروع المتعددة غير متاحة في الحساب القياسي (الفرع الرئيسي فقط). يرجى الترقية لباقة VIP لتفعيل الفروع.');
+        router.replace('/settings');
+      }
+    };
+    checkBranchAccess();
+  }, [orgId]);
+
   // Open modal for a new branch
   const handleOpenAddModal = () => {
+    if (!perms.canManageBranches) {
+      toast.error('الحساب القياسي يقتصر على الفرع الرئيسي فقط. لإنشاء فروع ومستودعات متعددة يرجى الترخيص لباقة VIP عبر لوحة التحكم.');
+      return;
+    }
     setEditingBranch(null);
     setBName('');
     setBPhone('');
@@ -199,7 +236,7 @@ export default function BranchesSettingsPage() {
   const totalCount = branches.length;
   const activeCount = branches.filter((b) => b.is_active).length;
 
-  const headerActions = (
+  const headerActions = perms.canManageBranches ? (
     <Button
       onClick={handleOpenAddModal}
       className="bg-[#6366f1] hover:bg-indigo-600 text-white font-black text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-md shadow-indigo-500/10 cursor-pointer print:hidden"
@@ -207,6 +244,10 @@ export default function BranchesSettingsPage() {
       <Plus className="w-4 h-4" />
       إضافة فرع جديد
     </Button>
+  ) : (
+    <div className="px-3.5 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold">
+      الفرع الرئيسي فقط
+    </div>
   );
 
   return (

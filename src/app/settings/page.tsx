@@ -32,11 +32,15 @@ import {
   EyeOff,
   KeyRound,
   User as UserIcon,
-  UserPlus
+  UserPlus,
+  Info,
+  Sparkles,
+  Crown
 } from 'lucide-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResetPeriodModal } from '@/components/settings/ResetPeriodModal';
+import { SUBSCRIPTION_PROFILES, getSubscriptionProfile, getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 
 import { useRouter } from 'next/navigation';
 
@@ -53,10 +57,14 @@ export default function SettingsPage() {
   const [isPeriodResetOpen, setIsPeriodResetOpen] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-  // Identity state
+  // Identity & Subscription state
   const [nameAr, setNameAr] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [activityType, setActivityType] = useState('retail');
+  const [subscriptionTier, setSubscriptionTier] = useState('standard');
+
+  const subProfile = getSubscriptionProfile(subscriptionTier);
+  const perms = getSubscriptionPermissions(subscriptionTier);
 
   // Contact & Taxes state
   const [phone, setPhone] = useState('');
@@ -101,6 +109,7 @@ export default function SettingsPage() {
           setNameAr(orgRec.name || '');
           setNameEn(orgRec.legal_name || ''); // maps English name to legal_name field
           setActivityType(orgRec.activity_type || 'retail');
+          setSubscriptionTier(orgRec.subscription_tier || 'standard');
           setPhone(orgRec.phone || '');
           setEmail(orgRec.email || '');
           setAddress(orgRec.address || '');
@@ -227,8 +236,7 @@ export default function SettingsPage() {
         SettingsRepository.setSetting(orgId, 'allow_expired_sales', String(allowExpiredSales), 'السماح ببيع المنتجات منتهية الصلاحية'),
         SettingsRepository.setSetting(orgId, 'enable_tax', String(enableTax), 'تفعيل ضريبة القيمة المضافة (اختيارية)'),
         SettingsRepository.setSetting(orgId, 'is_tax_inclusive', String(isTaxInclusive), 'هل الأسعار المعروضة شاملة الضريبة'),
-        SettingsRepository.setSetting(orgId, 'vat_rate', vatRate, 'نسبة ضريبة القيمة المضافة الافتراضية (%)'),
-        SettingsRepository.setSetting(orgId, 'enable_registration', String(enableRegistration), 'إتاحة صفحة إنشاء حساب جديد (/register)')
+        SettingsRepository.setSetting(orgId, 'vat_rate', vatRate, 'نسبة ضريبة القيمة المضافة الافتراضية (%)')
       ]);
 
       toast.success('تم حفظ التغييرات وإعدادات النظام بنجاح');
@@ -395,27 +403,29 @@ export default function SettingsPage() {
               <h3 className="text-xs font-black uppercase tracking-wider">منطقة الخطر والعمليات المتقدمة</h3>
             </div>
 
-            {/* Sub-Action 1: Reset by Date Range (New Feature) */}
-            <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 rounded-xl p-3.5 space-y-3">
-              <div className="flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded-md bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
+            {/* Sub-Action 1: Reset by Date Range (Available for VIP Tiers) */}
+            {perms.canResetByDateRange && (
+              <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 rounded-xl p-3.5 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-md bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-red-900 dark:text-red-300">تصفير المبيعات والمشتريات حسب المدة</h4>
+                    <p className="text-[10px] font-medium text-red-700/80 dark:text-red-400/80 leading-relaxed mt-1">
+                      حذف فواتير المبيعات، المشتريات، والمرتجعات خلال فترة يحددها صاحب المنشأة، مع معاينة حية للأعداد وخيارات متقدمة للمخزون والخزينة.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setIsPeriodResetOpen(true)}
+                  className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                >
                   <CalendarDays className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-red-900 dark:text-red-300">تصفير المبيعات والمشتريات حسب المدة</h4>
-                  <p className="text-[10px] font-medium text-red-700/80 dark:text-red-400/80 leading-relaxed mt-1">
-                    حذف فواتير المبيعات، المشتريات، والمرتجعات خلال فترة يحددها صاحب المنشأة، مع معاينة حية للأعداد وخيارات متقدمة للمخزون والخزينة.
-                  </p>
-                </div>
+                  تحديد المدة وتصفير العمليات
+                </Button>
               </div>
-              <Button
-                onClick={() => setIsPeriodResetOpen(true)}
-                className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                تحديد المدة وتصفير العمليات
-              </Button>
-            </div>
+            )}
 
             {/* Sub-Action 2: Reset Operations & Inventory */}
             <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-3.5 space-y-3">
@@ -525,11 +535,22 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  نوع النشاط التجاري
-                </label>
-                <Select value={activityType} onValueChange={setActivityType}>
-                  <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                    نوع النشاط التجاري
+                  </label>
+                  {!perms.canChangeActivityType && (
+                    <span className="text-[10px] font-bold text-slate-400">
+                      (محدد ومعتمد من لوحة تحكم لوجيسكا)
+                    </span>
+                  )}
+                </div>
+                <Select
+                  value={activityType}
+                  onValueChange={setActivityType}
+                  disabled={!perms.canChangeActivityType}
+                >
+                  <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white disabled:opacity-80 disabled:cursor-not-allowed">
                     <SelectValue placeholder="اختر نوع النشاط" />
                   </SelectTrigger>
                   <SelectContent>
@@ -542,6 +563,74 @@ export default function SettingsPage() {
                     <SelectItem value="services">خدمات ومطاعم وكافيهات</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Organization Subscription Plan & Logixa Licensing */}
+          <div className={`p-5 rounded-2xl border transition-all ${subProfile.cardStyle}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 font-black text-xl">
+                  {subProfile.icon}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white">
+                      باقة الترخيص والاشتراك الحالية للمنشأة ({subProfile.nameAr})
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] border ${subProfile.badgeStyle}`}>
+                      {subProfile.badgeName}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                    {subProfile.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>حالة الحساب: نشط ومعتمد</span>
+              </div>
+            </div>
+
+            {/* Active Tier Capabilities Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">حد الموظفين والمستخدمين</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.maxUsers}</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">حد الفروع والمستودعات</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.maxBranches}</span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">عمليات المبيعات والكاشير</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">
+                  {perms.canExecuteSales ? 'مفعّل بالكامل' : 'معاينة تجريبية فقط (البيع محجوب)'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">فواتير المشتريات والتوريد</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">
+                  {perms.canExecutePurchases ? 'مفعّل بالكامل' : 'غير متاح في هذه الباقة'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">إضافة الأصناف والأدوية</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">
+                  {perms.canAddProducts ? (perms.maxProductsLimit ? `متاح تجريبياً (حتى ${perms.maxProductsLimit} أصناف)` : 'متاح بلا حدود') : 'غير متاح'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">مستوى الدعم الفني</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.supportLevel}</span>
               </div>
             </div>
           </div>
@@ -873,137 +962,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Card 4: System Preferences & Behaviors */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
-            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
-                <Volume2 className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black text-slate-900 dark:text-white">تفضيلات وسلوك النظام</h3>
-                <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                  التحكم في المؤثرات والوضع البصري وسياسات البيع الفورية داخل المنظومة
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 divider-y divider-slate-100 dark:divider-slate-800/60">
-
-              {/* Preference 1: Sounds */}
-              <div className="flex items-center justify-between gap-4 py-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <Volume2 className="w-4 h-4 text-indigo-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">تفعيل الأصوات والتنبيهات الصوتية</h4>
-                    <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-relaxed">
-                      تشغيل نغمات تأكيد مسح الباركود، إضافة الأصناف، واعتماد الفواتير في شاشة الكاشير والمبيعات.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEnableSounds(!enableSounds)}
-                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                    enableSounds ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
-                      enableSounds ? 'right-0.5' : 'right-[22px]'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Preference 2: Dark Mode */}
-              <div className="flex items-center justify-between gap-4 py-2 border-t border-slate-50 dark:border-slate-800/40 pt-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <Moon className="w-4 h-4 text-purple-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">الوضع الليلي المريح (Dark Mode)</h4>
-                    <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-relaxed">
-                      تبديل ألوان الواجهة للنمط الداكن المريح للعين لتقليل الجهد البصري في فترات العمل الطويلة والمستمرة.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleDarkMode(!darkMode)}
-                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                    darkMode ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
-                      darkMode ? 'right-0.5' : 'right-[22px]'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Preference 3: Allow selling expired items */}
-              <div className="flex items-center justify-between gap-4 py-2 border-t border-slate-50 dark:border-slate-800/40 pt-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <CalendarDays className="w-4 h-4 text-amber-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">السماح ببيع المنتجات منتهية الصلاحية / التالفة</h4>
-                    <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-relaxed">
-                      عند التعطيل، سيمنع النظام تلقائياً إضافة أي صنف منتهي الصلاحية أو تم وسمه كتالف لسلة البيع حماية للجودة.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAllowExpiredSales(!allowExpiredSales)}
-                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                    allowExpiredSales ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
-                      allowExpiredSales ? 'right-0.5' : 'right-[22px]'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Preference 4: Allow / Hide Registration Page */}
-              <div className="flex items-center justify-between gap-4 py-2 border-t border-slate-50 dark:border-slate-800/40 pt-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <UserPlus className="w-4 h-4 text-blue-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">إتاحة صفحة إنشاء حساب جديد (/register)</h4>
-                    <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-relaxed">
-                      عند التعطيل، يتم إخفاء رابط التسجيل من صفحة الدخول، وتحويل أي محاولة للوصول المباشر إليها لحصر إنشاء الحسابات عبر إدارة النظام فقط.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEnableRegistration(!enableRegistration)}
-                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                    enableRegistration ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
-                      enableRegistration ? 'right-0.5' : 'right-[22px]'
-                    }`}
-                  />
-                </button>
-              </div>
-
             </div>
           </div>
 

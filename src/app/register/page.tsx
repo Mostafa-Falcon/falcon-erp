@@ -46,8 +46,13 @@ export default function RegisterPage() {
       }
 
       try {
-        const setting = await db.app_settings.get('enable_registration');
-        if (setting && setting.value === 'false') {
+        const [s1, s2] = await Promise.all([
+          db.app_settings.get('enable_registration'),
+          db.app_settings.get('allow_public_registration')
+        ]);
+        const val1 = s1?.value?.toLowerCase();
+        const val2 = s2?.value?.toLowerCase();
+        if (val1 === 'false' || val2 === 'false') {
           toast.error('التسجيل الذاتي مغلق حالياً، يتم إنشاء الحسابات وإدارتها عبر إدارة النظام فقط.');
           router.replace('/login');
           return;
@@ -124,11 +129,16 @@ export default function RegisterPage() {
       // Derive clean organization name from owner's name
       const derivedOrgName = `مؤسسة ${fullName.trim()}`;
 
-      // 1. Organization Record
+      // Trial Expiration Date: 7 days from now
+      const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      // 1. Organization Record (Default: 7-Day Demo Trial Mode)
       const newOrg: Organization = {
         id: orgId,
         name: derivedOrgName,
         activity_type: activityType,
+        subscription_tier: 'trial',
+        subscription_expires_at: trialExpiresAt,
         currency: 'EGP',
         transport_token: transportToken,
         is_active: true,
@@ -538,7 +548,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-11 sm:h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm sm:text-base rounded-xl shadow-lg shadow-blue-500/25 transition-all mt-3 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm sm:text-base rounded-xl shadow-lg shadow-emerald-500/20 transition-all mt-4 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">

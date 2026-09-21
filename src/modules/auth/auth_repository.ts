@@ -495,6 +495,8 @@ export class AuthRepository {
             id: cloudOrg.id,
             name: cloudOrg.name,
             activity_type: cloudOrg.activity_type || 'retail',
+            subscription_tier: cloudOrg.subscription_tier || 'standard',
+            subscription_expires_at: cloudOrg.subscription_expires_at || null,
             currency: cloudOrg.currency || 'EGP',
             transport_token: transportToken,
             is_active: cloudOrg.is_active !== undefined ? cloudOrg.is_active : true,

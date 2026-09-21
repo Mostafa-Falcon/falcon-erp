@@ -42,8 +42,13 @@ export default function LoginPage() {
     }
 
     // Check if registration is enabled
-    db.app_settings.get('enable_registration').then((setting) => {
-      if (setting && setting.value === 'false') {
+    Promise.all([
+      db.app_settings.get('enable_registration'),
+      db.app_settings.get('allow_public_registration')
+    ]).then(([s1, s2]) => {
+      const val1 = s1?.value?.toLowerCase();
+      const val2 = s2?.value?.toLowerCase();
+      if (val1 === 'false' || val2 === 'false') {
         setIsRegistrationEnabled(false);
       }
     }).catch(() => {});
@@ -245,7 +250,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base rounded-xl shadow-lg shadow-blue-500/25 transition-all mt-4 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black text-base rounded-xl shadow-lg shadow-blue-500/25 transition-all mt-4 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">

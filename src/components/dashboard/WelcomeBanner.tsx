@@ -18,6 +18,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
+import { getSubscriptionProfile } from '@/core/constants/subscription_profiles';
 
 interface KpiStats {
   todaySales: number;
@@ -33,6 +34,7 @@ export const WelcomeBanner: React.FC = () => {
   const { currentUser, activeBranchId } = useSessionStore();
   const [branchName, setBranchName] = useState<string | null>(null);
   const [domainType, setDomainType] = useState<string>('retail');
+  const [subTier, setSubTier] = useState<string>('standard');
   const [stats, setStats] = useState<KpiStats>({
     todaySales: 0,
     salesCount: 0,
@@ -44,6 +46,7 @@ export const WelcomeBanner: React.FC = () => {
   });
 
   const domain = getDomainProfile(domainType);
+  const subProfile = getSubscriptionProfile(subTier);
 
   useEffect(() => {
     const orgId = currentUser?.org_id;
@@ -55,10 +58,11 @@ export const WelcomeBanner: React.FC = () => {
       try {
         const { db } = await import('@/core/db/app_database');
         
-        // 0. Load organization domain/activity
+        // 0. Load organization domain/activity & subscription tier
         const org = await db.organizations.get(orgId);
         if (org && isSubscribed) {
           if (org.activity_type) setDomainType(org.activity_type);
+          if (org.subscription_tier) setSubTier(org.subscription_tier);
         }
 
         // 1. Branch info
@@ -161,6 +165,11 @@ export const WelcomeBanner: React.FC = () => {
                 <span>{domain.nameAr}</span>
               </span>
               <span>•</span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border ${subProfile.badgeStyle}`} title={subProfile.description}>
+                <span>{subProfile.icon}</span>
+                <span>{subProfile.badgeName}</span>
+              </span>
+              <span>•</span>
               <span className="flex items-center gap-1">
                 <Store className="w-3.5 h-3.5 text-slate-400" />
                 <span>{branchName || 'الفرع الرئيسي'}</span>
@@ -176,6 +185,17 @@ export const WelcomeBanner: React.FC = () => {
                 <span>قاعدة بيانات محلية متزامنة</span>
               </span>
             </div>
+
+            {subProfile.id === 'trial' && (
+              <div className="mt-2.5 p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>
+                    <strong>وضع الحساب التجريبي الاستكشافي (7 أيام):</strong> يمكنك إضافة أصناف تجريبية واستعراض الكاشير، بينما تنفيذ البيع والمشتريات محجوب لحين الترقية عبر إدارة لوجيسكا.
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

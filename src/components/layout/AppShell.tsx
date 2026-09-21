@@ -95,21 +95,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   useEffect(() => {
     if (!mounted) return;
     if (!currentUser) {
-      const checkAndRedirect = async () => {
-        try {
-          const { db } = await import('@/core/db/app_database');
-          const orgCount = await db.organizations.count();
-          const userCount = await db.users.count();
-          if (orgCount === 0 || userCount === 0) {
-            router.replace('/register');
-          } else {
-            router.replace('/login');
-          }
-        } catch {
-          router.replace('/login');
-        }
-      };
-      checkAndRedirect();
+      router.replace('/login');
     }
   }, [mounted, currentUser, router]);
 

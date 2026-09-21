@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import type { User, UserRole } from '@/types';
 
 export interface CreateEmployeeDTO {
@@ -59,6 +60,24 @@ export class EmployeeRepository {
    * Add a new employee under the owner's organization
    */
   public static async addEmployee(dto: CreateEmployeeDTO): Promise<User> {
+    // فحص ترقية اشتراك المنشأة والتأكد من السماح بإنشاء حسابات الموظفين
+    const org = await db.organizations.get(dto.org_id);
+    if (org) {
+      if (!org.is_active) {
+        throw new Error('حساب المنشأة غير فعال حالياً.');
+      }
+      const isExpired = org.subscription_expires_at
+        ? new Date(org.subscription_expires_at) < new Date()
+        : false;
+      const perms = getSubscriptionPermissions(org.subscription_tier, isExpired);
+      if (!perms.canManageEmployees) {
+        throw new Error(
+          perms.reasonIfBlocked ||
+          'إنشاء وإضافة حسابات الموظفين غير متاح في الحساب القياسي والتجريبي (متاح ترقيته لباقات VIP عبر لوحة التحكم).'
+        );
+      }
+    }
+
     const now = new Date().toISOString();
     const userId = uuidv4();
 

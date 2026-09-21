@@ -6,6 +6,7 @@ import { TreasuryRepository } from '@/modules/treasury/treasury_repository';
 import { ContactsRepository } from '@/modules/contacts/contacts_repository';
 import { ProductRepository } from '@/modules/inventory/product_repository';
 import { AccountingRepository } from '@/modules/accounting/accounting_repository';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import type {
   PurchaseInvoice,
   PurchaseInvoiceItem,
@@ -43,6 +44,24 @@ export class PurchasesRepository {
   }): Promise<PurchaseInvoice> {
     if (!params.items || params.items.length === 0) {
       throw new Error('فاتورة الشراء يجب أن تحتوي على صنف واحد على الأقل');
+    }
+
+    // فحص اشتراك المنشأة والتأكد من السماح بفواتير المشتريات والتوريد
+    const org = await db.organizations.get(params.orgId);
+    if (org) {
+      if (!org.is_active) {
+        throw new Error('حساب المنشأة غير فعال حالياً. يرجى مراجعة الدعم الفني أو الإدارة.');
+      }
+      const isExpired = org.subscription_expires_at
+        ? new Date(org.subscription_expires_at) < new Date()
+        : false;
+      const perms = getSubscriptionPermissions(org.subscription_tier, isExpired);
+      if (!perms.canExecutePurchases) {
+        throw new Error(
+          perms.reasonIfBlocked ||
+          'فواتير المشتريات والتوريد غير متاحة في الحساب التجريبي. يرجى الترقية للاشتراك القياسي أو VIP.'
+        );
+      }
     }
 
     const now = new Date().toISOString();

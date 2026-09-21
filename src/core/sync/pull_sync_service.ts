@@ -136,15 +136,18 @@ export class PullSyncService {
     let from = 0;
 
     for (;;) {
-      const query = supabase
+      let query = supabase
         .from(tableName)
         .select('*')
-        .eq(tableName === 'organizations' ? 'id' : 'org_id', orgId)
-        .gt(deltaColumn, lastPullTimestamp)
+        .eq(tableName === 'organizations' ? 'id' : 'org_id', orgId);
+
+      if (tableName !== 'organizations') {
+        query = query.gt(deltaColumn, lastPullTimestamp);
+      }
+
+      const { data, error } = await query
         .order(deltaColumn, { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
-
-      const { data, error } = await query;
       if (error || !data || data.length === 0) {
         break;
       }

@@ -107,7 +107,7 @@ export class FalconAppDatabase extends Dexie {
     super('falcon_universal_erp_db');
 
     this.version(1).stores({
-      organizations: 'id, is_active, sync_status',
+      organizations: 'id, is_active, subscription_tier, sync_status',
       branches: 'id, org_id, code, is_main, is_active, sync_status',
       users: 'id, org_id, branch_id, username, role, is_active, sync_status',
       app_settings: 'id, org_id, sync_status',

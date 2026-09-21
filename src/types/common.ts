@@ -9,11 +9,15 @@ export type ISODateString = string;
 // ORGANIZATIONAL & SYSTEM
 // ==========================================
 
+export type SubscriptionTier = 'standard' | 'vip_bronze' | 'vip_silver' | 'vip_gold';
+
 export interface Organization {
   id: EntityId;
   name: string;
   legal_name?: string;
   activity_type?: string;
+  subscription_tier?: SubscriptionTier | string; // 'standard' | 'vip_bronze' | 'vip_silver' | 'vip_gold'
+  subscription_expires_at?: ISODateString | null;
   tax_number?: string;
   commercial_reg_no?: string;
   currency: string; // e.g. EGP, SAR, USD

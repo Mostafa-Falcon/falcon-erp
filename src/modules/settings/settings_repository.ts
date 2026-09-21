@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import type { AppSetting, Branch, Organization } from '@/types';
 
 export class SettingsRepository {
@@ -82,6 +83,24 @@ export class SettingsRepository {
     address?: string;
     isMain: boolean;
   }): Promise<Branch> {
+    // فحص ترقية اشتراك المنشأة والتأكد من السماح بالإنشاء
+    const org = await db.organizations.get(params.orgId);
+    if (org) {
+      if (!org.is_active) {
+        throw new Error('حساب المنشأة غير فعال حالياً.');
+      }
+      const isExpired = org.subscription_expires_at
+        ? new Date(org.subscription_expires_at) < new Date()
+        : false;
+      const perms = getSubscriptionPermissions(org.subscription_tier, isExpired);
+      if (!perms.canManageBranches) {
+        throw new Error(
+          perms.reasonIfBlocked ||
+          'إنشاء وإضافة فروع جديدة غير متاح في الحساب القياسي والتجريبي (متاح ترقيته لباقات VIP عبر لوحة التحكم).'
+        );
+      }
+    }
+
     const count = await db.branches.where('org_id').equals(params.orgId).count();
     const now = new Date().toISOString();
     const branchId = uuidv4();

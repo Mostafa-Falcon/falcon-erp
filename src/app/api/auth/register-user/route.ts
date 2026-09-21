@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     const cleanPassword = password.trim();
     const cleanFullName = fullName?.trim() || 'مدير النظام';
     const now = new Date().toISOString();
+    const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const supabaseAdmin = createAdminClient();
 
@@ -39,6 +40,9 @@ export async function POST(req: Request) {
         full_name: cleanFullName,
         org_id: orgId || '',
         role: role,
+        account_type: 'business_owner',
+        activity_type: activityType,
+        subscription_tier: 'trial',
       },
     });
 
@@ -56,6 +60,9 @@ export async function POST(req: Request) {
               full_name: cleanFullName,
               org_id: orgId || '',
               role: role,
+              account_type: 'business_owner',
+              activity_type: activityType,
+              subscription_tier: 'trial',
             },
           });
         }
@@ -66,7 +73,7 @@ export async function POST(req: Request) {
       authUserId = authData.user.id;
     }
 
-    // 2. Populate public.organizations if orgId is provided
+    // 2. Populate public.organizations if orgId is provided (Default: 7-Day Trial)
     if (orgId) {
       const { error: orgErr } = await supabaseAdmin.from('organizations').upsert(
         {
@@ -74,6 +81,8 @@ export async function POST(req: Request) {
           name: orgName || `مؤسسة ${cleanFullName}`,
           currency: 'EGP',
           activity_type: activityType,
+          subscription_tier: 'trial',
+          subscription_expires_at: trialExpiresAt,
           transport_token: transportToken || '',
           is_active: true,
           created_at: now,

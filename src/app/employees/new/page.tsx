@@ -47,6 +47,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/lib/format';
 
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
+
 export default function AddEmployeePage() {
   const router = useRouter();
   const { currentUser } = useSessionStore();
@@ -55,6 +57,23 @@ export default function AddEmployeePage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const checkPerms = async () => {
+      if (!orgId) return;
+      const { db } = await import('@/core/db/app_database');
+      const org = await db.organizations.get(orgId);
+      const perms = getSubscriptionPermissions(
+        org?.subscription_tier,
+        org?.subscription_expires_at ? new Date(org.subscription_expires_at) < new Date() : false
+      );
+      if (!perms.canManageEmployees) {
+        toast.error('الحساب القياسي مخصص لصاحب المنشأة فقط (يمكنك فتح نفس الحساب على أجهزة متعددة). لإنشاء حسابات موظفين مستقلين يرجى ترقية الاشتراك لـ VIP.');
+        router.replace('/employees/directory');
+      }
+    };
+    checkPerms();
+  }, [orgId, router]);
 
   // Form State
   const [fullName, setFullName] = useState('');
