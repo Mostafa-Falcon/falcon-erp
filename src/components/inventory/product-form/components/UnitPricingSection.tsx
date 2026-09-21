@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Trash2, TrendingUp, Plus, X } from 'lucide-react';
+import { Trash2, TrendingUp, Plus, X, Layers, Sparkles } from 'lucide-react';
 import type { UnitLevelItem } from '../types';
 import { calculatePriceDetails } from '../utils';
 
@@ -38,6 +38,31 @@ export const UnitPricingSection: React.FC<UnitPricingSectionProps> = ({
 }) => {
   return (
     <>
+      {/* شريط الميزان والمعادلة الحسابية لتفكيك وحدات ومستويات الأصناف */}
+      {unitLevels.length > 1 && (
+        <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-blue-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 animate-pulse" />
+            <span>
+              <strong>معادلة تفكيك المستويات ({unitLevels.length} مستويات منفصلة):</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 font-mono text-xs bg-white/90 dark:bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 shadow-2xs font-black text-emerald-800 dark:text-emerald-300">
+            <span>1 {unitLevels[0]?.unitName || 'علبة'}</span>
+            <span className="text-slate-400">=</span>
+            <span>{unitLevels[1]?.conversionFactor || 3} {unitLevels[1]?.unitName || 'شريط'}</span>
+            {unitLevels.length > 2 && (
+              <>
+                <span className="text-slate-400">=</span>
+                <span>
+                  {((parseFloat(unitLevels[1]?.conversionFactor || '3') || 3) * (parseFloat(unitLevels[2]?.conversionFactor || '10') || 10))} {unitLevels[2]?.unitName || 'قرص'}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {unitLevels.map((lvl, idx) => {
         const isFirst = idx === 0;
         const activeSale = lvl.dualPricing

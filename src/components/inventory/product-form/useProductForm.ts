@@ -9,6 +9,7 @@ import type {
   FormBatchEntry,
   ItemTypeMode,
 } from './types';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import { useProductLookups } from './hooks/useProductLookups';
 import { useProductPricing } from './hooks/useProductPricing';
 import { useProductBatches } from './hooks/useProductBatches';
@@ -31,14 +32,21 @@ export function useProductForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isPharmacy, setIsPharmacy] = useState(isPharmacyProp || false);
+  const [subTier, setSubTier] = useState('standard');
+
+  const perms = getSubscriptionPermissions(subTier);
 
   useEffect(() => {
     if (isPharmacyProp !== undefined) {
       setIsPharmacy(isPharmacyProp);
-    } else if (orgId) {
+    }
+    if (orgId) {
       db.organizations.get(orgId).then((org) => {
-        if (org && org.activity_type === 'pharmacy') {
-          setIsPharmacy(true);
+        if (org) {
+          if (isPharmacyProp === undefined && org.activity_type === 'pharmacy') {
+            setIsPharmacy(true);
+          }
+          setSubTier(org.subscription_tier || 'standard');
         }
       }).catch(console.error);
     }
@@ -396,16 +404,20 @@ export function useProductForm({
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!perms.canUploadProductImages) {
+      toast.error('رفع واستضافة صور الأصناف ميزة حصرية لحسابات VIP جولد (👑). يرجى الترقية لباقة VIP جولد لتفعيل رفع الصور.');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('حجم الصورة يجب ألا يتجاوز 2 ميجابايت');
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة يجب ألا يتجاوز 5 ميجابايت');
       return;
     }
     const reader = new FileReader();
     reader.onload = (event) => {
       setImageUrl(event.target?.result as string);
-      toast.success('تم تحميل صورة الصنف بنجاح');
+      toast.success('تم رفـع وتجهيز صورة الصنف بنجاح!');
     };
     reader.readAsDataURL(file);
   };
@@ -606,6 +618,7 @@ export function useProductForm({
     setWeightNewSalePrice,
     weightDualPricing,
     setWeightDualPricing,
+    canUploadProductImages: perms.canUploadProductImages,
     // Actions & state
     isSaving,
     handleGenerateRandomBarcode,

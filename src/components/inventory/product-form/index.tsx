@@ -102,6 +102,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
     setWeightNewSalePrice,
     weightDualPricing,
     setWeightDualPricing,
+    canUploadProductImages,
     // Actions & state
     isSaving,
     handleGenerateRandomBarcode,
@@ -145,6 +146,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
         imageUrl={imageUrl}
         setImageUrl={setImageUrl}
         handleImageUpload={handleImageUpload}
+        canUploadProductImages={canUploadProductImages}
         name={name}
         setName={setName}
         scientificName={scientificName}

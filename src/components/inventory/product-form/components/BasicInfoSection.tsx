@@ -35,6 +35,7 @@ interface BasicInfoSectionProps {
   shelfLocation: string;
   setShelfLocation: (val: string) => void;
   isPharmacy?: boolean;
+  canUploadProductImages?: boolean;
 }
 
 export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
@@ -59,65 +60,68 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   shelfLocation,
   setShelfLocation,
   isPharmacy = false,
+  canUploadProductImages = false,
 }) => {
   return (
     <Card className="border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#131b2e] shadow-xs overflow-hidden rounded-2xl">
       <CardContent className="p-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* صندوق صورة الصنف / الدواء */}
-          <div className="lg:col-span-3 flex flex-col items-center justify-center">
-            <Input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full aspect-4/3 sm:aspect-square max-w-[190px] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-slate-50/70 dark:bg-slate-900/50 flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-all relative overflow-hidden group shadow-2xs"
-            >
-              {imageUrl ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl}
-                    alt={name || (isPharmacy ? 'صورة الدواء' : 'صورة الصنف')}
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setImageUrl('');
-                      }}
-                      className="w-8 h-8 rounded-full"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 shadow-2xs">
-                    <ImagePlus className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                    {isPharmacy ? 'صورة علبة الدواء' : 'صورة الصنف'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">
-                    انقر للرفع (PNG, JPG)
-                  </span>
-                </>
-              )}
+          {/* صندوق صورة الصنف / الدواء (متاح حصرياً لباقة VIP جولد) */}
+          {canUploadProductImages && (
+            <div className="lg:col-span-3 flex flex-col items-center justify-center">
+              <Input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full aspect-4/3 sm:aspect-square max-w-[190px] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-slate-50/70 dark:bg-slate-900/50 flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-all relative overflow-hidden group shadow-2xs"
+              >
+                {imageUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl}
+                      alt={name || (isPharmacy ? 'صورة الدواء' : 'صورة الصنف')}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setImageUrl('');
+                        }}
+                        className="w-8 h-8 rounded-full"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 shadow-2xs">
+                      <ImagePlus className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                      {isPharmacy ? 'صورة علبة الدواء' : 'صورة الصنف'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                      انقر للرفع (PNG, JPG)
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* الحقول الأساسية: الاسم والباركود والرف والمواصفات / المادة الفعالة */}
-          <div className="lg:col-span-9 space-y-4">
+          <div className={canUploadProductImages ? "lg:col-span-9 space-y-4" : "lg:col-span-12 space-y-4"}>
             {/* السطر الأول: الاسم الرئيسي مع المواصفات إن فُعّلت */}
             <div
               className={`grid grid-cols-1 ${

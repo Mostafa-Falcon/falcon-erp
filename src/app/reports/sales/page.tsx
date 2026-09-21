@@ -28,6 +28,8 @@ import {
   FilterX
 } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
+import { exportToCsv, triggerReportPrint } from '@/lib/export';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import type { Contact, SalesInvoice } from '@/types';
 
 export default function SalesReportPage() {
@@ -37,6 +39,9 @@ export default function SalesReportPage() {
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [customers, setCustomers] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [subTier, setSubTier] = useState('standard');
+
+  const perms = getSubscriptionPermissions(subTier);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,12 +54,16 @@ export default function SalesReportPage() {
     try {
       setIsLoading(true);
       const { db } = await import('@/core/db/app_database');
-      const [inv, custs] = await Promise.all([
+      const [inv, custs, orgRec] = await Promise.all([
         SalesRepository.getSalesInvoices(orgId),
         db.contacts.where('org_id').equals(orgId).toArray(),
+        db.organizations.get(orgId),
       ]);
       setInvoices(inv);
       setCustomers(custs);
+      if (orgRec) {
+        setSubTier(orgRec.subscription_tier || 'standard');
+      }
     } catch (err) {
       console.error('Load sales report error:', err);
     } finally {
@@ -113,6 +122,17 @@ export default function SalesReportPage() {
   }, [filteredInvoices]);
 
   const customerName = (id?: string | null) => (id ? customers.find((c) => c.id === id)?.name : 'عميل نقدي');
+
+  const handleExportCsv = () => {
+    const exportRows = filteredInvoices.map((inv) => ({
+      'رقم الفاتورة': inv.invoice_number,
+      'اسم العميل': customerName(inv.customer_id),
+      'التاريخ والوقت': inv.invoice_date || inv.created_at,
+      'طريقة الدفع': inv.payment_type === 'cash' ? 'نقدي' : inv.payment_type === 'card' ? 'بطاقة' : 'آجل',
+      'الإجمالي (ج.م)': inv.total,
+    }));
+    exportToCsv('تقرير_المبيعات', exportRows);
+  };
 
   return (
     <AppShell
@@ -194,18 +214,20 @@ export default function SalesReportPage() {
           {/* Main Toolbar */}
           <div className="p-4 bg-slate-50/30 dark:bg-slate-900/30 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <button onClick={loadData} className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer">
+              <button onClick={loadData} className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer" title="تحديث البيانات">
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
-              <button className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer">
-                <Printer className="w-4 h-4" />
-              </button>
-              <button className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer">
-                <FileText className="w-4 h-4 text-red-500" />
-              </button>
-              <button className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer">
-                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-              </button>
+
+              {perms.canExportReports && (
+                <>
+                  <button onClick={triggerReportPrint} className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer" title="طباعة التقرير">
+                    <Printer className="w-4 h-4 text-blue-600" />
+                  </button>
+                  <button onClick={handleExportCsv} className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer" title="تصدير لملف Excel">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  </button>
+                </>
+              )}
 
               <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2" />
 

@@ -69,7 +69,7 @@ export const SUBSCRIPTION_PROFILES: Record<string, SubscriptionProfile> = {
     cardStyle: 'border-orange-300 dark:border-orange-800/60 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-orange-950/20 dark:via-[#131b2e] dark:to-orange-900/10 shadow-xs',
     gradientText: 'bg-gradient-to-r from-orange-700 via-amber-700 to-orange-800 dark:from-orange-300 dark:to-amber-400 bg-clip-text text-transparent font-black',
     glowEffect: 'ring-1 ring-orange-400/30',
-    description: 'الباقة البرونزية VIP للمنشآت النامية المتميزة.',
+    description: 'الباقة البرونزية VIP للمنشآت النامية المتميزة مع تصدير التقارير المالية للـ Excel و PDF.',
     maxUsers: 'حتى 10 موظفين',
     maxBranches: 'حتى 3 فروع',
     supportLevel: 'دعم فني متميز',
@@ -85,7 +85,7 @@ export const SUBSCRIPTION_PROFILES: Record<string, SubscriptionProfile> = {
     cardStyle: 'border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50/80 via-white to-slate-100/40 dark:from-slate-900/40 dark:via-[#131b2e] dark:to-slate-800/20 shadow-sm',
     gradientText: 'bg-gradient-to-r from-slate-700 via-slate-500 to-slate-900 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent font-black',
     glowEffect: 'ring-1 ring-slate-400/30',
-    description: 'الباقة الفضية VIP للمنشآت المتوسطة والكبيرة المتقدمة.',
+    description: 'الباقة الفضية VIP للمنشآت المتقدمة مع طباعة شعار المؤسسة على الفواتير وتصدير التقارير.',
     maxUsers: 'حتى 25 موظف',
     maxBranches: 'حتى 10 فروع',
     supportLevel: 'دعم فني أولوية عالية VIP',
@@ -101,7 +101,7 @@ export const SUBSCRIPTION_PROFILES: Record<string, SubscriptionProfile> = {
     cardStyle: 'border-amber-400/60 dark:border-amber-500/40 bg-gradient-to-br from-amber-50/80 via-white to-amber-100/30 dark:from-amber-950/20 dark:via-[#131b2e] dark:to-amber-900/10 shadow-amber-500/10 shadow-md',
     gradientText: 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-700 bg-clip-text text-transparent font-black',
     glowEffect: 'ring-2 ring-amber-400/40 shadow-lg shadow-amber-500/10',
-    description: 'الباقة الذهبية VIP كأعلى مستوى للمنشآت الكبرى مع دعم ومزامنة غير محدودة وتخصيص كامل للألوان.',
+    description: 'الباقة الذهبية VIP كأعلى مستوى للمنشآت الكبرى مع طباعة الشعار، تصدير التقارير، وتخصيص كامل للألوان والصور.',
     maxUsers: 'غير محدود',
     maxBranches: 'فروع متعددة غير محدودة',
     supportLevel: 'دعم فني مخصص VIP على مدار الساعة 24/7',
@@ -122,6 +122,9 @@ export interface SubscriptionPermissions {
   canManageBranches: boolean;
   canChangeActivityType: boolean;
   canResetByDateRange: boolean;
+  canUploadProductImages: boolean;
+  canExportReports: boolean;
+  canUploadInvoiceLogo: boolean;
   maxProductsLimit?: number;
   reasonIfBlocked?: string;
 }
@@ -144,6 +147,9 @@ export function getSubscriptionPermissions(
       canManageBranches: false,
       canChangeActivityType: false,
       canResetByDateRange: false,
+      canUploadProductImages: false,
+      canExportReports: false,
+      canUploadInvoiceLogo: false,
       reasonIfBlocked: 'انتهت فترة اشتراك أو تجربة المنشأة. يرجى الترقية للتفعيل.',
     };
   }
@@ -158,6 +164,9 @@ export function getSubscriptionPermissions(
         canManageBranches: false,
         canChangeActivityType: false,
         canResetByDateRange: false,
+        canUploadProductImages: false,
+        canExportReports: false,
+        canUploadInvoiceLogo: false,
         maxProductsLimit: 15,
         reasonIfBlocked:
           'الحساب التجريبي مخصص للمعاينة واستكشاف النظام فقط (يمكنك استعراض الكاشير وإضافة أصناف تجريبية، بينما تنفيذ البيع والمشتريات محجوب لحين الترقية).',
@@ -171,8 +180,23 @@ export function getSubscriptionPermissions(
         canManageBranches: false, // الفرع الرئيسي فقط
         canChangeActivityType: false, // معتمد من لوحة تحكم لوجيسكا
         canResetByDateRange: false, // غير متاح في الحساب القياسي
+        canUploadProductImages: false, // حصرية لباقة VIP جولد
+        canExportReports: false, // ميزة حصرية لباقات VIP
+        canUploadInvoiceLogo: false, // ميزة حصرية لباقات VIP الفضية والذهبية
       };
     case 'vip_bronze':
+      return {
+        canExecuteSales: true,
+        canExecutePurchases: true,
+        canAddProducts: true,
+        canManageEmployees: true,
+        canManageBranches: true,
+        canChangeActivityType: false,
+        canResetByDateRange: true,
+        canUploadProductImages: false,
+        canExportReports: true, // تفعيل تصدير التقارير لباقة VIP برونز
+        canUploadInvoiceLogo: false,
+      };
     case 'vip_silver':
       return {
         canExecuteSales: true,
@@ -182,6 +206,9 @@ export function getSubscriptionPermissions(
         canManageBranches: true,
         canChangeActivityType: false,
         canResetByDateRange: true,
+        canUploadProductImages: false,
+        canExportReports: true,
+        canUploadInvoiceLogo: true, // تفعيل طباعة الشعار لباقة VIP سيلفر
       };
     case 'vip_gold':
     default:
@@ -193,6 +220,9 @@ export function getSubscriptionPermissions(
         canManageBranches: true,
         canChangeActivityType: true,
         canResetByDateRange: true,
+        canUploadProductImages: true, // ميزة حصرية لباقة VIP جولد 👑
+        canExportReports: true, // ميزة حصرية لباقات VIP
+        canUploadInvoiceLogo: true, // ميزة حصرية لباقات VIP سيلفر وجولد
       };
   }
 }

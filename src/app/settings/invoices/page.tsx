@@ -20,8 +20,11 @@ import {
   Percent,
   QrCode,
   Building2,
+  ImagePlus,
+  Upload,
   X
 } from 'lucide-react';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
 import {
   Select,
   SelectContent,
@@ -60,6 +63,11 @@ export default function InvoiceSettingsPage() {
   const [orgName, setOrgName] = useState('مؤسستي');
   const [taxNumberVal, setTaxNumberVal] = useState('123-456-789');
   const [currencySymbol, setCurrencySymbol] = useState('ج.م');
+  const [subTier, setSubTier] = useState('standard');
+  const [invoiceLogoUrl, setInvoiceLogoUrl] = useState('');
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const perms = getSubscriptionPermissions(subTier);
 
   // Load layout configurations on mount
   useEffect(() => {
@@ -75,6 +83,7 @@ export default function InvoiceSettingsPage() {
 
         if (orgRec) {
           setOrgName(orgRec.name || 'مؤسستي');
+          setSubTier(orgRec.subscription_tier || 'standard');
           setTaxNumberVal(orgRec.tax_number || '123-456-789');
           if (orgRec.currency) {
             setCurrencySymbol(orgRec.currency === 'EGP' ? 'ج.م' : orgRec.currency);
@@ -89,6 +98,7 @@ export default function InvoiceSettingsPage() {
           setEnableTaxCalculation(!!parsed.enableTaxCalculation);
           setInvoiceHeader(parsed.invoiceHeader || '');
           setInvoiceFooter(parsed.invoiceFooter || '');
+          setInvoiceLogoUrl(parsed.invoiceLogoUrl || '');
           setShowOrgLogo(parsed.showOrgLogo !== false);
           setShowTaxNumber(parsed.showTaxNumber !== false);
           setShowExpiryDate(!!parsed.showExpiryDate);
@@ -108,6 +118,21 @@ export default function InvoiceSettingsPage() {
     loadInvoiceSettings();
   }, [orgId]);
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('حجم الشعار يجب ألا يتجاوز 2 ميجابايت');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setInvoiceLogoUrl(event.target?.result as string);
+      toast.success('تم تحميل وتجهيز شعار المؤسسة للفاتورة بنجاح!');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Save changes handler
   const handleSaveInvoiceConfig = async () => {
     try {
@@ -115,6 +140,10 @@ export default function InvoiceSettingsPage() {
       const payload = {
         paperSize,
         currencyPosition,
+        enableTaxCalculation,
+        invoiceHeader,
+        invoiceFooter,
+        invoiceLogoUrl,
         enableTaxCalculation,
         invoiceHeader,
         invoiceFooter,
@@ -196,9 +225,14 @@ export default function InvoiceSettingsPage() {
                 {/* Header Section */}
                 <div className="flex flex-col items-center justify-center border-b border-dashed border-slate-200 pb-3 mb-4">
                   {showOrgLogo && (
-                    <div className="w-8 h-8 bg-slate-900 text-white rounded-md flex items-center justify-center text-xs font-black mb-1.5">
-                      +
-                    </div>
+                    invoiceLogoUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={invoiceLogoUrl} alt="Logo" className="w-10 h-10 object-contain mb-1.5" />
+                    ) : (
+                      <div className="w-8 h-8 bg-slate-900 text-white rounded-md flex items-center justify-center text-xs font-black mb-1.5">
+                        +
+                      </div>
+                    )
                   )}
                   <span className="text-[13px] font-black text-black leading-tight">{orgName}</span>
                   {showTaxNumber && (
@@ -301,6 +335,72 @@ export default function InvoiceSettingsPage() {
             <Button onClick={handleChoosePrinter} variant="outline" className="w-full h-11 border-dashed border-pink-300 text-pink-600 bg-pink-50/20 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-2xs cursor-pointer"><Printer className="w-4 h-4" />اضغط لاختيار طابعة الفواتير</Button>
             <p className="text-[10px] font-medium text-slate-400 leading-normal">سيتم كشف الطابعة الحرارية تلقائياً عند الطباعة (فوجيتسو/80/mthermal).</p>
           </div>
+
+          {/* Logo Upload Card (Visible ONLY to VIP Silver & Gold) */}
+          {perms.canUploadInvoiceLogo && (
+            <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-amber-400/60 dark:border-amber-500/40 p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 font-black">
+                  <ImagePlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-900 dark:text-white">
+                    طباعة شعار المنشأة المخصص على الفاتورة (VIP Logo Customizer)
+                  </h3>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                    ميزة حصرية لباقات VIP السيلفر والجولد: رفع شعار منشأتك ليظهر أعلى الإيصالات الحرارية وفواتير A4
+                  </p>
+                </div>
+              </div>
+
+              <input
+                type="file"
+                ref={logoInputRef}
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+
+              <div
+                onClick={() => logoInputRef.current?.click()}
+                className="w-full p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-500 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  {invoiceLogoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={invoiceLogoUrl} alt="شعار الفاتورة" className="w-14 h-14 object-contain rounded-xl border p-1 bg-white" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                      {invoiceLogoUrl ? 'تغيير الشعار المرفوع' : 'رفع شعار المؤسسة / الصيدلية'}
+                    </h4>
+                    <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                      انقر لاختيار الشعار (PNG, JPG بحد أقصى 2 ميجابايت)
+                    </p>
+                  </div>
+                </div>
+
+                {invoiceLogoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInvoiceLogoUrl('');
+                    }}
+                    className="h-8 px-2.5 text-xs text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
+                  >
+                    حذف الشعار
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
             <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
