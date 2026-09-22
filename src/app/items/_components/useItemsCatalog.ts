@@ -565,6 +565,5 @@ export function useItemsCatalog() {
     isPharmacy,
     forceSyncCatalog,
     reload: loadData,
-    reload: loadData,
   };
 }
