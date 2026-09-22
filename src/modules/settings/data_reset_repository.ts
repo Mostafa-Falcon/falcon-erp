@@ -361,7 +361,15 @@ export class DataResetRepository {
               sync_status: 'pending',
             };
             await db.stock_levels.put(updatedStock);
-            await SyncQueueManager.enqueue('stock_levels', updatedStock.id, 'update', updatedStock);
+            const effectiveStock = nextQty - currentStock.quantity;
+            if (effectiveStock !== 0) {
+              await SyncQueueManager.enqueueDelta(
+                'stock_levels',
+                updatedStock.id,
+                { quantity: effectiveStock, allow_negative: false },
+                { warehouse_id: currentStock.warehouse_id, product_id: currentStock.product_id }
+              );
+            }
           }
 
           // Also adjust batch if applicable
@@ -375,7 +383,10 @@ export class DataResetRepository {
                 sync_status: 'pending' as const,
               };
               await db.product_batches.put(updatedBatch);
-              await SyncQueueManager.enqueue('product_batches', batch.id, 'update', updatedBatch);
+              const effectiveBatch = updatedBatch.current_quantity - batch.current_quantity;
+              if (effectiveBatch !== 0) {
+                await SyncQueueManager.enqueueDelta('product_batches', batch.id, { current_quantity: effectiveBatch, allow_negative: false }, {});
+              }
             }
           }
         }
@@ -401,7 +412,10 @@ export class DataResetRepository {
                 sync_status: 'pending',
               };
               await db.treasuries.put(updatedTr);
-              await SyncQueueManager.enqueue('treasuries', tr.id, 'update', updatedTr);
+              const effectiveTr = updatedTr.current_balance - tr.current_balance;
+              if (effectiveTr !== 0) {
+                await SyncQueueManager.enqueueDelta('treasuries', tr.id, { current_balance: effectiveTr }, {});
+              }
             }
           }
         }
@@ -417,7 +431,7 @@ export class DataResetRepository {
                 sync_status: 'pending',
               };
               await db.treasuries.put(updatedTr);
-              await SyncQueueManager.enqueue('treasuries', tr.id, 'update', updatedTr);
+              await SyncQueueManager.enqueueDelta('treasuries', tr.id, { current_balance: ret.refunded_amount }, {});
             }
           }
         }
@@ -434,7 +448,7 @@ export class DataResetRepository {
                 sync_status: 'pending',
               };
               await db.treasuries.put(updatedTr);
-              await SyncQueueManager.enqueue('treasuries', tr.id, 'update', updatedTr);
+              await SyncQueueManager.enqueueDelta('treasuries', tr.id, { current_balance: paid }, {});
             }
           }
         }
@@ -450,7 +464,10 @@ export class DataResetRepository {
                 sync_status: 'pending',
               };
               await db.treasuries.put(updatedTr);
-              await SyncQueueManager.enqueue('treasuries', tr.id, 'update', updatedTr);
+              const effectiveTr = updatedTr.current_balance - tr.current_balance;
+              if (effectiveTr !== 0) {
+                await SyncQueueManager.enqueueDelta('treasuries', tr.id, { current_balance: effectiveTr }, {});
+              }
             }
           }
         }
@@ -500,7 +517,7 @@ export class DataResetRepository {
             account.updated_at = now;
             account.sync_status = 'pending';
             await db.accounts.put(account);
-            await SyncQueueManager.enqueue('accounts', account.id, 'update', account);
+            await SyncQueueManager.enqueueDelta('accounts', account.id, { current_balance: Math.round((-(line.debit || 0) + (line.credit || 0)) * 100) / 100 }, {});
           }
           await db.journal_entry_lines.delete(line.id);
           await SyncQueueManager.enqueue('journal_entry_lines', line.id, 'delete', { id: line.id });

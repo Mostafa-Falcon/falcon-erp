@@ -66,7 +66,12 @@ export class StockAdjustmentService {
             sync_status: 'pending',
           };
           await db.stock_levels.put(updatedLevel);
-          await SyncQueueManager.enqueue('stock_levels', stockId, 'upsert', updatedLevel);
+          await SyncQueueManager.enqueueDelta(
+            'stock_levels',
+            stockId,
+            { quantity: baseQuantity, allow_negative: allowNegative },
+            { warehouse_id: params.warehouseId, product_id: params.productId }
+          );
 
           const txId = uuidv4();
           const movement: InventoryTransaction = {
@@ -120,6 +125,7 @@ export class StockAdjustmentService {
                 delta: baseQuantity,
                 unitCost: params.unitCost,
                 isOutbound,
+                allowNegative,
               });
               await db.inventory_transactions.update(txId, {
                 batch_id: batch.id,

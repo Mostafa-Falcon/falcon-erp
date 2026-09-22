@@ -156,9 +156,9 @@ export class SalesRepository {
             sync_status: 'pending',
           };
           await db.treasuries.put(sourceUpdated);
-          await SyncQueueManager.enqueue('treasuries', shift.treasury_id, 'update', sourceUpdated);
+          await SyncQueueManager.enqueueDelta('treasuries', shift.treasury_id, { current_balance: -actualClosingBalance }, {});
           await db.treasuries.put(destUpdated);
-          await SyncQueueManager.enqueue('treasuries', destinationTreasuryId, 'update', destUpdated);
+          await SyncQueueManager.enqueueDelta('treasuries', destinationTreasuryId, { current_balance: actualClosingBalance }, {});
         }
       }
     });

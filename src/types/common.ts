@@ -92,7 +92,7 @@ export interface AppSetting {
 // OFFLINE-FIRST SYNC QUEUE (OUTBOX PATTERN)
 // ==========================================
 
-export type SyncOperation = 'insert' | 'update' | 'delete' | 'upsert';
+export type SyncOperation = 'insert' | 'update' | 'delete' | 'upsert' | 'delta';
 export type SyncStatus = 'pending' | 'in_flight' | 'synced' | 'failed' | 'conflict';
 
 export interface SyncQueueItem {

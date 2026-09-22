@@ -116,7 +116,7 @@ function ExchangeContent() {
             sync_status: 'pending',
           };
           await db.stock_levels.put(updatedSource);
-          await SyncQueueManager.enqueue('stock_levels', updatedSource.id, 'upsert', updatedSource);
+          await SyncQueueManager.enqueueDelta('stock_levels', updatedSource.id, { quantity: -qty, allow_negative: false }, { warehouse_id: sourceLevel.warehouse_id, product_id: sourceLevel.product_id });
         }
 
         // Increase target product
@@ -135,7 +135,7 @@ function ExchangeContent() {
             sync_status: 'pending',
           };
           await db.stock_levels.put(updatedTarget);
-          await SyncQueueManager.enqueue('stock_levels', updatedTarget.id, 'upsert', updatedTarget);
+          await SyncQueueManager.enqueueDelta('stock_levels', updatedTarget.id, { quantity: qty, allow_negative: false }, { warehouse_id: targetLevel.warehouse_id, product_id: targetLevel.product_id });
         } else {
           const stockId = `${sourceWarehouseId}_${targetProductId}`;
           const newTarget: StockLevel = {

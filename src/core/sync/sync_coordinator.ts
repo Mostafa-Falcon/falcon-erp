@@ -54,6 +54,47 @@ const TABLE_SYNC_ORDER: Record<string, number> = {
 };
 
 /**
+ * مسارات مزامنة العدّادات الحساسة: تحوّل عملية `delta` إلى استدعاء RPC
+ * سيرفرية ذرّية بدل رفع القيمة المطلقة (يمنع فقدان التحديث والبيع الزائد).
+ */
+interface DeltaRoute {
+  rpc: string;
+  toArgs: (id: string, delta: Record<string, number | boolean>, meta: Record<string, string | boolean>) => Record<string, unknown>;
+}
+const DELTA_ROUTES: Record<string, DeltaRoute> = {
+  stock_levels: {
+    rpc: 'falcon_adjust_stock',
+    toArgs: (_id, delta, meta) => ({
+      warehouse_id: meta.warehouse_id,
+      product_id: meta.product_id,
+      delta_quantity: (delta.quantity as number) ?? 0,
+      delta_reserved: (delta.reserved_quantity as number) ?? 0,
+      allow_negative: delta.allow_negative === true,
+    }),
+  },
+  product_batches: {
+    rpc: 'falcon_adjust_batch',
+    toArgs: (id, delta) => ({
+      batch_id: id,
+      delta_current_quantity: (delta.current_quantity as number) ?? 0,
+      allow_negative: delta.allow_negative === true,
+    }),
+  },
+  treasuries: {
+    rpc: 'falcon_adjust_treasury',
+    toArgs: (id, delta) => ({ treasury_id: id, delta_balance: (delta.current_balance as number) ?? 0 }),
+  },
+  contacts: {
+    rpc: 'falcon_adjust_contact',
+    toArgs: (id, delta) => ({ contact_id: id, delta_balance: (delta.current_balance as number) ?? 0 }),
+  },
+  accounts: {
+    rpc: 'falcon_adjust_account',
+    toArgs: (id, delta) => ({ account_id: id, delta_balance: (delta.current_balance as number) ?? 0 }),
+  },
+};
+
+/**
  * قائمة أعمدة كل جدول مسموح برفعها إلى Supabase (يعكس مخطط السحابة 100%).
  * تمنع أخطاء PostgREST (PGRST204) نتيجة أعمدة محلية فقط.
  */
@@ -504,6 +545,11 @@ export class SyncCoordinator {
       await SyncQueueManager.markInFlight(item.id);
       const rawPayload = JSON.parse(item.payload) as Record<string, unknown>;
 
+      // العدّادات الحساسة تُزامَن بـ DELTA ذرّية على السيرفر (وليس بقيمة مطلقة).
+      if (item.operation === 'delta') {
+        return this.processDeltaOp(item, rawPayload);
+      }
+
       // معالجة خاصة لجدول أنواع المنتجات (تخزينها سحابياً في إعدادات المؤسسة app_settings)
       if (item.entity_table === 'product_types') {
         const orgId = (rawPayload.org_id as string) || '';
@@ -604,6 +650,97 @@ export class SyncCoordinator {
 
   public getIsSyncing(): boolean {
     return this.isSyncing;
+  }
+
+  /**
+   * يدفع عملية delta عبر دالة RPC السيرفرية (تطبيق ذرّي + حراسة) ثم يعيد
+   * تثبيت الصف المحلي بالقيم الرسمية المعتمدة من السيرفر.
+   */
+  private async processDeltaOp(item: SyncQueueItem, rawPayload: Record<string, unknown>): Promise<boolean> {
+    try {
+      const route = DELTA_ROUTES[item.entity_table];
+      if (!route) {
+        const msg = `لا يوجد مسار delta للجدول ${item.entity_table}`;
+        console.warn('[Sync]', msg);
+        await SyncQueueManager.markRejected(item.id, msg);
+        return false;
+      }
+
+      const payload = rawPayload as { delta: Record<string, number | boolean>; meta: Record<string, string | boolean> };
+      const rpcClient = supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+      };
+      const { data, error } = await rpcClient.rpc(route.rpc, route.toArgs(item.entity_id, payload.delta, payload.meta));
+
+      if (error) {
+        console.warn(`[Sync] Delta RPC ${route.rpc} error:`, error.message);
+        await SyncQueueManager.markFailed(item.id, error.message);
+        return false;
+      }
+
+      const result = (data ?? {}) as { ok?: boolean; code?: string };
+      if (result.ok === false) {
+        // رفض السيرفر عمداً (مثال: رصيد غير كافٍ) → فشل دائم + إعادة تثبيت من السحابة.
+        const msg = `[${result.code ?? 'DELTA_REJECTED'}] ${item.entity_table}/${item.entity_id}`;
+        console.warn('[Sync]', msg);
+        await SyncQueueManager.markRejected(item.id, msg);
+        await this.refreshCounterFromCloud(item.entity_table, item.entity_id);
+        return false;
+      }
+
+      await SyncQueueManager.markSynced(item.id);
+      await this.applyAuthoritativeCounter(item.entity_table, item.entity_id, result);
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Exception during delta sync';
+      console.error('[Sync] Exception during delta sync:', msg);
+      await SyncQueueManager.markFailed(item.id, msg);
+      return false;
+    }
+  }
+
+  /**
+   * يعيد تثبيت صف عداد محلي بقيمه من السحابة بعد رفض الدلتا (منع انحراف العرض).
+   */
+  private async refreshCounterFromCloud(table: string, id: string): Promise<void> {
+    try {
+      const { data, error } = await supabase.from(table).select('*').eq('id', id).limit(1).maybeSingle();
+      if (error || !data) return;
+      const localTable = (db as unknown as Record<string, { get: (id: string) => Promise<object | undefined>; put: (row: object) => Promise<unknown> }>)[table];
+      if (!localTable) return;
+      const local = await localTable.get(id);
+      if (!local) return;
+      await localTable.put({ ...local, ...(data as object), sync_status: 'synced' });
+    } catch {
+      // تجاهل فشل ثانوي — المزامنة اللاحقة ستصلح الصف.
+    }
+  }
+
+  /**
+   * يطبّق القيم المعتمدة التي أرجعها السيرفر على الصف المحلي (مصدر حقيقة واحد).
+   */
+  private async applyAuthoritativeCounter(table: string, id: string, result: Record<string, unknown>): Promise<void> {
+    try {
+      const localTable = (db as unknown as Record<string, { get: (id: string) => Promise<object | undefined>; put: (row: object) => Promise<unknown> }>)[table];
+      if (!localTable) return;
+      const local = await localTable.get(id);
+      if (!local) return;
+
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString(), sync_status: 'synced' };
+      if (table === 'stock_levels') {
+        if (typeof result.quantity === 'number') patch.quantity = result.quantity;
+        if (typeof result.reserved_quantity === 'number') patch.reserved_quantity = result.reserved_quantity;
+        if (typeof result.available_quantity === 'number') patch.available_quantity = result.available_quantity;
+      } else if (table === 'product_batches') {
+        if (typeof result.current_quantity === 'number') patch.current_quantity = result.current_quantity;
+      } else if (table === 'treasuries' || table === 'contacts' || table === 'accounts') {
+        if (typeof result.current_balance === 'number') patch.current_balance = result.current_balance;
+      }
+
+      await localTable.put({ ...local, ...patch });
+    } catch {
+      // تجاهل فشل ثانوي.
+    }
   }
 }
 

@@ -261,6 +261,7 @@ export class StockTransferRepository {
               notes: `تحويل ${transfer.transfer_no}`,
               userId: transfer.created_by,
               now,
+              allowNegative,
             });
 
             // Destination warehouse: in leg
@@ -278,6 +279,7 @@ export class StockTransferRepository {
               notes: `تحويل ${transfer.transfer_no}`,
               userId: transfer.created_by,
               now,
+              allowNegative: false,
             });
 
             // Lot migration for expiry/batch-tracked products
@@ -360,6 +362,7 @@ export class StockTransferRepository {
     notes: string;
     userId: string;
     now: string;
+    allowNegative: boolean;
   }): Promise<void> {
     const stockId = `${params.warehouseId}_${params.productId}`;
     const currentStock = await db.stock_levels.get(stockId);
@@ -378,7 +381,12 @@ export class StockTransferRepository {
       sync_status: 'pending',
     };
     await db.stock_levels.put(updatedLevel);
-    await SyncQueueManager.enqueue('stock_levels', stockId, 'upsert', updatedLevel);
+    await SyncQueueManager.enqueueDelta(
+      'stock_levels',
+      stockId,
+      { quantity: params.baseQuantity, allow_negative: params.allowNegative },
+      { warehouse_id: params.warehouseId, product_id: params.productId }
+    );
 
     const txId = uuidv4();
     const movement: InventoryTransaction = {
@@ -446,7 +454,7 @@ export class StockTransferRepository {
       sync_status: 'pending',
     };
     await db.product_batches.put(updatedSource);
-    await SyncQueueManager.enqueue('product_batches', sourceLot.id, 'update', updatedSource);
+    await SyncQueueManager.enqueueDelta('product_batches', sourceLot.id, { current_quantity: -params.baseQuantity, allow_negative: false }, {});
 
     // Grow the destination lot (same batch number).
     const destLot = await db.product_batches
@@ -467,7 +475,7 @@ export class StockTransferRepository {
         sync_status: 'pending',
       };
       await db.product_batches.put(updatedDest);
-      await SyncQueueManager.enqueue('product_batches', destLot.id, 'update', updatedDest);
+      await SyncQueueManager.enqueueDelta('product_batches', destLot.id, { current_quantity: params.baseQuantity, allow_negative: false }, {});
     } else {
       const createdDest: ProductBatch = {
         id: uuidv4(),

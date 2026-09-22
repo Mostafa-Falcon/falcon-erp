@@ -243,7 +243,7 @@ export class AccountingRepository {
         acc.updated_at = now;
         acc.sync_status = 'pending';
         await db.accounts.put(acc);
-        await SyncQueueManager.enqueue('accounts', acc.id, 'update', acc);
+        await SyncQueueManager.enqueueDelta('accounts', acc.id, { current_balance: Math.round((line.debit - line.credit) * 100) / 100 }, {});
       }
       await SyncQueueManager.enqueue('journal_entry_lines', line.id, 'insert', line);
     }

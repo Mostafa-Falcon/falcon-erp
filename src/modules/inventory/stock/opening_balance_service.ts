@@ -71,7 +71,12 @@ export class OpeningBalanceService {
             sync_status: 'pending',
           };
           await db.stock_levels.put(updatedLevel);
-          await SyncQueueManager.enqueue('stock_levels', stockId, 'upsert', updatedLevel);
+          await SyncQueueManager.enqueueDelta(
+            'stock_levels',
+            stockId,
+            { quantity: baseQuantity, allow_negative: false },
+            { warehouse_id: params.warehouseId, product_id: params.productId }
+          );
 
           const txId = uuidv4();
           const movement: InventoryTransaction = {
@@ -279,7 +284,16 @@ export class OpeningBalanceService {
             sync_status: 'pending',
           };
           await db.stock_levels.put(updatedLevel);
-          await SyncQueueManager.enqueue('stock_levels', stockId, 'upsert', updatedLevel);
+          if (currentStock && delta !== 0) {
+            await SyncQueueManager.enqueueDelta(
+              'stock_levels',
+              stockId,
+              { quantity: delta, allow_negative: false },
+              { warehouse_id: params.warehouseId, product_id: params.productId }
+            );
+          } else if (!currentStock && delta !== 0) {
+            await SyncQueueManager.enqueue('stock_levels', stockId, 'upsert', updatedLevel);
+          }
 
           // 3) Record the movement ledger only when the balance actually changed.
           if (delta !== 0) {

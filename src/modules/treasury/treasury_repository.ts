@@ -340,7 +340,7 @@ export class TreasuryRepository {
     };
 
     await db.treasuries.put(updated);
-    await SyncQueueManager.enqueue('treasuries', treasuryId, 'update', updated);
+    await SyncQueueManager.enqueueDelta('treasuries', treasuryId, { current_balance: deltaAmount }, {});
 
     return newBalance;
   }
@@ -622,7 +622,7 @@ export class TreasuryRepository {
           sync_status: 'pending' as const,
         };
         await db.contacts.put(updatedContact);
-        await SyncQueueManager.enqueue('contacts', params.contactId, 'update', updatedContact);
+        await SyncQueueManager.enqueueDelta('contacts', params.contactId, { current_balance: totalSettled }, {});
 
         // 5. Add Contact transaction
         const transId = uuidv4();
@@ -749,7 +749,7 @@ export class TreasuryRepository {
           sync_status: 'pending' as const,
         };
         await db.contacts.put(updatedContact);
-        await SyncQueueManager.enqueue('contacts', params.contactId, 'update', updatedContact);
+        await SyncQueueManager.enqueueDelta('contacts', params.contactId, { current_balance: -totalSettled }, {});
 
         // 5. Add Contact transaction
         const transId = uuidv4();
@@ -859,7 +859,7 @@ export class TreasuryRepository {
                 sync_status: 'pending' as const,
               };
               await db.contacts.put(updatedContact);
-              await SyncQueueManager.enqueue('contacts', contact.id, 'update', updatedContact);
+              await SyncQueueManager.enqueueDelta('contacts', contact.id, { current_balance: reverseSettledDebit - reverseSettledCredit }, {});
 
               const transId = uuidv4();
               const trans = {

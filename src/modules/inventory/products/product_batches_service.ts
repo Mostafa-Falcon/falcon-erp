@@ -71,7 +71,15 @@ export class ProductBatchesService {
           sync_status: 'pending',
         };
         await db.stock_levels.put(stockLevel);
-        await SyncQueueManager.enqueue('stock_levels', stockId, 'update', stockLevel);
+        const stockDelta = totalQty - (existingStock?.quantity || 0);
+        if (stockDelta !== 0) {
+          await SyncQueueManager.enqueueDelta(
+            'stock_levels',
+            stockId,
+            { quantity: stockDelta, allow_negative: false },
+            { warehouse_id: wId, product_id: productId }
+          );
+        }
       }
     });
 

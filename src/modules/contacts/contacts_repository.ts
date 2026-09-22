@@ -40,7 +40,10 @@ export class ContactsRepository {
       sync_status: 'pending',
     };
     await db.transaction('rw', [db.contacts, db.sync_queue], async () => {
-      await db.contacts.put(updated);
+            await db.contacts.put(updated);
+      // DELTA-EXEMPT: عمود فقط semantic/metadata بدون تغيير في العدّاد
+      // (current_balance محفوظة كما هي). الكتابة المطلقة هنا لا تحمل سباقًا حقيقيًا
+      // لأن نفس الصف لا يُحدَّث بالتزامن على جهازين إلا كتغيير وصف.
       await SyncQueueManager.enqueue('contacts', id, 'update', updated);
     });
     return updated;
@@ -143,7 +146,7 @@ export class ContactsRepository {
 
     await db.transaction('rw', [db.contacts, db.contact_transactions, db.sync_queue], async () => {
       await db.contacts.put(updatedContact);
-      await SyncQueueManager.enqueue('contacts', params.contactId, 'update', updatedContact);
+      await SyncQueueManager.enqueueDelta('contacts', params.contactId, { current_balance: delta }, {});
 
       await db.contact_transactions.add(trans);
       await SyncQueueManager.enqueue('contact_transactions', transId, 'insert', trans);

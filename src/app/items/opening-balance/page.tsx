@@ -149,7 +149,12 @@ function OpeningBalanceContent() {
                 sync_status: 'pending',
               };
               await db.stock_levels.put(updatedLevel);
-              await SyncQueueManager.enqueue('stock_levels', updatedLevel.id, 'upsert', updatedLevel);
+              await SyncQueueManager.enqueueDelta(
+                'stock_levels',
+                updatedLevel.id,
+                { quantity: qty - existingLevel.quantity, allow_negative: false },
+                { warehouse_id: selectedWarehouseId, product_id: prodId }
+              );
 
               // Log opening balance change
               const txId = uuidv4();

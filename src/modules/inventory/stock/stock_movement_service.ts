@@ -31,6 +31,8 @@ export class StockMovementService {
     unitId?: string;
     unitName?: string;
     levelQuantity?: number;
+    /** Whether the stock setting allows negative balances (server guard mirror). */
+    allowNegative?: boolean;
   }): Promise<ProductBatch> {
     const now = new Date().toISOString();
     // batch.purchase_price MUST be per BASE unit (same semantics as
@@ -125,7 +127,7 @@ export class StockMovementService {
       sync_status: 'pending',
     };
     await db.product_batches.put(updated);
-    await SyncQueueManager.enqueue('product_batches', existing.id, 'update', updated);
+    await SyncQueueManager.enqueueDelta('product_batches', existing.id, { current_quantity: params.delta, allow_negative: params.allowNegative === true }, {});
     return updated;
   }
 
@@ -222,6 +224,7 @@ export class StockMovementService {
               unitId: params.unitId,
               unitName,
               levelQuantity: params.quantity,
+              allowNegative,
             });
             movementBatchId = appliedBatch.id;
           }
@@ -242,7 +245,12 @@ export class StockMovementService {
         };
 
         await db.stock_levels.put(updatedStockLevel);
-        await SyncQueueManager.enqueue('stock_levels', stockId, 'upsert', updatedStockLevel);
+        await SyncQueueManager.enqueueDelta(
+          'stock_levels',
+          stockId,
+          { quantity: baseQuantity, allow_negative: allowNegative },
+          { warehouse_id: params.warehouseId, product_id: params.productId }
+        );
 
         const transactionId = uuidv4();
         const transaction: InventoryTransaction = {
