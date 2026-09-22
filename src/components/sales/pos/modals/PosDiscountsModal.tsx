@@ -38,6 +38,7 @@ interface PosDiscountsModalProps {
   shippingFee: number;
   onApplyDiscounts: (params: {
     globalDiscount: number;
+    globalDiscountPercent: number;
     shippingFee: number;
     lineDiscounts: Record<string, number>;
   }) => void;
@@ -137,6 +138,7 @@ export function PosDiscountsModal({
   const handleApply = () => {
     onApplyDiscounts({
       globalDiscount: calculatedGlobalDiscount,
+      globalDiscountPercent: globalMode === 'percentage' ? Number(parseFloat(globalValue) || 0) : 0,
       shippingFee: calculatedShipping,
       lineDiscounts: calculatedLineDiscounts,
     });

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import type { StockLevel, InventoryTransaction } from '@/types';
+import { AccountingRepository } from '@/modules/accounting/accounting_repository';
 import { StockMovementService } from './stock_movement_service';
 
 export class StockAdjustmentService {
@@ -38,6 +39,7 @@ export class StockAdjustmentService {
     const stockId = `${params.warehouseId}_${params.productId}`;
 
     try {
+      let movementId = '';
       await db.transaction(
         'rw',
         [db.stock_levels, db.inventory_transactions, db.product_batches, db.sync_queue],
@@ -93,6 +95,7 @@ export class StockAdjustmentService {
           };
           await db.inventory_transactions.add(movement);
           await SyncQueueManager.enqueue('inventory_transactions', txId, 'insert', movement);
+          movementId = txId;
 
           // Lot bookkeeping: adjustments follow the latest active lot.
           if (product.tracks_batch) {
@@ -130,6 +133,28 @@ export class StockAdjustmentService {
           }
         }
       );
+
+      // 6. Post the double-entry adjustment (surplus -> inventory/revenue,
+      //    shortage/damaged -> COGS/inventory). Atomic with stock; accounting
+      //    failure degrades gracefully so the physical move is never lost.
+      if (movementId) {
+        try {
+          await AccountingRepository.postStockAdjustment({
+            orgId: params.orgId,
+            date: now,
+            referenceId: movementId,
+            value: baseQuantity * params.unitCost,
+            notes: params.notes || (params.type === 'damaged' ? 'توالف / تلف' : 'تسوية يدوية'),
+            userId: params.userId,
+          });
+        } catch (accountingError) {
+          console.warn('[Accounting] Failed to post stock adjustment:', accountingError);
+        }
+      }
+
+      // Keep per-level quantity silos honest after the committed adjustment.
+      await StockMovementService.syncProductLevelSilos(params.productId);
+
       return { success: true };
     } catch (err) {
       return {

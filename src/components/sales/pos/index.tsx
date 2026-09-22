@@ -161,6 +161,7 @@ export function POS() {
   // Saving / Invoice
   const [isSaving, setIsSaving] = useState(false);
   const [successInvoice, setSuccessInvoice] = useState<SalesInvoice | null>(null);
+  const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
 
   // Theme
   const [isDark, setIsDark] = useState(false);
@@ -214,6 +215,7 @@ export function POS() {
     setLineBatch,
     handleUnitChange,
     setLineDiscount,
+    toggleLinePriceTier,
     removeLine,
     clearCart,
     holdCurrentSale,
@@ -275,6 +277,8 @@ export function POS() {
           quantity: line.qty,
           unitPrice: line.price,
           unitCost: line.cost * line.factor,
+          discountAmount: line.discount,
+          taxRate: line.taxRate,
         }));
 
         await SalesRepository.createSalesReturn({
@@ -285,6 +289,10 @@ export function POS() {
           shiftId: activeShift.id,
           customerId: activeReturnInvoice.customer_id || null,
           items: returnItems,
+          discountAmount: globalDiscount,
+          discountPercent: globalDiscountPercent,
+          enableTax,
+          vatRate,
           treasuryId,
           userId: currentUser?.id || '',
           reason: notes.trim() || `مرتجع مبيعات مباشر من الفاتورة #${activeReturnInvoice.invoice_number}`,
@@ -349,6 +357,8 @@ export function POS() {
         customerId: selectedCustomerId || null,
         items,
         discountAmount: globalDiscount,
+        discountPercent: globalDiscountPercent,
+        shippingFee,
         paymentType: payType,
         cashAmount,
         cardAmount,
@@ -371,6 +381,7 @@ export function POS() {
       setCart([]);
       setGlobalDiscount(0);
       setShippingFee(0);
+      setGlobalDiscountPercent(0);
       setNotes('');
       setSelectedCustomerId('');
       setCustomerMode('cash');
@@ -576,6 +587,7 @@ export function POS() {
                 onReadLiveWeight={handleReadLiveWeight}
                 isReadingScale={isReadingScale}
                 onUnitChange={handleUnitChange}
+                onToggleLinePriceTier={toggleLinePriceTier}
                 lastAddedKey={lastAddedKey}
                 onFocusSearch={() => {
                   searchInputRef.current?.focus();
@@ -732,8 +744,9 @@ export function POS() {
         unitsById={unitsById}
         globalDiscount={globalDiscount}
         shippingFee={shippingFee}
-        onApplyDiscounts={({ globalDiscount: gDisc, shippingFee: sFee, lineDiscounts }) => {
+        onApplyDiscounts={({ globalDiscount: gDisc, globalDiscountPercent: gDiscPct, shippingFee: sFee, lineDiscounts }) => {
           setGlobalDiscount(gDisc);
+          setGlobalDiscountPercent(gDiscPct);
           setShippingFee(sFee);
           Object.entries(lineDiscounts).forEach(([k, d]) => {
             setLineDiscount(k, d);

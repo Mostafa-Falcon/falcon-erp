@@ -17,6 +17,7 @@ export interface PurchaseInvoice {
   
   subtotal: number;
   discount_amount: number;
+  discount_percent?: number;
   tax_amount: number;
   total: number;
   paid_amount: number;
@@ -64,6 +65,8 @@ export interface PurchaseReturn {
   return_date: ISODateString;
   total: number;
   refunded_amount: number;
+  discount_amount?: number;
+  tax_amount?: number;
   treasury_id?: EntityId | null;
   reason?: string;
   created_by: EntityId;

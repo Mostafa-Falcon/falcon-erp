@@ -192,6 +192,21 @@ export class FalconAppDatabase extends Dexie {
       employee_advances: 'id, org_id, branch_id, employee_id, adjustment_type, status, sync_status',
       employee_documents: 'id, org_id, employee_id, document_type, sync_status',
     });
+
+    // Incremental upgrade (Phase 1 - Unit Levels):
+    // Registers the extended local columns carrying the OWNER's level names and
+    // per-level quantities (المنهجية المستوردة من pharmacy_system):
+    //  - product_units.unit_name / level_order / available_quantity
+    //  - product_batches.unit_id / unit_name / level_quantity
+    //  - inventory_transactions.product_name / unit_name / level_quantity /
+    //    batch_number / expiry_date / prev_quantity / new_quantity / reference_number
+    // These are NON-indexed local (Dexie) fields; they are stripped by
+    // sanitizePayloadForCloud when syncing so the Supabase contract is untouched.
+    this.version(10).stores({
+      product_units: 'id, product_id, unit_id, barcode, is_default_sale, is_default_purchase, sync_status',
+      product_batches: 'id, product_id, warehouse_id, batch_number, expiry_date, sync_status',
+      inventory_transactions: 'id, org_id, warehouse_id, product_id, transaction_type, reference_type, reference_id, created_at, sync_status',
+    });
   }
 }
 

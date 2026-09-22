@@ -199,6 +199,7 @@ function ItemsCatalogContent() {
         <OpeningStockModal
           product={catalog.openingStockProduct}
           warehouses={catalog.warehouses}
+          orgId={catalog.orgId}
           unitName={catalog.unitName}
           onClose={() => catalog.setOpeningStockProduct(null)}
           onSuccess={catalog.reload}

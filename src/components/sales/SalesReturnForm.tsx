@@ -32,6 +32,7 @@ interface Line {
   factor: number;
   qty: string;
   price: string;
+  discountPct: string;
 }
 
 export function SalesReturnForm({
@@ -66,6 +67,10 @@ export function SalesReturnForm({
   const [sourceInfo, setSourceInfo] = useState<{ title: string; invoice?: SalesInvoice } | null>(null);
   const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [discountMode, setDiscountMode] = useState<'amount' | 'percentage'>('amount');
+  const [discountValue, setDiscountValue] = useState('');
+  const [enableTax, setEnableTax] = useState(false);
+  const [vatRate, setVatRate] = useState(0);
 
   const loadData = async () => {
     if (!orgId) return;
@@ -81,6 +86,11 @@ export function SalesReturnForm({
         presetInvoiceId ? db.sales_invoices.get(presetInvoiceId) : undefined,
         presetInvoiceId ? db.sales_invoice_items.where('invoice_id').equals(presetInvoiceId).toArray() : [],
       ]);
+
+      const enableTaxSetting = (await db.app_settings.get('enable_tax'))?.value === 'true';
+      const vatRateSetting = Number((await db.app_settings.get('vat_rate'))?.value || 0);
+      setEnableTax(enableTaxSetting);
+      setVatRate(vatRateSetting);
 
       const umap: Record<string, Unit> = {};
       for (const u of unts) umap[u.id] = u;
@@ -117,6 +127,7 @@ export function SalesReturnForm({
             factor: it.conversion_factor,
             qty: String(it.quantity),
             price: String(it.unit_price),
+            discountPct: '0',
           }))
         );
       } else {
@@ -136,7 +147,7 @@ export function SalesReturnForm({
   }, [orgId, branchId, presetInvoiceId]);
 
   const addLine = () => {
-    setLines((prev) => [...prev, { productId: '', unitId: '', factor: 1, qty: '1', price: '0' }]);
+    setLines((prev) => [...prev, { productId: '', unitId: '', factor: 1, qty: '1', price: '0', discountPct: '0' }]);
     setFormError('');
   };
 
@@ -172,7 +183,22 @@ export function SalesReturnForm({
   };
 
   const baseOf = (line: Line) => (Number(line.qty) || 0) * (Number(line.price) || 0);
-  const total = useMemo(() => lines.reduce((a, l) => a + baseOf(l), 0), [lines]);
+  const lineDiscOf = (line: Line) => {
+    const gross = baseOf(line);
+    const pct = Math.max(0, Math.min(100, Number(line.discountPct) || 0));
+    return Number((gross * (pct / 100)).toFixed(2));
+  };
+
+  const total = useMemo(() => {
+    const base = lines.reduce((a, l) => a + baseOf(l), 0);
+    const itemDisc = lines.reduce((a, l) => a + lineDiscOf(l), 0);
+    const gDisc =
+      discountMode === 'percentage'
+        ? Number((Math.max(0, base - itemDisc) * (Math.max(0, Number(discountValue) || 0) / 100)).toFixed(2))
+        : Number(discountValue) || 0;
+    const tax = enableTax ? Number((Math.max(0, base - itemDisc - gDisc) * (vatRate / 100)).toFixed(2)) : 0;
+    return Math.max(0, base - itemDisc - gDisc) + tax;
+  }, [lines, discountMode, discountValue, enableTax, vatRate]);
 
   const save = async () => {
     setFormError('');
@@ -201,6 +227,8 @@ export function SalesReturnForm({
       quantity: number;
       unitPrice: number;
       unitCost: number;
+      discountAmount: number;
+      taxRate: number;
     }[] = [];
 
     for (const line of lines) {
@@ -216,6 +244,8 @@ export function SalesReturnForm({
         quantity: Number(line.qty),
         unitPrice: Number(line.price) || 0,
         unitCost: p.purchase_price * line.factor,
+        discountAmount: Math.min(baseOf(line), lineDiscOf(line)),
+        taxRate: vatRate,
       });
     }
 
@@ -229,6 +259,12 @@ export function SalesReturnForm({
         shiftId: activeShift?.id || null,
         customerId: customerId || null,
         items,
+        discountAmount:
+          discountMode === 'amount' ? Math.max(0, Number(discountValue) || 0) : 0,
+        discountPercent:
+          discountMode === 'percentage' ? Math.max(0, Number(discountValue) || 0) : 0,
+        enableTax,
+        vatRate,
         treasuryId,
         userId: currentUser.id,
         reason: reason.trim() || undefined,
@@ -326,6 +362,61 @@ export function SalesReturnForm({
           </p>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">خصم عام على المرتجع</span>
+            <div className="flex gap-2 items-center">
+              <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <button
+                  onClick={() => setDiscountMode('amount')}
+                  className={(
+                    'px-3 h-10 text-[11px] font-bold transition-colors ' +
+                    (discountMode === 'amount' ? 'bg-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 text-slate-500')
+                  )}
+                >
+                  مبلغ
+                </button>
+                <button
+                  onClick={() => setDiscountMode('percentage')}
+                  className={(
+                    'px-3 h-10 text-[11px] font-bold transition-colors ' +
+                    (discountMode === 'percentage' ? 'bg-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 text-slate-500')
+                  )}
+                >
+                  نسبة %
+                </button>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                placeholder={discountMode === 'percentage' ? '0-100' : '0.00'}
+                className="h-10 bg-slate-50 dark:bg-slate-900 text-sm flex-1"
+              />
+            </div>
+          </div>
+          <div>
+            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الخصم على الصنف %</span>
+            <p className="text-[11px] text-slate-400">يُدخل بجانب سعر كل صنف في الجدول بالأسفل.</p>
+          </div>
+          <label className="flex items-start gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={enableTax}
+              onChange={(e) => setEnableTax(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              احتساب الضريبة المضافة
+              <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
+                النسبة المحفوظة في إعدادات المنشأة: {vatRate}%
+              </span>
+            </span>
+          </label>
+        </div>
+
         <div>
           <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">سبب الإرجاع</span>
           <Input type="text" value={reason} onChange={(e) => setReason(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900 text-sm" placeholder="اختياري" />
@@ -396,8 +487,15 @@ export function SalesReturnForm({
                     <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">السعر</span>
                     <Input type="number" min={0} step="any" value={line.price} onChange={(e) => updateLine(idx, { price: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs" />
                   </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">خصم الصنف %</span>
+                    <Input type="number" min={0} max={100} step="any" value={line.discountPct} onChange={(e) => updateLine(idx, { discountPct: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs" />
+                  </div>
                   <div className="flex items-end justify-between gap-1">
-                    <div className="text-xs font-black text-red-500 pt-1 whitespace-nowrap">{formatNumber(baseOf(line))}</div>
+                    <div className="text-xs font-black text-red-500 pt-1 whitespace-nowrap">
+                      {formatNumber(baseOf(line) - lineDiscOf(line))}
+                      {Number(line.discountPct) > 0 && <span className="block text-[9px] text-slate-400 font-normal">خصم {formatNumber(lineDiscOf(line))}</span>}
+                    </div>
                     <button onClick={() => removeLine(idx)} className="text-red-500 hover:text-red-700"><Icons.X /></button>
                   </div>
                 </div>

@@ -484,6 +484,7 @@ export function useItemsCatalog() {
   const detailProduct = detailId ? products.find((p) => p.id === detailId) : undefined;
 
   return {
+    orgId,
     products,
     categories,
     brands,

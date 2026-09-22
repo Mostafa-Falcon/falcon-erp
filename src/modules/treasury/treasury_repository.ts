@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import { AccountingRepository } from '@/modules/accounting/accounting_repository';
+import { roundMoney } from '@/lib/decimal';
 import type {
   Treasury,
   Expense,
@@ -328,7 +329,7 @@ export class TreasuryRepository {
     const treasury = await db.treasuries.get(treasuryId);
     if (!treasury) throw new Error('الخزينة غير موجودة');
 
-    const newBalance = treasury.current_balance + deltaAmount;
+    const newBalance = roundMoney(treasury.current_balance + deltaAmount);
     const now = new Date().toISOString();
 
     const updated: Treasury = {
@@ -613,7 +614,7 @@ export class TreasuryRepository {
         }
 
         // 4. Adjust Contact balance: debit = totalSettled
-        newContactBalance = contact.current_balance + totalSettled;
+        newContactBalance = roundMoney(contact.current_balance + totalSettled);
         const updatedContact = {
           ...contact,
           current_balance: newContactBalance,
@@ -740,7 +741,7 @@ export class TreasuryRepository {
         }
 
         // 4. Adjust Contact balance: credit = totalSettled (decreases customer debt)
-        newContactBalance = contact.current_balance - totalSettled;
+        newContactBalance = roundMoney(contact.current_balance - totalSettled);
         const updatedContact = {
           ...contact,
           current_balance: newContactBalance,
@@ -838,11 +839,19 @@ export class TreasuryRepository {
           if (voucher.contact_id) {
             const contact = await db.contacts.get(voucher.contact_id);
             if (contact) {
-              const reverseSettled = voucher.amount;
-              const newContactBalance =
-                voucher.type === 'receipt'
-                  ? contact.current_balance + reverseSettled
-                  : contact.current_balance - reverseSettled;
+              // Mirror the ORIGINAL contact transaction amounts (which include any
+              // settlement discount) instead of assuming just voucher.amount,
+              // otherwise discount-booked settlements drift by the discount on reversal.
+              const originalTx = (
+                await db.contact_transactions
+                  .where('contact_id')
+                  .equals(contact.id)
+                  .and((t) => t.reference_id === voucherId)
+                  .toArray()
+              )[0];
+              const reverseSettledDebit = originalTx ? originalTx.credit || 0 : voucher.type === 'receipt' ? voucher.amount : 0;
+              const reverseSettledCredit = originalTx ? originalTx.debit || 0 : voucher.type === 'receipt' ? 0 : voucher.amount;
+              const newContactBalance = roundMoney(contact.current_balance + reverseSettledDebit - reverseSettledCredit);
               const updatedContact = {
                 ...contact,
                 current_balance: newContactBalance,
@@ -862,8 +871,8 @@ export class TreasuryRepository {
                     ? ('payment_voucher' as const)
                     : ('receipt_voucher' as const),
                 reference_id: voucherId,
-                debit: voucher.type === 'receipt' ? reverseSettled : 0,
-                credit: voucher.type === 'receipt' ? 0 : reverseSettled,
+                debit: reverseSettledDebit,
+                credit: reverseSettledCredit,
                 balance_after: newContactBalance,
                 notes: `عكس سند ${voucher.voucher_no} — ${reason}`,
                 created_at: now,

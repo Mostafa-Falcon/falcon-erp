@@ -48,6 +48,7 @@ export interface SalesInvoice {
   discount_amount: number;
   discount_percent: number;
   tax_amount: number;
+  shipping_fee?: number;
   total: number;
   paid_amount: number;
   remaining_amount: number;
@@ -99,6 +100,8 @@ export interface SalesReturn {
   customer_id?: EntityId | null;
   total: number;
   refunded_amount: number;
+  discount_amount?: number;
+  tax_amount?: number;
   treasury_id: EntityId;
   reason?: string;
   created_by: EntityId;

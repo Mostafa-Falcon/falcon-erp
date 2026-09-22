@@ -118,7 +118,14 @@ export function usePosCart({
   // Add Product to Cart
   const addToCart = (
     product: Product,
-    options?: { unitId?: string; price?: number; factor?: number; qty?: number; batchId?: string }
+    options?: {
+      unitId?: string;
+      price?: number;
+      factor?: number;
+      qty?: number;
+      batchId?: string;
+      priceTier?: 'default' | 'old' | 'wholesale';
+    }
   ) => {
     if (!activeShift) {
       toast.error('يرجى فتح وردية كاشير أولاً للبدء بالبيع وإضافة الأصناف');
@@ -187,8 +194,13 @@ export function usePosCart({
     }
 
     let itemPrice = Number(options?.price ?? opt?.price ?? product.sale_price ?? 0);
+    let lineTier: 'default' | 'old' | 'wholesale' = options?.priceTier || 'default';
     if (priceTier === 'wholesale' && product.wholesale_price) {
       itemPrice = product.wholesale_price * factor;
+      lineTier = 'wholesale';
+    } else if (options?.priceTier === 'old' && product.has_dual_pricing && product.old_sale_price) {
+      itemPrice = product.old_sale_price * factor;
+      lineTier = 'old';
     }
 
     // Tax rate is strictly 0 if enableTax is false (tax is optional!).
@@ -196,6 +208,16 @@ export function usePosCart({
     const resolvedTaxRate = enableTax && product.is_taxable !== false
       ? (product.tax_rate !== undefined && product.tax_rate !== null ? product.tax_rate : vatRate)
       : 0;
+
+    // FIFO cost: when a specific batch/lot is picked (FEFO-first), the line cost
+    // follows the ACTUAL batch cost (per base unit) instead of the card cost,
+    // so stock valuation, COGS and the profit report stay consistent with the
+    // lot actually consumed (same intent as FifoValuationService).
+    const chosenBatch = batchId ? (batches[product.id] || []).find((b) => b.id === batchId) : undefined;
+    const lineCost =
+      chosenBatch?.purchase_price !== undefined && chosenBatch.purchase_price > 0
+        ? chosenBatch.purchase_price
+        : product.purchase_price || 0;
 
     setCart((prev) => [
       ...prev,
@@ -208,8 +230,9 @@ export function usePosCart({
         qty: clampedQty,
         price: itemPrice,
         discount: 0,
-        cost: product.purchase_price,
+        cost: lineCost,
         taxRate: resolvedTaxRate,
+        priceTier: lineTier,
       },
     ]);
 
@@ -440,6 +463,12 @@ export function usePosCart({
           newPrice = (chosenBatch as any).sale_price * l.factor;
         }
 
+        // FIFO cost: re-anchor the line cost to the batch actually consumed.
+        const newCost =
+          chosenBatch?.purchase_price !== undefined && chosenBatch.purchase_price > 0
+            ? chosenBatch.purchase_price
+            : l.cost;
+
         let clampedQty = l.qty;
         if (prod?.item_type === 'storable') {
           const maxAvail = getMaxAvailableForLine(l.productId, l.unitId, l.factor, newBatchId);
@@ -455,6 +484,7 @@ export function usePosCart({
           ...l,
           batchId: newBatchId,
           price: newPrice,
+          cost: newCost,
           qty: clampedQty,
         };
       })
@@ -496,6 +526,26 @@ export function usePosCart({
     const validDiscount = Math.max(0, discount);
     setCart((prev) =>
       prev.map((l) => (l.key === key ? { ...l, discount: validDiscount } : l))
+    );
+  };
+
+  const toggleLinePriceTier = (key: string) => {
+    setCart((prev) =>
+      prev.map((l) => {
+        if (l.key !== key) return l;
+        const prod = products.find((p) => p.id === l.productId);
+        if (!prod) return l;
+
+        const movingToOld = l.priceTier !== 'old';
+        const hasOld = prod.has_dual_pricing && Number(prod.old_sale_price) > 0;
+        if (!hasOld) return l;
+
+        const newPrice = movingToOld
+          ? Number(prod.old_sale_price) * l.factor
+          : Number(prod.sale_price) * l.factor;
+
+        return { ...l, price: newPrice, priceTier: movingToOld ? 'old' : 'default' };
+      })
     );
   };
 
@@ -624,6 +674,7 @@ export function usePosCart({
     setLineBatch,
     handleUnitChange,
     setLineDiscount,
+    toggleLinePriceTier,
     removeLine,
     clearCart,
     holdCurrentSale,

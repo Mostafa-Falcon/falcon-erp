@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import type { Contact, ContactTransaction, ContactType } from '@/types';
+import { roundMoney } from '@/lib/decimal';
 
 export class ContactsRepository {
   /**
@@ -116,7 +117,7 @@ export class ContactsRepository {
     const now = new Date().toISOString();
     // Balance calculation: positive = debit (owed to us), negative = credit (we owe)
     const delta = params.debit - params.credit;
-    const newBalance = contact.current_balance + delta;
+    const newBalance = roundMoney(contact.current_balance + delta);
 
     const updatedContact: Contact = {
       ...contact,

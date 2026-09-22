@@ -86,11 +86,12 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
     'id', 'product_id', 'unit_id', 'conversion_factor', 'barcode',
     'purchase_price', 'sale_price', 'wholesale_price', 'is_default_sale',
     'is_default_purchase', 'created_at', 'updated_at',
+    'unit_name', 'level_order', 'available_quantity',
   ]),
   product_batches: new Set([
     'id', 'org_id', 'product_id', 'warehouse_id', 'batch_number',
     'expiry_date', 'initial_quantity', 'current_quantity', 'purchase_price',
-    'created_at', 'updated_at',
+    'created_at', 'updated_at', 'unit_id', 'unit_name', 'level_quantity',
   ]),
   stock_levels: new Set([
     'id', 'org_id', 'warehouse_id', 'product_id', 'quantity',
@@ -101,6 +102,8 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
     'reference_type', 'reference_id', 'quantity', 'unit_id', 'unit_conversion_factor',
     'base_quantity', 'unit_cost', 'total_cost', 'balance_after', 'notes',
     'created_by', 'created_at',
+    'product_name', 'unit_name', 'level_quantity', 'batch_number', 'expiry_date',
+    'prev_quantity', 'new_quantity', 'reference_number',
   ]),
   stock_transfers: new Set([
     'id', 'org_id', 'transfer_no', 'from_warehouse_id', 'to_warehouse_id',
@@ -147,7 +150,7 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
   sales_invoices: new Set([
     'id', 'org_id', 'branch_id', 'warehouse_id', 'shift_id', 'invoice_number',
     'invoice_date', 'customer_id', 'subtotal', 'discount_amount', 'discount_percent',
-    'tax_amount', 'total', 'paid_amount', 'remaining_amount', 'payment_type',
+    'tax_amount', 'shipping_fee', 'total', 'paid_amount', 'remaining_amount', 'payment_type',
     'cash_amount', 'card_amount', 'treasury_id', 'status', 'notes', 'is_deleted',
     'deleted_at', 'deleted_by', 'delete_reason', 'created_by', 'created_at', 'updated_at',
   ]),
@@ -159,12 +162,12 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
   sales_returns: new Set([
     'id', 'org_id', 'branch_id', 'warehouse_id', 'original_invoice_id', 'shift_id',
     'return_number', 'return_date', 'customer_id', 'total', 'refunded_amount',
-    'treasury_id', 'reason', 'created_by', 'created_at',
+    'discount_amount', 'tax_amount', 'treasury_id', 'reason', 'created_by', 'created_at',
   ]),
   purchase_invoices: new Set([
     'id', 'org_id', 'branch_id', 'warehouse_id', 'supplier_id', 'invoice_number',
     'system_invoice_number', 'invoice_date', 'subtotal', 'discount_amount',
-    'tax_amount', 'total', 'paid_amount', 'remaining_amount', 'payment_type',
+    'discount_percent', 'tax_amount', 'total', 'paid_amount', 'remaining_amount', 'payment_type',
     'treasury_id', 'status', 'notes', 'is_deleted', 'deleted_at', 'deleted_by',
     'delete_reason', 'created_by', 'created_at', 'updated_at',
   ]),
@@ -176,7 +179,7 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
   purchase_returns: new Set([
     'id', 'org_id', 'branch_id', 'warehouse_id', 'original_invoice_id',
     'supplier_id', 'return_number', 'return_date', 'total', 'refunded_amount',
-    'treasury_id', 'reason', 'created_by', 'created_at',
+    'discount_amount', 'tax_amount', 'treasury_id', 'reason', 'created_by', 'created_at',
   ]),
   stocktake_sessions: new Set([
     'id', 'org_id', 'branch_id', 'warehouse_id', 'session_number', 'status',

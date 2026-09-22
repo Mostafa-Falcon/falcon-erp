@@ -478,7 +478,9 @@ export class StockTransferRepository {
         expiry_date: sourceLot.expiry_date,
         initial_quantity: params.baseQuantity,
         current_quantity: params.baseQuantity,
-        purchase_price: params.unitCost,
+        // The migrated lot must keep the SOURCE lot's receipt cost (per BASE unit)
+        // so FIFO costing stays correct in the destination warehouse.
+        purchase_price: sourceLot.purchase_price,
         created_at: params.now,
         updated_at: params.now,
         sync_status: 'pending',

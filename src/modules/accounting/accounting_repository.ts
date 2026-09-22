@@ -408,7 +408,7 @@ export class AccountingRepository {
   /**
    * Posts a sales invoice:
    *   Dr Cash (treasury account) / Dr Bank (card) / Dr Receivables (credit)
-   *   Dr COGS / Cr Sales / Cr Accrued (tax) / Cr Inventory
+   *   Dr COGS / Cr Sales / Cr Accrued (tax) / Cr Inventory / Cr Other Revenue (shipping)
    */
   public static async postSalesInvoice(params: {
     orgId: string;
@@ -418,6 +418,7 @@ export class AccountingRepository {
     date: string;
     netRevenue: number;
     taxAmount: number;
+    shipping?: number;
     cashPaid: number;
     cardPaid: number;
     creditAmount: number;
@@ -427,6 +428,7 @@ export class AccountingRepository {
   }): Promise<void> {
     if (await this.hasPosted(params.orgId, 'sale_invoice', params.invoiceId)) return;
 
+    const shipping = params.shipping || 0;
     const treasury = params.treasuryId ? await db.treasuries.get(params.treasuryId) : undefined;
     const cashAccount = await this.resolveTreasuryAccountId(params.orgId, treasury);
     const bankAccount = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.BANK);
@@ -435,6 +437,7 @@ export class AccountingRepository {
     const accrued = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.ACCRUED);
     const cogsAccount = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.COGS);
     const inventory = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.INVENTORY);
+    const otherRevenue = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.OTHER_REVENUE);
 
     const lines = [
       { account_id: cashAccount, debit: params.cashPaid, credit: 0 },
@@ -444,6 +447,7 @@ export class AccountingRepository {
       { account_id: sales, debit: 0, credit: params.netRevenue },
       { account_id: accrued, debit: 0, credit: params.taxAmount },
       { account_id: inventory, debit: 0, credit: params.cogs },
+      ...(shipping > 0 ? [{ account_id: otherRevenue, debit: 0, credit: shipping }] : []),
     ];
 
     await this.journalize({
@@ -544,7 +548,9 @@ export class AccountingRepository {
     });
   }
 
-  /** Posts a purchase return: Dr Suppliers / Cr Inventory (+ treasury refund leg). */
+  /** Posts a purchase return (reverses the returned goods + input VAT):
+   *  Dr Suppliers (full returned value) / Cr Accrued (VAT reversed) / Cr Inventory,
+   *  plus Dr Treasury / Cr Suppliers when the money returned to a treasury. */
   public static async postPurchaseReturn(params: {
     orgId: string;
     branchId?: string | null;
@@ -566,9 +572,12 @@ export class AccountingRepository {
     const accrued = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.ACCRUED);
     const inventory = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.INVENTORY);
 
+    // Full value the supplier owes back = net goods + the reverse of the input VAT.
+    const total = params.netReturn + params.taxAmount;
+
     const lines = [
-      { account_id: suppliers, debit: params.creditAmount, credit: 0 },
-      { account_id: accrued, debit: params.taxAmount, credit: 0 },
+      { account_id: suppliers, debit: total, credit: 0 },
+      { account_id: accrued, debit: 0, credit: params.taxAmount },
       { account_id: inventory, debit: 0, credit: params.netReturn },
     ];
 
@@ -892,6 +901,54 @@ export class AccountingRepository {
       description: `تسوية جرد مخزني ${params.sessionNumber} (${isSurplus ? 'فائض مخزون' : 'عجز مخزون'})`,
       reference_type: 'stocktake',
       reference_id: params.sessionId,
+      lines,
+      created_by: params.userId,
+    });
+  }
+
+  /**
+   * Posts a manual stock adjustment / damage write-off (from StockAdjustmentService).
+   * - Surplus (adjustment_in):  Dr Inventory (1140) / Cr Other Revenue (4900).
+   * - Shortage / damaged (out): Dr COGS (5100) / Cr Inventory (1140).
+   * Idempotent per originating movement transaction.
+   */
+  public static async postStockAdjustment(params: {
+    orgId: string;
+    branchId?: string | null;
+    date: string;
+    referenceId: string;
+    value: number; // signed base-value: positive = surplus, negative = shortage/damage
+    notes: string;
+    userId?: string | null;
+  }): Promise<void> {
+    if (await this.hasPosted(params.orgId, 'stock_adjustment', params.referenceId)) return;
+    if (Math.abs(params.value) < 0.0001) return;
+
+    const inventory = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.INVENTORY);
+    const otherRevenue = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.OTHER_REVENUE);
+    const cogsAccount = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.COGS);
+
+    const isSurplus = params.value > 0;
+    const absDiff = Math.abs(params.value);
+
+    const lines = isSurplus
+      ? [
+          { account_id: inventory, debit: absDiff, credit: 0 },
+          { account_id: otherRevenue, debit: 0, credit: absDiff },
+        ]
+      : [
+          { account_id: cogsAccount, debit: absDiff, credit: 0 },
+          { account_id: inventory, debit: 0, credit: absDiff },
+        ];
+
+    await this.journalize({
+      org_id: params.orgId,
+      branch_id: params.branchId,
+      type: 'adjustment',
+      entry_date: params.date,
+      description: `تسوية مخزون (${isSurplus ? 'زيادة' : 'عجز/توالف'}): ${params.notes}`,
+      reference_type: 'stock_adjustment',
+      reference_id: params.referenceId,
       lines,
       created_by: params.userId,
     });

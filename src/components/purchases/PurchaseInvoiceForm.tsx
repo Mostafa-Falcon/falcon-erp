@@ -48,6 +48,8 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState('');
   const [paymentType, setPaymentType] = useState<'cash' | 'credit'>('cash');
   const [discount, setDiscount] = useState('0');
+  const [discountMode, setDiscountMode] = useState<'amount' | 'percentage'>('amount');
+  const [discountPercent, setDiscountPercent] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
   const [formError, setFormError] = useState('');
@@ -144,7 +146,11 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
 
   const subtotal = useMemo(() => lines.reduce((a, l) => a + baseOf(l), 0), [lines]);
   const taxTotal = useMemo(() => lines.reduce((a, l) => a + (baseOf(l) * (Number(l.taxRate) || 0)) / 100, 0), [lines]);
-  const total = Math.max(0, subtotal - (Number(discount) || 0) + taxTotal);
+  const appliedDiscount =
+    discountMode === 'percentage'
+      ? Number((subtotal * (Math.max(0, Math.min(100, Number(discountPercent) || 0)) / 100)).toFixed(2))
+      : Number(discount) || 0;
+  const total = Math.max(0, subtotal - appliedDiscount + taxTotal);
 
   const save = async () => {
     setFormError('');
@@ -206,7 +212,10 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
         supplierId,
         supplierInvoiceNumber: supplierInvoiceNumber.trim(),
         items,
-        discountAmount: Number(discount) || 0,
+        discountAmount:
+          discountMode === 'amount' ? Number(discount) || 0 : appliedDiscount,
+        discountPercent:
+          discountMode === 'percentage' ? Math.max(0, Math.min(100, Number(discountPercent) || 0)) : 0,
         paymentType,
         treasuryId: paymentType === 'cash' ? treasuryId : null,
         userId: currentUser.id,
@@ -415,12 +424,44 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
         <div className="border-t border-slate-100 dark:border-slate-800 pt-4 grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
           <div>
             <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">خصم على الفاتورة</span>
-            <Input type="number" min={0} step="any" value={discount} onChange={(e) => setDiscount(e.target.value)} className="h-10 bg-white dark:bg-slate-800 text-sm" />
+            <div className="flex gap-2 items-center">
+              <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <button
+                  onClick={() => setDiscountMode('amount')}
+                  className={(
+                    'px-2.5 h-10 text-[11px] font-bold transition-colors ' +
+                    (discountMode === 'amount' ? 'bg-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 text-slate-500')
+                  )}
+                >
+                  مبلغ
+                </button>
+                <button
+                  onClick={() => setDiscountMode('percentage')}
+                  className={(
+                    'px-2.5 h-10 text-[11px] font-bold transition-colors ' +
+                    (discountMode === 'percentage' ? 'bg-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 text-slate-500')
+                  )}
+                >
+                  نسبة %
+                </button>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                value={discountMode === 'amount' ? discount : discountPercent}
+                onChange={(e) => (discountMode === 'amount' ? setDiscount(e.target.value) : setDiscountPercent(e.target.value))}
+                placeholder={discountMode === 'percentage' ? '0-100' : '0.00'}
+                className="h-10 bg-white dark:bg-slate-800 text-sm"
+              />
+            </div>
           </div>
           <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
             <div className="flex justify-between py-1"><span>الإجمالي قبل الضريبة</span><span>{formatNumber(subtotal)}</span></div>
             <div className="flex justify-between py-1"><span>الضريبة</span><span>{formatNumber(taxTotal)}</span></div>
-            <div className="flex justify-between py-1"><span>الخصم</span><span>{formatNumber(Number(discount) || 0)}</span></div>
+            <div className="flex justify-between py-1"><span>الخصم</span><span>{formatNumber(appliedDiscount)}
+
+{discountMode === 'percentage' ? ` (${Number(discountPercent) || 0}%)` : ''}</span></div>
             <div className="flex justify-between py-1 text-base font-black text-primary border-t border-slate-200 dark:border-slate-700 mt-1 pt-2">
               <span>الإجمالي</span><span>{formatNumber(total)}</span>
             </div>

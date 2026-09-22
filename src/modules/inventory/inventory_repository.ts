@@ -100,6 +100,29 @@ export class InventoryRepository {
     return OpeningBalanceService.openStock(params);
   }
 
+  /**
+   * Sets the ACTUAL physical opening quantity of a product in a warehouse,
+   * distributed across expiry dates/batches. See OpeningBalanceService.
+   */
+  public static async setOpeningQuantity(params: {
+    orgId: string;
+    warehouseId: string;
+    productId: string;
+    userId: string;
+    unitCost: number;
+    entries: {
+      expiryDate?: string | null;
+      batchNumber?: string;
+      baseQuantity: number;
+      unitId?: string;
+      unitName?: string;
+      levelQuantity?: number;
+    }[];
+    notes?: string;
+  }): Promise<{ success: boolean; error?: string; newBalance?: number }> {
+    return OpeningBalanceService.setOpeningQuantity(params);
+  }
+
   // ── Adjustments & Damages ──────────────────────────────────
   public static async adjustStock(params: {
     orgId: string;

@@ -198,6 +198,7 @@ export default function ItemCardPage({ params }: { params: Promise<{ id: string 
           <OpeningStockModal
             product={card.product}
             warehouses={card.warehouses}
+            orgId={card.orgId}
             unitName={(id) => (id && card.unitsById[id]?.name) || card.baseUName}
             onSuccess={() => {
               card.setShowOpeningStockModal(false);

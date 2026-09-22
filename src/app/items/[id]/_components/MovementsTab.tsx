@@ -383,7 +383,8 @@ export function MovementsTab({
                     {/* الكمية */}
                     {movementColumns.quantity && (
                       <TableCell className={cn(rowPadding, 'text-center font-mono font-black text-slate-900 dark:text-white')}>
-                        {tx.quantity} {baseUName}
+                        {formatNumber(tx.level_quantity ?? tx.quantity)}{' '}
+                        <span className="text-slate-500 font-bold">{tx.unit_name || baseUName}</span>
                       </TableCell>
                     )}
 

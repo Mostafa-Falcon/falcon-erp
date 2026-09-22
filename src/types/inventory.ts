@@ -116,6 +116,12 @@ export interface ProductUnit {
   product_id: EntityId;
   unit_id: EntityId;
   conversion_factor: number; // How many base units in this unit (explicitly set)
+  /** ترتيب المستوى داخل صنف: 1 = الوحدة الأساسية، 2+ = المستويات الأعلى (بالتسلسل). */
+  level_order?: number;
+  /** نسخة ثابتة من اسم المستوى كما أدخله صاحب المنشأة وقت الحفظ (عرض بدون JOIN حتى offline). */
+  unit_name?: string;
+  /** الكمية المتاحة معبّرة بوحدة المستوى نفسه (سيلو المستوى). */
+  available_quantity?: number;
   barcode?: string;
   purchase_price?: number; // Independent purchase price
   cost_price?: number; // Alias for purchase_price
@@ -145,6 +151,12 @@ export interface ProductBatch {
   current_quantity: number; // in base units
   quantity_in?: number; // Alias for current_quantity
   purchase_price?: number;
+  /** الوحدة/المستوى الذي سُجّل به هذا التاريخ (معرّف ثابت). */
+  unit_id?: string;
+  /** نسخة ثابتة من اسم المستوى كما أدخله صاحب المنشأة (مثلاً علبة / كرتونة). */
+  unit_name?: string;
+  /** الكمية كما أُدخلت بوحدة المستوى (معلومة عرض؛ الكميات الأساسية تبقى SSOT). */
+  level_quantity?: number;
   created_at: ISODateString;
   updated_at: ISODateString;
   sync_status?: 'synced' | 'pending' | 'failed';
@@ -206,6 +218,20 @@ export interface InventoryTransaction {
   unit_cost: number;
   total_cost: number;
   balance_after: number; // running balance in warehouse
+  /** نسخة ثابتة من اسم الصنف وقت الحركة (عرض بدون JOIN حتى offline). */
+  product_name?: string;
+  /** نسخة ثابتة من اسم الوحدة/المستوى التي سُجّلت بها الحركة. */
+  unit_name?: string;
+  /** الكمية كما أُدخلت بوحدة الحركة المختارة (سيلو المستوى). */
+  level_quantity?: number;
+  batch_number?: string;
+  expiry_date?: string | null;
+  /** الرصيد قبل الحركة (بالوحدة الأساسية). */
+  prev_quantity?: number;
+  /** الرصيد بعد الحركة (بالوحدة الأساسية). */
+  new_quantity?: number;
+  /** رقم مستند مرجعي قابل للقراءة (رقم فاتورة / تشغيلة). */
+  reference_number?: string;
   notes?: string;
   created_by: EntityId;
   created_at: ISODateString;

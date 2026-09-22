@@ -14,6 +14,7 @@ import type {
   Treasury,
   InvoicePaymentType,
 } from '@/types';
+import { roundMoney } from '@/lib/decimal';
 
 export class SalesRepository {
   // ==========================================
@@ -208,6 +209,7 @@ export class SalesRepository {
     paymentType: InvoicePaymentType;
     cashAmount?: number;
     cardAmount?: number;
+    shippingFee?: number;
     treasuryId: string;
     userId: string;
     notes?: string;
@@ -244,12 +246,12 @@ export class SalesRepository {
     let totalTax = 0;
 
     const invoiceItems: SalesInvoiceItem[] = params.items.map((item) => {
-      const lineSubtotal = item.quantity * item.unitPrice;
-      const discount = item.discountAmount || 0;
-      const taxableAmount = Math.max(0, lineSubtotal - discount);
+      const lineSubtotal = roundMoney(item.quantity * item.unitPrice);
+      const discount = roundMoney(item.discountAmount || 0);
+      const taxableAmount = roundMoney(Math.max(0, lineSubtotal - discount));
       const taxRate = item.taxRate || 0;
-      const taxAmount = (taxableAmount * taxRate) / 100;
-      const lineTotal = taxableAmount + taxAmount;
+      const taxAmount = roundMoney((taxableAmount * taxRate) / 100);
+      const lineTotal = roundMoney(taxableAmount + taxAmount);
 
       subtotal += lineSubtotal;
       totalItemDiscount += discount;
@@ -273,8 +275,17 @@ export class SalesRepository {
       };
     });
 
-    const overallDiscount = params.discountAmount || 0;
-    const finalTotal = Math.max(0, subtotal - totalItemDiscount - overallDiscount + totalTax);
+    const overallDiscount =
+      params.discountPercent && params.discountPercent > 0
+        ? roundMoney(
+            Math.max(0, (subtotal - totalItemDiscount) * (params.discountPercent / 100))
+          )
+        : roundMoney(params.discountAmount || 0);
+    // Shipping is optional; when present it is included in the total the customer
+    // pays (POS already charged it) so the invoice cannot total less than received.
+    const shipping = roundMoney(params.shippingFee || 0);
+    const goodsNet = roundMoney(Math.max(0, subtotal - totalItemDiscount - overallDiscount));
+    const finalTotal = roundMoney(goodsNet + totalTax + shipping);
 
     // Payment calculations
     let cashPaid = 0;
@@ -285,8 +296,8 @@ export class SalesRepository {
     } else if (params.paymentType === 'card') {
       cardPaid = finalTotal;
     } else if (params.paymentType === 'split') {
-      cashPaid = params.cashAmount || 0;
-      cardPaid = params.cardAmount || 0;
+      cashPaid = roundMoney(params.cashAmount || 0);
+      cardPaid = roundMoney(params.cardAmount || 0);
     }
 
     const totalPaid = cashPaid + cardPaid;
@@ -305,10 +316,11 @@ export class SalesRepository {
       invoice_number: invoiceNumber,
       invoice_date: now,
       customer_id: params.customerId,
-      subtotal,
-      discount_amount: totalItemDiscount + overallDiscount,
+      subtotal: roundMoney(subtotal),
+      discount_amount: roundMoney(totalItemDiscount + overallDiscount),
       discount_percent: params.discountPercent || 0,
-      tax_amount: totalTax,
+      tax_amount: roundMoney(totalTax),
+      shipping_fee: shipping,
       total: finalTotal,
       paid_amount: totalPaid,
       remaining_amount: remainingAmount,
@@ -414,12 +426,13 @@ export class SalesRepository {
         invoiceId,
         invoiceNumber,
         date: now,
-        netRevenue: finalTotal - totalTax,
+        netRevenue: goodsNet,
         taxAmount: totalTax,
+        shipping: shipping,
         cashPaid,
         cardPaid,
         creditAmount: remainingAmount,
-        cogs: invoiceItems.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0),
+        cogs: roundMoney(invoiceItems.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0)),
         treasuryId: params.treasuryId,
         userId: params.userId,
       });
@@ -447,7 +460,13 @@ export class SalesRepository {
       quantity: number;
       unitPrice: number;
       unitCost: number;
+      discountAmount?: number;
+      taxRate?: number;
     }[];
+    discountAmount?: number;
+    discountPercent?: number;
+    enableTax?: boolean;
+    vatRate?: number;
     treasuryId: string;
     userId: string;
     reason?: string;
@@ -464,7 +483,34 @@ export class SalesRepository {
       throw new Error('لا يمكن إرجاع المبلغ كرصيد بدون تحديد العميل.');
     }
 
-    const total = params.items.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0);
+    // Returns support the same optional discounts (amount/% on item or invoice)
+    // and optional tax as sales invoices; free-of-charge = 100% discount.
+    const enableTaxSetting = params.enableTax === true;
+    const defaultVat = params.vatRate || 0;
+    let subtotal = 0;
+    let lineDiscTotal = 0;
+    let taxAmount = 0;
+
+    for (const it of params.items) {
+      const lineGross = roundMoney(it.quantity * it.unitPrice);
+      const lineDisc = roundMoney(Math.min(lineGross, Math.max(0, it.discountAmount || 0)));
+      const taxable = roundMoney(lineGross - lineDisc);
+      const rate = enableTaxSetting
+        ? it.taxRate !== undefined && it.taxRate > 0
+          ? it.taxRate
+          : defaultVat
+        : 0;
+      subtotal += lineGross;
+      lineDiscTotal += lineDisc;
+      taxAmount += roundMoney((taxable * rate) / 100);
+    }
+
+    const globalDisc =
+      params.discountPercent !== undefined && params.discountPercent > 0
+        ? roundMoney(((subtotal - lineDiscTotal) * params.discountPercent) / 100)
+        : roundMoney(params.discountAmount || 0);
+    const netReturn = roundMoney(Math.max(0, subtotal - lineDiscTotal - globalDisc));
+    const total = roundMoney(netReturn + taxAmount);
     const cashRefund = refundType === 'cash' ? total : 0;
     const creditRefund = refundType === 'credit' ? total : 0;
 
@@ -480,6 +526,8 @@ export class SalesRepository {
       customer_id: params.customerId,
       total,
       refunded_amount: cashRefund,
+      discount_amount: roundMoney(lineDiscTotal + globalDisc),
+      tax_amount: taxAmount,
       treasury_id: params.treasuryId,
       reason: params.reason,
       created_by: params.userId,
@@ -560,11 +608,11 @@ export class SalesRepository {
         returnId,
         returnNumber,
         date: now,
-        netReturn: total,
-        taxAmount: 0,
+        netReturn,
+        taxAmount,
         refundedAmount: cashRefund,
         creditAmount: creditRefund,
-        cogs: params.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0),
+        cogs: roundMoney(params.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)),
         treasuryId: params.treasuryId,
         userId: params.userId,
       });
@@ -717,6 +765,7 @@ export class SalesRepository {
     paymentType?: InvoicePaymentType;
     cashAmount?: number;
     cardAmount?: number;
+    shippingFee?: number;
     notes?: string;
   }): Promise<SalesInvoice> {
     const existing = await db.sales_invoices.get(params.invoiceId);
@@ -740,12 +789,12 @@ export class SalesRepository {
       let calcTax = 0;
 
       newItemsToSave = params.items.map((line) => {
-        const lineGross = line.quantity * line.unitPrice;
-        const discount = line.discountAmount || 0;
-        const taxable = lineGross - discount;
+        const lineGross = roundMoney(line.quantity * line.unitPrice);
+        const discount = roundMoney(line.discountAmount || 0);
+        const taxable = roundMoney(lineGross - discount);
         const taxRate = line.taxRate || 0;
-        const taxAmount = (taxable * taxRate) / 100;
-        const lineTotal = taxable + taxAmount;
+        const taxAmount = roundMoney((taxable * taxRate) / 100);
+        const lineTotal = roundMoney(taxable + taxAmount);
 
         calcSub += lineGross;
         calcItemDisc += discount;
@@ -769,24 +818,34 @@ export class SalesRepository {
         };
       });
 
-      subtotal = calcSub;
-      const overallDiscount = params.discountAmount !== undefined ? params.discountAmount : 0;
-      totalDiscount = calcItemDisc + overallDiscount;
-      totalTax = calcTax;
-      finalTotal = Math.max(0, subtotal - totalDiscount + totalTax);
+      subtotal = roundMoney(calcSub);
+      const overallDiscount = params.discountAmount !== undefined ? roundMoney(params.discountAmount) : 0;
+      totalDiscount = roundMoney(calcItemDisc + overallDiscount);
+      totalTax = roundMoney(calcTax);
+      finalTotal = roundMoney(Math.max(0, subtotal - totalDiscount + totalTax));
     }
 
     const payType = params.paymentType || existing.payment_type;
     let cashPaid = 0;
     let cardPaid = 0;
 
+    // Shipping: carry the existing charge unless a new value is provided.
+    const shipping = params.shippingFee !== undefined ? roundMoney(params.shippingFee) : existing.shipping_fee || 0;
+    if (params.items && params.items.length > 0) {
+      // Item totals above exclude shipping -> add it on top.
+      finalTotal = roundMoney(finalTotal + shipping);
+    } else {
+      // Reuse the stored total but re-slice shipping out so it is never double-counted.
+      finalTotal = roundMoney(Math.max(0, existing.total - (existing.shipping_fee || 0) + shipping));
+    }
+
     if (payType === 'cash') {
       cashPaid = finalTotal;
     } else if (payType === 'card') {
       cardPaid = finalTotal;
     } else if (payType === 'split') {
-      cashPaid = params.cashAmount !== undefined ? params.cashAmount : existing.cash_amount;
-      cardPaid = params.cardAmount !== undefined ? params.cardAmount : existing.card_amount;
+      cashPaid = params.cashAmount !== undefined ? roundMoney(params.cashAmount) : existing.cash_amount;
+      cardPaid = params.cardAmount !== undefined ? roundMoney(params.cardAmount) : existing.card_amount;
     }
 
     const totalPaid = cashPaid + cardPaid;
@@ -795,9 +854,10 @@ export class SalesRepository {
     const updatedInvoice: SalesInvoice = {
       ...existing,
       customer_id: params.customerId !== undefined ? params.customerId : existing.customer_id,
-      subtotal,
-      discount_amount: totalDiscount,
-      tax_amount: totalTax,
+      subtotal: roundMoney(subtotal),
+      discount_amount: roundMoney(totalDiscount),
+      tax_amount: roundMoney(totalTax),
+      shipping_fee: shipping,
       total: finalTotal,
       paid_amount: totalPaid,
       remaining_amount: remainingAmount,
@@ -933,12 +993,13 @@ export class SalesRepository {
         invoiceId: existing.id,
         invoiceNumber: existing.invoice_number,
         date: now,
-        netRevenue: finalTotal - totalTax,
+        netRevenue: roundMoney(Math.max(0, subtotal - totalDiscount)),
         taxAmount: totalTax,
+        shipping: shipping,
         cashPaid,
         cardPaid,
         creditAmount: remainingAmount,
-        cogs: newItemsToSave.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0),
+        cogs: roundMoney(newItemsToSave.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0)),
         treasuryId: existing.treasury_id,
         userId: params.userId,
       });

@@ -7,6 +7,7 @@ import { ContactsRepository } from '@/modules/contacts/contacts_repository';
 import { ProductRepository } from '@/modules/inventory/product_repository';
 import { AccountingRepository } from '@/modules/accounting/accounting_repository';
 import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
+import { roundMoney } from '@/lib/decimal';
 import type {
   PurchaseInvoice,
   PurchaseInvoiceItem,
@@ -36,6 +37,7 @@ export class PurchasesRepository {
       taxRate?: number;
     }[];
     discountAmount?: number;
+    discountPercent?: number;
     paymentType: InvoicePaymentType;
     paidAmount?: number;
     treasuryId?: string | null;
@@ -73,10 +75,10 @@ export class PurchasesRepository {
     let totalTax = 0;
 
     const invoiceItems: PurchaseInvoiceItem[] = params.items.map((item) => {
-      const lineCost = item.quantity * item.unitCost;
+      const lineCost = roundMoney(item.quantity * item.unitCost);
       const taxRate = item.taxRate || 0;
-      const taxAmount = (lineCost * taxRate) / 100;
-      const lineTotal = lineCost + taxAmount;
+      const taxAmount = roundMoney((lineCost * taxRate) / 100);
+      const lineTotal = roundMoney(lineCost + taxAmount);
 
       subtotal += lineCost;
       totalTax += taxAmount;
@@ -99,11 +101,14 @@ export class PurchasesRepository {
       };
     });
 
-    const discount = params.discountAmount || 0;
-    const finalTotal = Math.max(0, subtotal - discount + totalTax);
+    const discount =
+      params.discountPercent !== undefined && params.discountPercent > 0
+        ? roundMoney((roundMoney(subtotal) * params.discountPercent) / 100)
+        : roundMoney(params.discountAmount || 0);
+    const finalTotal = roundMoney(Math.max(0, roundMoney(subtotal) - discount + roundMoney(totalTax)));
 
-    const paid = params.paymentType === 'cash' ? finalTotal : params.paidAmount || 0;
-    const remaining = Math.max(0, finalTotal - paid);
+    const paid = params.paymentType === 'cash' ? finalTotal : roundMoney(params.paidAmount || 0);
+    const remaining = roundMoney(Math.max(0, finalTotal - paid));
 
     const invoice: PurchaseInvoice = {
       id: invoiceId,
@@ -114,9 +119,10 @@ export class PurchasesRepository {
       invoice_number: params.supplierInvoiceNumber,
       system_invoice_number: systemInvoiceNumber,
       invoice_date: now,
-      subtotal,
+      subtotal: roundMoney(subtotal),
       discount_amount: discount,
-      tax_amount: totalTax,
+      discount_percent: params.discountPercent || 0,
+      tax_amount: roundMoney(totalTax),
       total: finalTotal,
       paid_amount: paid,
       remaining_amount: remaining,
@@ -205,7 +211,7 @@ export class PurchasesRepository {
         invoiceId,
         invoiceNumber: systemInvoiceNumber,
         date: now,
-        netPurchase: subtotal - discount,
+        netPurchase: roundMoney(subtotal - discount),
         taxAmount: totalTax,
         paidAmount: paid,
         creditAmount: remaining,
@@ -435,7 +441,13 @@ export class PurchasesRepository {
       conversionFactor: number;
       quantity: number;
       unitCost: number;
+      discountAmount?: number;
+      taxRate?: number;
     }[];
+    discountAmount?: number;
+    discountPercent?: number;
+    enableTax?: boolean;
+    vatRate?: number;
     refundType: 'treasury' | 'credit';
     treasuryId?: string | null;
     userId: string;
@@ -453,9 +465,38 @@ export class PurchasesRepository {
     const count = await db.purchase_returns.where('branch_id').equals(params.branchId).count();
     const returnNumber = `PRET-${String(count + 1).padStart(6, '0')}`;
 
-    const total = params.items.reduce((acc, item) => acc + item.quantity * item.unitCost, 0);
-    if (!(total > 0)) {
-      throw new Error('قيمة المرتجع يجب أن تكون أكبر من صفر.');
+    // Returns follow the invoice discount rules (item/invoice, amount or %,
+    // optional tax, free return = 100% discount).
+    const enableTaxSetting = params.enableTax === true;
+    const defaultVat = params.vatRate || 0;
+    let subtotal = 0;
+    let lineDiscTotal = 0;
+    let taxAmount = 0;
+
+    for (const it of params.items) {
+      const lineGross = roundMoney(it.quantity * it.unitCost);
+      const lineDisc = roundMoney(Math.min(lineGross, Math.max(0, it.discountAmount || 0)));
+      const taxable = roundMoney(lineGross - lineDisc);
+      const rate = enableTaxSetting
+        ? it.taxRate !== undefined && it.taxRate > 0
+          ? it.taxRate
+          : defaultVat
+        : 0;
+      subtotal += lineGross;
+      lineDiscTotal += lineDisc;
+      taxAmount += roundMoney((taxable * rate) / 100);
+    }
+
+    const globalDisc =
+      params.discountPercent !== undefined && params.discountPercent > 0
+        ? roundMoney(((subtotal - lineDiscTotal) * params.discountPercent) / 100)
+        : roundMoney(params.discountAmount || 0);
+    const netReturn = roundMoney(Math.max(0, subtotal - lineDiscTotal - globalDisc));
+    const total = roundMoney(netReturn + taxAmount);
+    // Allow free returns (100% discount => total = 0). Only reject when there is
+    // nothing being returned at all (no line value before any discount).
+    if (!(subtotal > 0)) {
+      throw new Error('المرتجع يجب أن يحتوي على أصناف بقيمة إجمالية أكبر من صفر.');
     }
 
     const returnDoc: PurchaseReturn = {
@@ -468,7 +509,9 @@ export class PurchasesRepository {
       return_number: returnNumber,
       return_date: now,
       total,
-      refunded_amount: total,
+      refunded_amount: params.refundType === 'treasury' ? total : 0,
+      discount_amount: roundMoney(lineDiscTotal + globalDisc),
+      tax_amount: taxAmount,
       treasury_id: params.refundType === 'treasury' ? params.treasuryId : null,
       reason: params.reason,
       created_by: params.userId,
@@ -519,30 +562,41 @@ export class PurchasesRepository {
           await TreasuryRepository.adjustBalance(params.treasuryId, total);
         }
 
-        // 4. Adjust supplier ledger: the return is a debit against the supplier
-        await ContactsRepository.adjustBalance({
-          orgId: params.orgId,
-          contactId: params.supplierId,
-          referenceType: 'purchase_return',
-          referenceId: returnId,
-          debit: total,
-          credit: 0,
-          notes: `مرتجع مشتريات رقم ${returnNumber}`,
-        });
+        // 4. Adjust the supplier ledger: the return is a debit against the supplier.
+        //    Booked ONLY when a supplier credit is actually reduced (store-credit
+        //    refund, or the original invoice still carries an unpaid remaining);
+        //    a pure cash refund (refundType=treasury against a settled invoice)
+        //    touches no supplier balance and must NOT create phantom supplier debt.
+        let originalInvoice: PurchaseInvoice | undefined;
+        if (params.originalInvoiceId) {
+          originalInvoice = await db.purchase_invoices.get(params.originalInvoiceId);
+        }
+        const shouldBookSupplierLedger =
+          params.refundType === 'credit' ||
+          (originalInvoice !== undefined && originalInvoice.remaining_amount > 0);
+
+        if (shouldBookSupplierLedger) {
+          await ContactsRepository.adjustBalance({
+            orgId: params.orgId,
+            contactId: params.supplierId,
+            referenceType: 'purchase_return',
+            referenceId: returnId,
+            debit: total,
+            credit: 0,
+            notes: `مرتجع مشتريات رقم ${returnNumber}`,
+          });
+        }
 
         // 5. Reduce the original invoice remaining amount when it still carries credit
-        if (params.originalInvoiceId) {
-          const original = await db.purchase_invoices.get(params.originalInvoiceId);
-          if (original && original.status === 'completed') {
-            const updatedInvoice: PurchaseInvoice = {
-              ...original,
-              remaining_amount: Math.max(0, original.remaining_amount - total),
-              updated_at: now,
-              sync_status: 'pending',
-            };
-            await db.purchase_invoices.put(updatedInvoice);
-            await SyncQueueManager.enqueue('purchase_invoices', original.id, 'update', updatedInvoice);
-          }
+        if (originalInvoice && originalInvoice.status === 'completed') {
+          const updatedInvoice: PurchaseInvoice = {
+            ...originalInvoice,
+            remaining_amount: Math.max(0, originalInvoice.remaining_amount - total),
+            updated_at: now,
+            sync_status: 'pending',
+          };
+          await db.purchase_invoices.put(updatedInvoice);
+          await SyncQueueManager.enqueue('purchase_invoices', originalInvoice.id, 'update', updatedInvoice);
         }
       }
     );
@@ -555,10 +609,10 @@ export class PurchasesRepository {
         returnId,
         returnNumber,
         date: now,
-        netReturn: total,
-        taxAmount: 0,
+        netReturn,
+        taxAmount,
         refundedAmount: params.refundType === 'treasury' ? total : 0,
-        creditAmount: total,
+        creditAmount: 0,
         treasuryId: params.treasuryId,
         userId: params.userId,
       });

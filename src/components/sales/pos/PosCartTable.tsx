@@ -42,6 +42,7 @@ interface PosCartTableProps {
   onReadLiveWeight: (targetKey?: string) => void;
   isReadingScale: boolean;
   onUnitChange: (key: string, newUnitId: string, factor: number, price?: number) => void;
+  onToggleLinePriceTier?: (key: string) => void;
   lastAddedKey?: string | null;
   onFocusSearch?: () => void;
 }
@@ -62,6 +63,7 @@ export function PosCartTable({
   onReadLiveWeight,
   isReadingScale,
   onUnitChange,
+  onToggleLinePriceTier,
   lastAddedKey,
   onFocusSearch,
 }: PosCartTableProps) {
@@ -271,6 +273,20 @@ export function PosCartTable({
                     <div className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">
                       {totalLineVal.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">ج.م</span>
                     </div>
+                    {product?.has_dual_pricing && onToggleLinePriceTier && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleLinePriceTier(line.key)}
+                        title={line.priceTier === 'old' ? 'التبديل إلى سعر البيع الجديد' : 'التبديل إلى سعر البيع القديم'}
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer ${
+                          line.priceTier === 'old'
+                            ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300'
+                            : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >
+                        {line.priceTier === 'old' ? 'سعر قديم' : 'سعر جديد'}
+                      </button>
+                    )}
                     {line.discount > 0 && (
                       <span className="text-[9px] text-rose-500 font-bold">
                         خصم: {line.discount} ج.م
@@ -638,6 +654,22 @@ export function PosCartTable({
                     <td className="py-3.5 px-3 text-center font-mono font-bold text-sm text-slate-800 dark:text-slate-200">
                       {line.price.toFixed(2)}{' '}
                       <span className="text-[10px] font-normal text-slate-400">ج.م</span>
+                      {product?.has_dual_pricing && onToggleLinePriceTier && (
+                        <div className="mt-1">
+                          <button
+                            type="button"
+                            onClick={() => onToggleLinePriceTier(line.key)}
+                            title={line.priceTier === 'old' ? 'التبديل إلى سعر البيع الجديد' : 'التبديل إلى سعر البيع القديم'}
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md transition-colors cursor-pointer ${
+                              line.priceTier === 'old'
+                                ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
+                                : 'bg-slate-100 text-slate-400 hover:text-slate-600 dark:bg-slate-800 dark:text-slate-500 border border-slate-100 dark:border-slate-700'
+                            }`}
+                          >
+                            {line.priceTier === 'old' ? 'سعر قديم' : 'سعر جديد'}
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     {/* Line Total */}

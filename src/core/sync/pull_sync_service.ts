@@ -71,6 +71,37 @@ const CHILD_TABLES: Record<string, { childTable: string; fkColumn: string }> = {
 
 const PAGE_SIZE = 500;
 
+/**
+ * Local-only shield columns (NOT yet in the remote Supabase schema).
+ *
+ * These carry owner-entered level names and per-level quantities plus
+ * denormalized display snapshots (مستوردة من منهجية pharmacy_system):
+ *  - product_units:        unit_name / level_order / available_quantity
+ *  - product_batches:      unit_id / unit_name / level_quantity
+ *  - inventory_transactions: product_name / unit_name / level_quantity /
+ *                           batch_number / expiry_date / prev_quantity /
+ *                           new_quantity / reference_number
+ *
+ * These fields ARE now also hosted in the remote schema (migration 12); during
+ * a cloud pull they are still PRESERVED here when the fetched record does not
+ * carry them, so offline display snapshots survive re-pulls of legacy rows and
+ * the local value is never wiped by an older cloud record.
+ */
+const SHIELD_COLUMNS: Record<string, readonly string[]> = {
+  product_units: ['unit_name', 'level_order', 'available_quantity'],
+  product_batches: ['unit_id', 'unit_name', 'level_quantity'],
+  inventory_transactions: [
+    'product_name',
+    'unit_name',
+    'level_quantity',
+    'batch_number',
+    'expiry_date',
+    'prev_quantity',
+    'new_quantity',
+    'reference_number',
+  ],
+};
+
 export class PullSyncService {
   public static async pullAll(orgId: string): Promise<Record<string, number>> {
     if (!networkListener.getStatus() || !isSupabaseConfigured()) {
@@ -237,28 +268,44 @@ export class PullSyncService {
     return collected.length;
   }
 
-  /**
-   * دمج السجلات السحابية مع حارس حماية:
-   * لا نستبدل أي سجل محلي عليه تغيير غير مُزامن (pending/in_flight/failed).
-   */
-  private static async mergeIntoLocal(
-    tableName: string,
-    records: Record<string, unknown>[]
-  ): Promise<void> {
-    const localTable = (db as unknown as Record<string, { bulkGet: (keys: string[]) => Promise<unknown[]>; bulkPut: (records: unknown[]) => Promise<unknown> }>)[tableName];
-    if (!localTable) return;
+/**
+ * دمج السجلات السحابية مع حارس حماية:
+ * لا نستبدل أي سجل محلي عليه تغيير غير مُزامن (pending/in_flight/failed).
+ */
+private static async mergeIntoLocal(
+  tableName: string,
+  records: Record<string, unknown>[]
+): Promise<void> {
+  const localTable = (db as unknown as Record<string, { bulkGet: (keys: string[]) => Promise<unknown[]>; bulkPut: (records: unknown[]) => Promise<unknown> }>)[tableName];
+  if (!localTable) return;
 
-    const ids = records.map((r) => r.id as string);
-    const existing = await localTable.bulkGet(ids);
+  const ids = records.map((r) => r.id as string);
+  const existing = await localTable.bulkGet(ids);
 
-    const toStore = records.filter((_rec, idx) => {
-      const local = existing[idx] as ({ sync_status?: string } | undefined) | undefined;
-      if (!local) return true;
+  // Merge the shield columns in the SAME pass as the pending-guard so the
+  // local/cloud record indices stay aligned.
+  const toStore = records
+    .map((rec, idx) => {
+      const local = existing[idx] as ({ sync_status?: string } & Record<string, unknown> | undefined) | undefined;
+      if (!local) return { rec, keep: true };
       const status = local.sync_status;
-      return status !== 'pending' && status !== 'in_flight' && status !== 'failed';
-    });
+      if (status === 'pending' || status === 'in_flight' || status === 'failed') {
+        return { rec, keep: false };
+      }
+      const shield = SHIELD_COLUMNS[tableName];
+      if (!shield) return { rec, keep: true };
+      const merged: Record<string, unknown> = { ...rec };
+      for (const col of shield) {
+        if (rec[col] === undefined && local[col] !== undefined) {
+          merged[col] = local[col];
+        }
+      }
+      return { rec: merged, keep: true };
+    })
+    .filter((r) => r.keep)
+    .map((r) => r.rec);
 
-    if (toStore.length === 0) return;
+  if (toStore.length === 0) return;
 
     const recordsToStore = toStore.map((item) => ({
       ...item,
