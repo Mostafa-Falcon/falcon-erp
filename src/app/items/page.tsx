@@ -108,6 +108,7 @@ function ItemsCatalogContent() {
         <ItemTableToolbar
           onPrint={() => window.print()}
           onExportCsv={catalog.handleExportCsv}
+          onForceSync={catalog.forceSyncCatalog}
           visibleColumns={catalog.visibleColumns}
           setVisibleColumns={catalog.setVisibleColumns}
           pageSize={catalog.pageSize}

@@ -9,6 +9,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -29,6 +30,8 @@ interface PosSearchCustomerBarProps {
   setSearchQuery: (q: string) => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
+  searchHighlightedIndex: number;
+  setSearchHighlightedIndex: (index: number) => void;
   searchResults: Product[];
   searchInputRef: RefObject<HTMLInputElement | null>;
   onSearchKeyDown: (e: React.KeyboardEvent) => void;
@@ -50,6 +53,8 @@ export function PosSearchCustomerBar({
   setSearchQuery,
   isSearchOpen,
   setIsSearchOpen,
+  searchHighlightedIndex,
+  setSearchHighlightedIndex,
   searchResults,
   searchInputRef,
   onSearchKeyDown,
@@ -61,6 +66,14 @@ export function PosSearchCustomerBar({
 }: PosSearchCustomerBarProps) {
   const router = useRouter();
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
+
+  // Auto-scroll highlighted product in dropdown into view
+  const highlightedProductRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (highlightedProductRef.current) {
+      highlightedProductRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [searchHighlightedIndex]);
 
   // Smart Search State
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -467,21 +480,38 @@ export function PosSearchCustomerBar({
         {/* Autocomplete Search Dropdown */}
         {isSearchOpen && searchResults.length > 0 && (
           <div className="absolute top-12 left-0 right-0 z-50 bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-150">
-            <div className="p-2 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 flex items-center justify-between">
+            <div className="p-2 bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-500 flex items-center justify-between">
               <span>نتائج البحث المباشرة ({searchResults.length})</span>
-              <span>اضغط Enter لإضافة أول نتيجة</span>
+              <span className="text-blue-600 dark:text-blue-400 font-mono flex items-center gap-1">
+                <span>تنقل بالأسهم (↑ ↓) و اضغط Enter</span>
+              </span>
             </div>
             <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-              {searchResults.map((p) => {
+              {searchResults.map((p, index) => {
                 const avail = availableFor(p.id);
+                const isHighlighted = index === searchHighlightedIndex;
                 return (
                   <div
                     key={p.id}
+                    ref={isHighlighted ? highlightedProductRef : null}
                     onClick={() => onAddToCart(p)}
-                    className="p-3 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center justify-between cursor-pointer transition-colors"
+                    onMouseEnter={() => setSearchHighlightedIndex(index)}
+                    className={cn(
+                      'p-3 flex items-center justify-between cursor-pointer transition-all border-r-4',
+                      isHighlighted
+                        ? 'bg-blue-100/90 dark:bg-blue-950/80 border-blue-600 dark:border-blue-400 font-black shadow-2xs'
+                        : 'hover:bg-blue-50/80 dark:hover:bg-blue-950/40 border-transparent'
+                    )}
                   >
                     <div className="flex flex-col text-right">
-                      <span className="font-bold text-xs text-slate-900 dark:text-white">{p.name}</span>
+                      <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>{p.name}</span>
+                        {isHighlighted && (
+                          <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded-md font-mono font-bold">
+                            محدد ↵
+                          </span>
+                        )}
+                      </span>
                       <span className="text-[10px] text-slate-400 font-mono mt-0.5">
                         باركود / SKU: {p.sku}
                       </span>

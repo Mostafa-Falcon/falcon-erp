@@ -48,12 +48,22 @@ export class SalesRepository {
       return existing;
     }
 
+    let activeBranchId = params.branchId;
+    if (!activeBranchId && params.orgId) {
+      const mainBranch =
+        (await db.branches.where('org_id').equals(params.orgId).and((b) => b.is_main).first()) ||
+        (await db.branches.where('org_id').equals(params.orgId).first());
+      if (mainBranch) {
+        activeBranchId = mainBranch.id;
+      }
+    }
+
     let shiftCount = 0;
     try {
-      if (params.branchId) {
+      if (activeBranchId) {
         shiftCount = await db.cashier_shifts
           .where('branch_id')
-          .equals(params.branchId)
+          .equals(activeBranchId)
           .and((s) => !params.orgId || s.org_id === params.orgId)
           .count();
       } else if (params.orgId) {
@@ -73,7 +83,7 @@ export class SalesRepository {
     const shift: CashierShift = {
       id: shiftId,
       org_id: params.orgId,
-      branch_id: params.branchId,
+      branch_id: activeBranchId,
       user_id: params.userId,
       treasury_id: params.treasuryId,
       shift_number: shiftCount + 1,

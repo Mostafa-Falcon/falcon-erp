@@ -41,11 +41,20 @@ function ExpiryAlertsContent() {
     if (!orgId) return;
     try {
       setIsLoading(true);
-      const [allBatches, allProds, allWh] = await Promise.all([
-        db.product_batches.where('org_id').equals(orgId).toArray(),
+
+      let allBatches: ProductBatch[] = [];
+      try {
+        allBatches = await db.product_batches.where('org_id').equals(orgId).toArray();
+      } catch {
+        const rawBatches = await db.product_batches.toArray();
+        allBatches = rawBatches.filter((b) => b.org_id === orgId || !b.org_id);
+      }
+
+      const [allProds, allWh] = await Promise.all([
         db.products.where('org_id').equals(orgId).toArray(),
         db.warehouses.where('org_id').equals(orgId).toArray(),
       ]);
+
       setBatches(allBatches);
       setProducts(allProds);
       setWarehouses(allWh);

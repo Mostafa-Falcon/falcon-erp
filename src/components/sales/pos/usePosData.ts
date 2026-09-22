@@ -160,7 +160,15 @@ export function usePosData() {
           }
         }
 
-        opts[p.id] = list;
+        // Deduplicate unitId entries to prevent duplicate keys/values in Select components
+        const uniqueOptsMap = new Map<string, UnitOption>();
+        for (const opt of list) {
+          if (!uniqueOptsMap.has(opt.unitId)) {
+            uniqueOptsMap.set(opt.unitId, opt);
+          }
+        }
+
+        opts[p.id] = Array.from(uniqueOptsMap.values());
       }
 
       // Auto-heal Treasuries if empty

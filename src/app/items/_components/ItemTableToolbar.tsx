@@ -26,12 +26,14 @@ import {
   Search,
   Barcode,
   Menu,
+  RefreshCw,
 } from 'lucide-react';
 import type { VisibleColumns } from './types';
 
 interface ItemTableToolbarProps {
   onPrint: () => void;
   onExportCsv: () => void;
+  onForceSync?: () => void;
   visibleColumns: VisibleColumns;
   setVisibleColumns: React.Dispatch<React.SetStateAction<VisibleColumns>>;
   pageSize: number;
@@ -46,6 +48,7 @@ interface ItemTableToolbarProps {
 export function ItemTableToolbar({
   onPrint,
   onExportCsv,
+  onForceSync,
   visibleColumns,
   setVisibleColumns,
   pageSize,
@@ -60,6 +63,19 @@ export function ItemTableToolbar({
     <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
       {/* Right side in RTL (Left side visually): Print, CSV, Excel, Layout, Columns, Page Size */}
       <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        {/* Re-sync / Refresh Button */}
+        {onForceSync && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onForceSync}
+            title="إعادة مزامنة الأصناف كاملة من السحابة"
+            className="w-9 h-9 rounded-xl text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 shadow-2xs"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        )}
+
         {/* Print Button */}
         <Button
           variant="outline"

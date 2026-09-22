@@ -140,6 +140,23 @@ export function useItemsCatalog() {
     }
   };
 
+  const forceSyncCatalog = async () => {
+    if (!orgId) return;
+    setIsLoading(true);
+    try {
+      toast.info('جاري إعادة مزامنة دليل الأصناف بالكامل من السحابة...');
+      const { PullSyncService } = await import('@/core/sync/pull_sync_service');
+      await PullSyncService.forcePullAll(orgId);
+      await loadData();
+      toast.success('تمت إعادة مزامنة دليل الأصناف بنجاح.');
+    } catch (err) {
+      console.error('Force sync error:', err);
+      toast.error('حدث خطأ أثناء مزامنة دليل الأصناف.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!orgId) return;
     loadData();
@@ -546,6 +563,8 @@ export function useItemsCatalog() {
     handleExportCsv,
     detailProduct,
     isPharmacy,
+    forceSyncCatalog,
+    reload: loadData,
     reload: loadData,
   };
 }

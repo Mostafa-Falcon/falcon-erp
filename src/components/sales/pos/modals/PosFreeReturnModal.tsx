@@ -366,7 +366,8 @@ export function PosFreeReturnModal({
                 ) : (
                   lines.map((line, idx) => {
                     const lineTotal = line.quantity * line.unitPrice;
-                    const opts = unitOptions[line.productId] || [];
+                    const rawOpts = unitOptions[line.productId] || [];
+                    const opts = Array.from(new Map(rawOpts.map((o) => [o.unitId, o])).values());
 
                     return (
                       <tr key={line.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">

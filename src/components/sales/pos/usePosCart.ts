@@ -34,6 +34,7 @@ export function usePosCart({
   const [cart, setCart] = useState<CartLine[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchHighlightedIndex, setSearchHighlightedIndex] = useState<number>(0);
   const [customerMode, setCustomerMode] = useState<'cash' | 'customer' | 'both' | 'supplier'>('cash');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [priceTier, setPriceTier] = useState<string>('default');
@@ -239,11 +240,41 @@ export function usePosCart({
     setLastAddedKey(key);
     setSearchQuery('');
     setIsSearchOpen(false);
+    setSearchHighlightedIndex(0);
     toast.success(`تمت إضافة «${product.name}» (${clampedQty}) للسلة`);
   };
 
-  // Direct Barcode Scan / Enter Key (Supports standard barcodes & electronic scale barcodes)
+  // Reset highlight index when query or results change
+  useEffect(() => {
+    setSearchHighlightedIndex(0);
+  }, [searchQuery]);
+
+  // Direct Barcode Scan / Keyboard Navigation & Selection (ArrowUp / ArrowDown / Enter / Escape)
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      if (isSearchOpen && searchResults.length > 0) {
+        e.preventDefault();
+        setSearchHighlightedIndex((prev) => (prev < searchResults.length - 1 ? prev + 1 : prev));
+        return;
+      }
+    }
+
+    if (e.key === 'ArrowUp') {
+      if (isSearchOpen && searchResults.length > 0) {
+        e.preventDefault();
+        setSearchHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        return;
+      }
+    }
+
+    if (e.key === 'Escape') {
+      if (isSearchOpen) {
+        e.preventDefault();
+        setIsSearchOpen(false);
+        return;
+      }
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       const q = searchQuery.trim();
@@ -286,7 +317,10 @@ export function usePosCart({
       if (exact) {
         addToCart(exact);
       } else if (searchResults.length > 0) {
-        addToCart(searchResults[0]);
+        const targetProduct = searchResults[searchHighlightedIndex] || searchResults[0];
+        if (targetProduct) {
+          addToCart(targetProduct);
+        }
       } else {
         toast.error(`لا يوجد صنف مسجل بهذا الكود: «${q}»`);
       }
@@ -644,6 +678,8 @@ export function usePosCart({
     setSearchQuery,
     isSearchOpen,
     setIsSearchOpen,
+    searchHighlightedIndex,
+    setSearchHighlightedIndex,
     searchResults,
     searchInputRef,
     customerMode,

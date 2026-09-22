@@ -33,10 +33,54 @@ function ImportContent() {
   const { currentUser } = useSessionStore();
   const orgId = currentUser?.org_id || '';
 
-  const [rows, setRows] = useState<ImportRow[]>(SAMPLE_DATA);
+  const [rows, setRows] = useState<ImportRow[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length <= 1) {
+        setErrorMessage('الملف المرفق فارغ أو لا يحتوي على صفوف بيانات.');
+        return;
+      }
+
+      // Skip header line
+      const parsedRows: ImportRow[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map((c) => c.replace(/^"|"$/g, '').trim());
+        if (cols.length < 2) continue;
+
+        parsedRows.push({
+          name: cols[0] || `صنف ${i}`,
+          sku: cols[1] || `SKU-${Date.now()}-${i}`,
+          cost_price: parseFloat(cols[2]) || 0,
+          sale_price: parseFloat(cols[3]) || 0,
+          barcode: cols[4] || '',
+          category_name: cols[5] || 'عام',
+          stock: parseInt(cols[6] || '0', 10) || 0,
+        });
+      }
+
+      if (parsedRows.length > 0) {
+        setRows(parsedRows);
+        setErrorMessage(null);
+        setResultMessage(`تم قراءة ${parsedRows.length} صنف من الملف المرفق بنجاح.`);
+      } else {
+        setErrorMessage('تعذر قراءة بيانات من الملف المرفق.');
+      }
+    };
+
+    reader.readAsText(file, 'UTF-8');
+  };
 
   const handleDownloadTemplate = () => {
     const csvContent =
@@ -200,7 +244,7 @@ function ImportContent() {
               <FileUp className="w-4 h-4" />
               اختيار ملف من الجهاز
             </span>
-            <input type="file" accept=".csv, .xlsx" className="hidden" />
+            <input type="file" accept=".csv, .xlsx" onChange={handleFileUpload} className="hidden" />
           </label>
         </div>
       </div>
@@ -227,34 +271,44 @@ function ImportContent() {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800 text-[11px] font-black text-slate-500 border-b border-slate-200 dark:border-slate-700">
-                <th className="py-3 px-4">اسم الصنف</th>
-                <th className="py-3 px-4">الكود (SKU)</th>
-                <th className="py-3 px-4">الباركود</th>
-                <th className="py-3 px-4">المجموعة</th>
-                <th className="py-3 px-4">سعر التكلفة</th>
-                <th className="py-3 px-4">سعر البيع</th>
-                <th className="py-3 px-4">الرصيد الأولي</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
-              {rows.map((r, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                  <td className="py-3 px-4 font-black text-slate-900 dark:text-white">{r.name}</td>
-                  <td className="py-3 px-4 font-mono text-slate-400">{r.sku}</td>
-                  <td className="py-3 px-4 font-mono text-slate-500">{r.barcode || '-'}</td>
-                  <td className="py-3 px-4 text-slate-500">{r.category_name || '-'}</td>
-                  <td className="py-3 px-4">{formatNumber(r.cost_price)} ج.م</td>
-                  <td className="py-3 px-4 font-black text-[#2563eb]">{formatNumber(r.sale_price)} ج.م</td>
-                  <td className="py-3 px-4 text-emerald-600 font-black">{r.stock || 0}</td>
+        {rows.length === 0 ? (
+          <div className="py-12 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl text-center text-slate-400 font-bold space-y-2">
+            <FileSpreadsheet className="w-10 h-10 mx-auto opacity-30 text-slate-400" />
+            <p className="text-xs text-slate-600 dark:text-slate-300">لم يتم إرفاق أو قراءة أي ملف أصناف بعد.</p>
+            <p className="text-[11px] text-slate-400">
+              قم باختيار ملف CSV أو Excel من المربع أعلاه لمعاينة الأصناف ديناميكياً قبل البدء بالحفظ.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800 text-[11px] font-black text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                  <th className="py-3 px-4">اسم الصنف</th>
+                  <th className="py-3 px-4">الكود (SKU)</th>
+                  <th className="py-3 px-4">الباركود</th>
+                  <th className="py-3 px-4">المجموعة</th>
+                  <th className="py-3 px-4">سعر التكلفة</th>
+                  <th className="py-3 px-4">سعر البيع</th>
+                  <th className="py-3 px-4">الرصيد الأولي</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
+                {rows.map((r, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                    <td className="py-3 px-4 font-black text-slate-900 dark:text-white">{r.name}</td>
+                    <td className="py-3 px-4 font-mono text-slate-400">{r.sku}</td>
+                    <td className="py-3 px-4 font-mono text-slate-500">{r.barcode || '-'}</td>
+                    <td className="py-3 px-4 text-slate-500">{r.category_name || '-'}</td>
+                    <td className="py-3 px-4">{formatNumber(r.cost_price)} ج.م</td>
+                    <td className="py-3 px-4 font-black text-[#2563eb]">{formatNumber(r.sale_price)} ج.م</td>
+                    <td className="py-3 px-4 text-emerald-600 font-black">{r.stock || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

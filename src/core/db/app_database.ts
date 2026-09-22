@@ -207,6 +207,11 @@ export class FalconAppDatabase extends Dexie {
       product_batches: 'id, product_id, warehouse_id, batch_number, expiry_date, sync_status',
       inventory_transactions: 'id, org_id, warehouse_id, product_id, transaction_type, reference_type, reference_id, created_at, sync_status',
     });
+
+    // Incremental upgrade: adds org_id index to product_batches for org-scoped queries.
+    this.version(11).stores({
+      product_batches: 'id, org_id, product_id, warehouse_id, batch_number, expiry_date, sync_status',
+    });
   }
 }
 

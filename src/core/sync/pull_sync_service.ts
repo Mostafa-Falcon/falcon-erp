@@ -159,8 +159,23 @@ export class PullSyncService {
     }
 
     const localSettingKey = `last_pull_${tableName}_${orgId}`;
-    const lastPullSetting = await db.app_settings.get(localSettingKey);
-    const lastPullTimestamp = lastPullSetting?.value || '1970-01-01T00:00:00.000Z';
+    const migrationKey = `pull_engine_v2_reset_${tableName}_${orgId}`;
+    const migrationDone = await db.app_settings.get(migrationKey);
+
+    let lastPullTimestamp = '1970-01-01T00:00:00.000Z';
+    if (!migrationDone && (tableName === 'products' || CHILD_TABLES[tableName])) {
+      await db.app_settings.delete(localSettingKey);
+      await db.app_settings.put({
+        id: migrationKey,
+        org_id: orgId,
+        value: 'true',
+        updated_at: new Date().toISOString(),
+        sync_status: 'synced',
+      });
+    } else {
+      const lastPullSetting = await db.app_settings.get(localSettingKey);
+      lastPullTimestamp = lastPullSetting?.value || '1970-01-01T00:00:00.000Z';
+    }
 
     const collected: Record<string, unknown>[] = [];
     let newestDate: string | null = null;
@@ -178,6 +193,7 @@ export class PullSyncService {
 
       const { data, error } = await query
         .order(deltaColumn, { ascending: true })
+        .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
       if (error || !data || data.length === 0) {
         break;
@@ -321,36 +337,65 @@ private static async mergeIntoLocal(
     notifyCloudDataChanged();
   }
 
+  /**
+   * Resets last pull timestamp in app_settings for one table or all tables.
+   */
+  public static async resetLastPull(orgId: string, tableName?: string): Promise<void> {
+    if (tableName) {
+      const localSettingKey = `last_pull_${tableName}_${orgId}`;
+      await db.app_settings.delete(localSettingKey);
+    } else {
+      for (const tName of Object.keys(PARENT_TABLES)) {
+        const localSettingKey = `last_pull_${tName}_${orgId}`;
+        await db.app_settings.delete(localSettingKey);
+      }
+    }
+  }
+
+  /**
+   * Forces a clean full re-pull of all remote records into local Dexie IndexedDB.
+   */
+  public static async forcePullAll(orgId: string): Promise<Record<string, number>> {
+    await this.resetLastPull(orgId);
+    return await this.pullAll(orgId);
+  }
+
   private static async pullChildren(childTable: string, fkColumn: string, parentIds: string[]): Promise<number> {
     const localTable = (db as unknown as Record<string, { bulkGet: (keys: string[]) => Promise<unknown[]>; bulkPut: (records: unknown[]) => Promise<unknown> }>)[childTable];
-    if (!localTable) return 0;
+    if (!localTable || parentIds.length === 0) return 0;
 
-    const collected: Record<string, unknown>[] = [];
-    let from = 0;
+    const FK_BATCH_SIZE = 100;
+    let totalCount = 0;
 
-    for (;;) {
-      const query = supabase
-        .from(childTable)
-        .select('*')
-        .in(fkColumn, parentIds)
-        .range(from, from + PAGE_SIZE - 1);
+    for (let i = 0; i < parentIds.length; i += FK_BATCH_SIZE) {
+      const batchIds = parentIds.slice(i, i + FK_BATCH_SIZE);
+      const collected: Record<string, unknown>[] = [];
+      let from = 0;
 
-      const { data, error } = await query;
-      if (error || !data || data.length === 0) {
-        break;
+      for (;;) {
+        const query = supabase
+          .from(childTable)
+          .select('*')
+          .in(fkColumn, batchIds)
+          .range(from, from + PAGE_SIZE - 1);
+
+        const { data, error } = await query;
+        if (error || !data || data.length === 0) {
+          break;
+        }
+        collected.push(...data);
+        if (data.length < PAGE_SIZE) {
+          break;
+        }
+        from += PAGE_SIZE;
       }
-      collected.push(...data);
-      if (data.length < PAGE_SIZE) {
-        break;
+
+      if (collected.length > 0) {
+        await this.mergeIntoLocal(childTable, collected);
+        totalCount += collected.length;
       }
-      from += PAGE_SIZE;
     }
 
-    if (collected.length === 0) {
-      return 0;
-    }
-
-    await this.mergeIntoLocal(childTable, collected);
-    return collected.length;
+    return totalCount;
   }
 }

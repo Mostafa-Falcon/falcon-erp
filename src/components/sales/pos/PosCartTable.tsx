@@ -100,7 +100,8 @@ export function PosCartTable({
         ) : (
           cart.map((line, index) => {
             const product = lineProduct(line);
-            const opts = product ? unitOptions[product.id] || [] : [];
+            const rawOpts = product ? unitOptions[product.id] || [] : [];
+            const opts = Array.from(new Map(rawOpts.map((o) => [o.unitId, o])).values());
             const totalLineVal = lineTotal(line);
             const avail = product
               ? availableFor(product.id, line.unitId, line.factor, line.batchId)
@@ -336,7 +337,8 @@ export function PosCartTable({
             ) : (
               cart.map((line, index) => {
                 const product = lineProduct(line);
-                const opts = product ? unitOptions[product.id] || [] : [];
+                const rawOpts = product ? unitOptions[product.id] || [] : [];
+                const opts = Array.from(new Map(rawOpts.map((o) => [o.unitId, o])).values());
                 const totalLineVal = lineTotal(line);
 
                 // Available stock in current line's unit and batch

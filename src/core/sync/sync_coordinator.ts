@@ -588,6 +588,36 @@ export class SyncCoordinator {
         }
       }
 
+      // ضمان وجود branch_id للجداول التي تتطلب branch_id سحابياً
+      if (
+        (item.entity_table === 'cashier_shifts' ||
+          item.entity_table === 'sales_invoices' ||
+          item.entity_table === 'purchase_invoices' ||
+          item.entity_table === 'sales_returns' ||
+          item.entity_table === 'branches' ||
+          item.entity_table === 'treasuries' ||
+          item.entity_table === 'users') &&
+        (!payload.branch_id || payload.branch_id === 'null' || payload.branch_id === 'undefined')
+      ) {
+        const orgId = (payload.org_id as string) || '';
+        if (orgId) {
+          const mainBranch =
+            (await db.branches.where('org_id').equals(orgId).and((b) => b.is_main).first()) ||
+            (await db.branches.where('org_id').equals(orgId).first());
+          if (mainBranch) {
+            payload.branch_id = mainBranch.id;
+            try {
+              const table = (db as unknown as Record<string, { update: (id: string, updates: Record<string, unknown>) => Promise<unknown> }>)[item.entity_table];
+              if (table) {
+                await table.update(item.entity_id, { branch_id: mainBranch.id });
+              }
+            } catch {
+              // Ignore local update errors
+            }
+          }
+        }
+      }
+
       let error: { message: string } | null = null;
 
       switch (item.operation) {

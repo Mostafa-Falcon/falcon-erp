@@ -186,6 +186,8 @@ export function POS() {
     setSearchQuery,
     isSearchOpen,
     setIsSearchOpen,
+    searchHighlightedIndex,
+    setSearchHighlightedIndex,
     searchResults,
     searchInputRef,
     customerMode,
@@ -557,6 +559,8 @@ export function POS() {
             setSearchQuery={setSearchQuery}
             isSearchOpen={isSearchOpen}
             setIsSearchOpen={setIsSearchOpen}
+            searchHighlightedIndex={searchHighlightedIndex}
+            setSearchHighlightedIndex={setSearchHighlightedIndex}
             searchResults={searchResults}
             searchInputRef={searchInputRef}
             onSearchKeyDown={handleSearchKeyDown}
