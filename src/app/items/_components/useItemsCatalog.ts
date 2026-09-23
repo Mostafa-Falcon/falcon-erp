@@ -237,7 +237,7 @@ export function useItemsCatalog() {
       if (p.item_type === 'storable') {
         if (stock <= 0) {
           outOfStockCount++;
-        } else if (stock <= (p.min_stock_alert || 0)) {
+        } else if (stock < 1 || stock <= (p.min_stock_alert || 0)) {
           lowStockCount++;
         }
       }
@@ -245,7 +245,11 @@ export function useItemsCatalog() {
 
       if (p.tracks_expiry && batchesByProduct[p.id]) {
         const hasNear = batchesByProduct[p.id].some(
-          (b) => b.expiry_date && !isExpired(b.expiry_date) && daysToExpiry(b.expiry_date) <= 90
+          (b) =>
+            (b.current_quantity ?? 0) > 0 &&
+            b.expiry_date &&
+            !isExpired(b.expiry_date) &&
+            daysToExpiry(b.expiry_date) <= 90
         );
         if (hasNear) nearExpiryCount++;
       }
@@ -326,7 +330,7 @@ export function useItemsCatalog() {
       // Quick filter tabs
       const stock = stockMap[p.id] || 0;
       if (quickFilter === 'low_stock') {
-        return p.item_type === 'storable' && stock <= (p.min_stock_alert || 0);
+        return p.item_type === 'storable' && (stock < 1 || stock <= (p.min_stock_alert || 0));
       }
       if (quickFilter === 'out_of_stock') {
         return p.item_type === 'storable' && stock <= 0;
@@ -337,7 +341,11 @@ export function useItemsCatalog() {
       if (quickFilter === 'near_expiry') {
         if (!p.tracks_expiry || !batchesByProduct[p.id]) return false;
         return batchesByProduct[p.id].some(
-          (b) => b.expiry_date && !isExpired(b.expiry_date) && daysToExpiry(b.expiry_date) <= 90
+          (b) =>
+            (b.current_quantity ?? 0) > 0 &&
+            b.expiry_date &&
+            !isExpired(b.expiry_date) &&
+            daysToExpiry(b.expiry_date) <= 90
         );
       }
 

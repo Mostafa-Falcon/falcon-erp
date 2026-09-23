@@ -35,10 +35,7 @@ export class AuthRepository {
       this.saveSession(user);
 
       if (networkListener.getStatus() && isSupabaseConfigured()) {
-        const aligned = await this.syncDeviceCloudContext(user.email || user.username, cleanPin, user);
-        if (aligned) {
-          return aligned;
-        }
+        this.syncDeviceCloudContext(user.email || user.username, cleanPin, user).catch(() => {});
       }
 
       return user;
@@ -249,12 +246,9 @@ export class AuthRepository {
         await restoreOrgTransportToken();
         this.saveSession(localUser);
 
-        // If online, capture authoritative org/token and pull updates from other devices
+        // If online, capture authoritative org/token and pull updates in background
         if (networkListener.getStatus() && isSupabaseConfigured()) {
-          const aligned = await this.syncDeviceCloudContext(cleanIdentifier, cleanPassword, localUser);
-          if (aligned) {
-            return { user: aligned };
-          }
+          this.syncDeviceCloudContext(cleanIdentifier, cleanPassword, localUser).catch(() => {});
         }
 
         return { user: localUser };
@@ -548,12 +542,10 @@ export class AuthRepository {
       }
     );
 
-    // 4. Await complete pull sync for all organizational data (products, invoices, categories, etc.)
-    try {
-      await PullSyncService.pullAll(cloudUser.org_id);
-    } catch (err) {
+    // 4. Run pull sync in background so login completes immediately (< 1s)
+    PullSyncService.pullAll(cloudUser.org_id).catch((err) => {
       console.warn('[AuthRepository] Initial multi-device background pull failed:', err);
-    }
+    });
   }
 
   public static saveSession(user: User): void {

@@ -147,15 +147,17 @@ export function ItemTable({
     }
 
     const baseUName = unitName(p.base_unit_id);
-    const secUnits = productUnitsByProduct[p.id] || [];
+    const secUnits = (productUnitsByProduct[p.id] || []).filter(
+      (u) => u.unit_id !== p.base_unit_id && u.level_order !== 1 && (unitsById[u.unit_id]?.name || u.unit_name) !== baseUName
+    );
 
     let stockText = '';
     if (secUnits.length >= 2) {
       // 3 Levels (e.g. علبة + شريط + قرص)
       const u2 = secUnits[0];
       const u3 = secUnits[1];
-      const u2Name = unitsById[u2.unit_id]?.name || 'شريط';
-      const u3Name = unitsById[u3.unit_id]?.name || 'قرص';
+      const u2Name = unitsById[u2.unit_id]?.name || u2.unit_name || 'شريط';
+      const u3Name = unitsById[u3.unit_id]?.name || u3.unit_name || 'قرص';
       const f2 = u2.conversion_factor && u2.conversion_factor > 0 ? u2.conversion_factor : 1;
       const f3 = u3.conversion_factor && u3.conversion_factor > 0 ? u3.conversion_factor : 1;
 
@@ -201,28 +203,20 @@ export function ItemTable({
     }
 
     // Colors matching stock health
-    let badgeClass =
-      'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
-    let icon = <CheckCircle2 className="w-3 h-3 text-emerald-600" />;
-
-    if (stock <= 0) {
-      badgeClass =
-        'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
-      icon = <XCircle className="w-3 h-3 text-rose-500" />;
-    } else if (stock <= (p.min_stock_alert || 0)) {
-      badgeClass =
-        'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
-      icon = <AlertTriangle className="w-3 h-3 text-amber-600" />;
-    }
+    const badgeStyle =
+      stock <= 0
+        ? 'bg-rose-50/90 text-rose-600 border-rose-200/70 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900/50'
+        : stock <= (p.min_stock_alert || 0)
+        ? 'bg-amber-50/90 text-amber-700 border-amber-200/70 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/50'
+        : 'bg-emerald-50/90 text-emerald-700 border-emerald-200/70 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50';
 
     return (
       <div
         className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-mono font-black shadow-2xs transition-all hover:scale-105 select-none',
-          badgeClass
+          'inline-flex items-center justify-center px-3 py-1 rounded-xl border text-xs font-bold transition-all shadow-2xs select-none min-w-[110px]',
+          badgeStyle
         )}
       >
-        {icon}
         <span>{stockText}</span>
       </div>
     );
@@ -371,7 +365,10 @@ export function ItemTable({
               </TableRow>
             ) : (
               products.map((p) => {
-                const secUnits = productUnitsByProduct[p.id] || [];
+                const baseUName = unitName(p.base_unit_id);
+                const secUnits = (productUnitsByProduct[p.id] || []).filter(
+                  (u) => u.unit_id !== p.base_unit_id && u.level_order !== 1 && (unitsById[u.unit_id]?.name || u.unit_name) !== baseUName
+                );
                 const secUnit = secUnits[0];
                 const isSelected = selectedIds.has(p.id);
                 const brand = p.brand_id ? brands.find((b) => b.id === p.brand_id) : null;
@@ -457,7 +454,7 @@ export function ItemTable({
                     {/* 3. سعر الشراء */}
                     {visibleColumns.purchasePrice && (
                       <TableCell className={cn('text-center font-mono text-xs text-slate-700 dark:text-slate-300', rowPadding)}>
-                        <span className="font-bold">{formatNumber(p.purchase_price)}</span>{' '}
+                        <span className="font-bold">{Number(p.purchase_price || 0).toFixed(2)}</span>{' '}
                         <span className="text-[10px] text-slate-400 font-sans">ج.م</span>
                       </TableCell>
                     )}
@@ -465,33 +462,40 @@ export function ItemTable({
                     {/* 4. سعر البيع والوحدات المتعددة (علبة / شريط / قرص) */}
                     {visibleColumns.salePrice && (
                       <TableCell className={cn('text-center', rowPadding)}>
-                        <div className="flex flex-col items-center gap-0.5">
+                        <div className="flex flex-col items-center gap-1">
                           {/* Level 1: علبة */}
-                          <div className="flex items-center gap-1 font-mono">
-                            <span className="font-black text-xs text-emerald-600 dark:text-emerald-400">
-                              {formatNumber(p.sale_price)}
+                          <div className="flex items-center justify-between w-full max-w-[130px] font-mono text-xs px-1">
+                            <span className="text-[10px] font-sans font-bold text-slate-400">
+                              {unitName(p.base_unit_id)}:
                             </span>
-                            <span className="text-[10px] font-sans font-bold text-slate-500 dark:text-slate-400">
-                              ج.م {unitName(p.base_unit_id)}
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                              {Number(p.sale_price || 0).toFixed(2)}{' '}
+                              <span className="text-[9px] font-sans font-medium text-slate-400">ج.م</span>
                             </span>
                           </div>
 
                           {/* Level 2: شريط */}
                           {secUnits[0] && secUnits[0].sale_price !== undefined && (
-                            <div className="flex items-center gap-1 text-[10px] font-mono text-teal-700 dark:text-teal-400 font-bold">
-                              <span>{formatNumber(secUnits[0].sale_price)}</span>
-                              <span className="text-[9px] font-sans text-slate-400">
-                                ج.م {unitsById[secUnits[0].unit_id]?.name || 'شريط'}
+                            <div className="flex items-center justify-between w-full max-w-[130px] font-mono text-[11px] px-1">
+                              <span className="text-[9px] font-sans font-bold text-slate-400">
+                                {unitsById[secUnits[0].unit_id]?.name || secUnits[0].unit_name || 'شريط'}:
+                              </span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                {Number(secUnits[0].sale_price || 0).toFixed(2)}{' '}
+                                <span className="text-[8px] font-sans font-medium text-slate-400">ج.م</span>
                               </span>
                             </div>
                           )}
 
                           {/* Level 3: قرص / كبسولة */}
                           {secUnits[1] && secUnits[1].sale_price !== undefined && (
-                            <div className="flex items-center gap-1 text-[10px] font-mono text-sky-700 dark:text-sky-400 font-bold">
-                              <span>{formatNumber(secUnits[1].sale_price)}</span>
-                              <span className="text-[9px] font-sans text-slate-400">
-                                ج.م {unitsById[secUnits[1].unit_id]?.name || 'قرص'}
+                            <div className="flex items-center justify-between w-full max-w-[130px] font-mono text-[10px] px-1">
+                              <span className="text-[9px] font-sans font-bold text-slate-400">
+                                {unitsById[secUnits[1].unit_id]?.name || secUnits[1].unit_name || 'قرص'}:
+                              </span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                {Number(secUnits[1].sale_price || 0).toFixed(2)}{' '}
+                                <span className="text-[8px] font-sans font-medium text-slate-400">ج.م</span>
                               </span>
                             </div>
                           )}
@@ -511,9 +515,15 @@ export function ItemTable({
                       <TableCell className={cn('text-center', rowPadding)}>
                         <Badge
                           variant="secondary"
-                          className="font-bold text-xs bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/60 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-2xs"
+                          className={cn(
+                            'font-bold text-xs px-2.5 py-1 rounded-xl shadow-2xs border',
+                            catName(p.category_id) === 'أدوية'
+                              ? 'bg-blue-50/70 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/40'
+                              : catName(p.category_id) === 'مستلزمات'
+                              ? 'bg-purple-50/70 text-purple-700 border-purple-200/60 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/40'
+                              : 'bg-slate-100 text-slate-700 border-slate-200/60 dark:bg-slate-800 dark:text-slate-300'
+                          )}
                         >
-                          <Tag className="w-3 h-3 text-slate-400 ml-1 inline-block" />
                           <span>{catName(p.category_id)}</span>
                         </Badge>
                       </TableCell>
@@ -544,41 +554,17 @@ export function ItemTable({
 
                     {/* 8. الخيارات (Action Menu) */}
                     <TableCell className={cn('text-center', rowPadding)}>
-                      <div className="flex items-center justify-center gap-1">
-                        {/* Quick View Button */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onOpenDetail(p)}
-                          title="عرض تفاصيل الصنف"
-                          className="w-7 h-7 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer hidden sm:inline-flex"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-
-                        {/* Quick Edit Button */}
-                        <Link href={`/items/new?edit=${p.id}`}>
+                      <Popover>
+                        <PopoverTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="تعديل الصنف"
-                            className="w-7 h-7 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer hidden sm:inline-flex"
+                            title="خيارات إضافية"
+                            className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer"
                           >
-                            <Edit className="w-3.5 h-3.5" />
+                            <MoreVertical className="w-4 h-4" />
                           </Button>
-                        </Link>
-
-                        {/* Full Popover Menu */}
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </PopoverTrigger>
+                        </PopoverTrigger>
                           <PopoverContent
                             className="w-52 p-1.5 bg-white dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 text-right space-y-0.5"
                             dir="rtl"
@@ -652,7 +638,6 @@ export function ItemTable({
                             </button>
                           </PopoverContent>
                         </Popover>
-                      </div>
                     </TableCell>
                   </TableRow>
                 );

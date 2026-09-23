@@ -25,6 +25,7 @@ const PARENT_TABLES: Record<string, string> = {
   product_categories: 'updated_at',
   product_brands: 'updated_at',
   products: 'updated_at',
+  product_units: 'updated_at',
   product_batches: 'updated_at',
   stock_levels: 'updated_at',
   inventory_transactions: 'created_at',
@@ -35,12 +36,13 @@ const PARENT_TABLES: Record<string, string> = {
   expenses: 'created_at',
   financial_vouchers: 'created_at',
   accounts: 'updated_at',
+  financial_entries: 'created_at',
   journal_entries: 'created_at',
   cashier_shifts: 'opened_at',
   sales_invoices: 'updated_at',
   sales_returns: 'created_at',
   purchase_invoices: 'updated_at',
-  purchase_returns: 'created_at',
+  purchase_returns: 'updated_at',
   stocktake_sessions: 'created_at',
   employee_attendance: 'updated_at',
   salary_statements: 'updated_at',
@@ -61,7 +63,6 @@ const FULL_REFRESH_TABLES: Record<string, string> = {
 
 /** الجداول التابعة المفتوحة الآن مع عمود المفتاح الأجنبي المؤدي لجدول الرأس */
 const CHILD_TABLES: Record<string, { childTable: string; fkColumn: string }> = {
-  products: { childTable: 'product_units', fkColumn: 'product_id' },
   sales_invoices: { childTable: 'sales_invoice_items', fkColumn: 'invoice_id' },
   purchase_invoices: { childTable: 'purchase_invoice_items', fkColumn: 'invoice_id' },
   stock_transfers: { childTable: 'stock_transfer_items', fkColumn: 'transfer_id' },
@@ -357,6 +358,16 @@ private static async mergeIntoLocal(
    */
   public static async forcePullAll(orgId: string): Promise<Record<string, number>> {
     await this.resetLastPull(orgId);
+    try {
+      await Promise.all([
+        db.products.clear(),
+        db.product_units.clear(),
+        db.stock_levels.clear(),
+        db.product_batches.clear(),
+      ]);
+    } catch (e) {
+      console.warn('Non-critical cleanup warning in forcePullAll:', e);
+    }
     return await this.pullAll(orgId);
   }
 

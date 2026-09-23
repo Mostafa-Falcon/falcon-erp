@@ -17,7 +17,7 @@ export function ItemKpiCards({ stats, isPharmacy }: ItemKpiCardsProps) {
       <div className="bg-[#f0f7ff] dark:bg-blue-950/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/40 shadow-xs flex items-center justify-between">
         <div className="flex flex-col">
           <span className="text-xs font-black text-slate-600 dark:text-slate-300">
-            {isPharmacy ? 'إجمالي الأدوية' : 'إجمالي الأصناف'}
+            إجمالي الأصناف
           </span>
           <span className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5">
             {formatNumber(stats.total)}
