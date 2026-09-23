@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/Icons';
@@ -17,8 +17,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Contact, Product, Treasury, Unit, Warehouse } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+import { RotateCcw, AlertTriangle, Trash2, Plus, X } from 'lucide-react';
 
 interface Line {
+  id: string;
   productId: string;
   batchNumber: string;
   expiryDate: string;
@@ -54,6 +57,99 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
   const [lines, setLines] = useState<Line[]>([]);
   const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Draft Auto-Save State
+  const draftKey = `falcon_purchase_invoice_draft_${orgId}`;
+  const [hasDraftNotice, setHasDraftNotice] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
+
+  // 1. Check for unsaved draft in localStorage on mount
+  useEffect(() => {
+    if (!orgId || typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.lines) && parsed.lines.length > 0) {
+          setDraftCount(parsed.lines.length);
+          setHasDraftNotice(true);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, [orgId, draftKey]);
+
+  // 2. Auto-save form draft to localStorage whenever fields/lines change
+  useEffect(() => {
+    if (!orgId || typeof window === 'undefined' || isLoading) return;
+    if (lines.length > 0 || supplierId || supplierInvoiceNumber || notes) {
+      const payload = {
+        supplierId,
+        warehouseId,
+        treasuryId,
+        supplierInvoiceNumber,
+        paymentType,
+        discount,
+        discountMode,
+        discountPercent,
+        notes,
+        lines,
+      };
+      localStorage.setItem(draftKey, JSON.stringify(payload));
+    }
+  }, [orgId, draftKey, isLoading, supplierId, warehouseId, treasuryId, supplierInvoiceNumber, paymentType, discount, discountMode, discountPercent, notes, lines]);
+
+  // 3. BeforeUnload browser warning when leaving page with unsaved items
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (lines.length > 0 || supplierInvoiceNumber || notes) {
+        e.preventDefault();
+        e.returnValue = 'هل تريد الخروج؟ هناك أصناف في فاتورة الشراء لم يتم حفظها بعد.';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [lines, supplierInvoiceNumber, notes]);
+
+  // Restore draft handler
+  const restoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.supplierId) setSupplierId(parsed.supplierId);
+        if (parsed.warehouseId) setWarehouseId(parsed.warehouseId);
+        if (parsed.treasuryId) setTreasuryId(parsed.treasuryId);
+        if (parsed.supplierInvoiceNumber) setSupplierInvoiceNumber(parsed.supplierInvoiceNumber);
+        if (parsed.paymentType) setPaymentType(parsed.paymentType);
+        if (parsed.discount) setDiscount(parsed.discount);
+        if (parsed.discountMode) setDiscountMode(parsed.discountMode);
+        if (parsed.discountPercent) setDiscountPercent(parsed.discountPercent);
+        if (parsed.notes) setNotes(parsed.notes);
+        if (Array.isArray(parsed.lines)) {
+          // Ensure each restored line has a unique ID
+          const restoredLines = parsed.lines.map((l: Partial<Line>) => ({
+            ...l,
+            id: l.id || uuidv4(),
+          }));
+          setLines(restoredLines);
+        }
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setHasDraftNotice(false);
+    }
+  };
+
+  // Clear draft handler
+  const clearDraft = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(draftKey);
+    }
+    setHasDraftNotice(false);
+  };
 
   const loadData = async () => {
     if (!orgId) return;
@@ -96,14 +192,27 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!orgId) return;
     Promise.resolve().then(loadData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, branchId]);
 
   const addLine = () => {
-    setLines((prev) => [...prev, { productId: '', batchNumber: '', expiryDate: '', unitId: '', conversionFactor: 1, qty: '1', cost: '0', taxRate: '0' }]);
+    setLines((prev) => [
+      ...prev,
+      {
+        id: uuidv4(),
+        productId: '',
+        batchNumber: '',
+        expiryDate: '',
+        unitId: '',
+        conversionFactor: 1,
+        qty: '1',
+        cost: '0',
+        taxRate: '0',
+      },
+    ]);
     setFormError('');
   };
 
@@ -221,6 +330,9 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
         userId: currentUser.id,
         notes: notes.trim() || undefined,
       });
+
+      // Clear draft upon successful save
+      clearDraft();
       onSaved(invoice.id);
     } catch (err) {
       console.error(err);
@@ -238,6 +350,43 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
 
   return (
     <div className="space-y-4">
+      {/* Draft Recovery Notice Banner */}
+      {hasDraftNotice && (
+        <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-amber-900 dark:text-amber-200">
+                توجد مسودة فاتورة شراء غير محفوظة ({draftCount} صنف)
+              </h4>
+              <p className="text-[11px] font-bold text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                تم الاحتفاظ بها تلقائياً أثناء الجلسة السابقة لضمان عدم فقدان البيانات في حال انقطاع التيار الكهربائي.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={restoreDraft}
+              className="h-9 px-4 text-xs font-black bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs"
+            >
+              استرجاع المسودة
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearDraft}
+              className="h-9 px-3 text-xs font-bold border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-amber-100/60 rounded-xl"
+            >
+              مسح وبدء جديدة
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Headers */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="md:col-span-2">
@@ -281,18 +430,20 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
           <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">طريقة الدفع</span>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => setPaymentType('cash')}
               className={(
-                'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors ' +
+                'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors cursor-pointer ' +
                 (paymentType === 'cash' ? 'bg-primary border-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300')
               )}
             >
               نقدي
             </button>
             <button
+              type="button"
               onClick={() => setPaymentType('credit')}
               className={(
-                'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors ' +
+                'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors cursor-pointer ' +
                 (paymentType === 'credit' ? 'bg-primary border-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300')
               )}
             >
@@ -324,14 +475,14 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
         )}
       </div>
 
-      {/* Items */}
+      {/* Items Table Section */}
       <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
             <span className="text-primary"><Icons.Receipt /></span>
-            أصناف الفاتورة
+            أصناف الفاتورة ({lines.length})
           </h3>
-          <Button onClick={addLine} className="h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5">
+          <Button onClick={addLine} className="h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer">
             <Icons.Plus /> إضافة صنف
           </Button>
         </div>
@@ -351,22 +502,29 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
             {lines.map((line, idx) => {
               const p = lineProduct(line);
               return (
-                <div key={idx} className="grid grid-cols-2 md:grid-cols-12 gap-2 items-end rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
-                  <div className="col-span-2 md:col-span-3">
-                    <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">الصنف</span>
-                    <Select value={line.productId} onValueChange={(val) => onProductChange(idx, val)}>
-                      <SelectTrigger className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-xs font-bold">
-                        <SelectValue placeholder="— اختر الصنف —" />
-                      </SelectTrigger>
-                      <SelectContent className="z-50 bg-white dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
-                        {products.map((pr) => (
-                          <SelectItem key={pr.id} value={pr.id} className="">
-                            {pr.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div key={line.id || idx} className="grid grid-cols-2 md:grid-cols-12 gap-2 items-end rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
+                  {/* Sequence Order Number Badge & Product Select */}
+                  <div className="col-span-2 md:col-span-3 flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-900 shadow-2xs">
+                      #{idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">الصنف</span>
+                      <Select value={line.productId} onValueChange={(val) => onProductChange(idx, val)}>
+                        <SelectTrigger className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                          <SelectValue placeholder="— اختر الصنف —" />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 bg-white dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+                          {products.map((pr) => (
+                            <SelectItem key={pr.id} value={pr.id} className="">
+                              {pr.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
                   {p?.tracks_batch && (
                     <>
                       <div className="md:col-span-2">
@@ -398,19 +556,19 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
                   </div>
                   <div>
                     <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">الكمية</span>
-                    <Input type="number" min={0} step="any" value={line.qty} onChange={(e) => updateLine(idx, { qty: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs" />
+                    <Input type="number" min={0} step="any" value={line.qty} onChange={(e) => updateLine(idx, { qty: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold" />
                   </div>
                   <div>
                     <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">التكلفة</span>
-                    <Input type="number" min={0} step="any" value={line.cost} onChange={(e) => updateLine(idx, { cost: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs" />
+                    <Input type="number" min={0} step="any" value={line.cost} onChange={(e) => updateLine(idx, { cost: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold" />
                   </div>
                   <div>
                     <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">ضريبة %</span>
-                    <Input type="number" min={0} step="any" value={line.taxRate} onChange={(e) => updateLine(idx, { taxRate: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs" />
+                    <Input type="number" min={0} step="any" value={line.taxRate} onChange={(e) => updateLine(idx, { taxRate: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold" />
                   </div>
                   <div className="flex items-end justify-between gap-1">
-                    <div className="text-xs font-black text-primary pt-1 whitespace-nowrap">{formatNumber(lineTotals(line))}</div>
-                    <button onClick={() => removeLine(idx)} className="text-red-500 hover:text-red-700">
+                    <div className="text-xs font-black text-primary font-mono pt-1 whitespace-nowrap">{formatNumber(lineTotals(line))}</div>
+                    <button type="button" onClick={() => removeLine(idx)} className="text-red-500 hover:text-red-700 cursor-pointer p-1">
                       <Icons.X />
                     </button>
                   </div>
@@ -425,53 +583,67 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
           <div>
             <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">خصم على الفاتورة</span>
             <div className="flex gap-2 items-center">
-              <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
                 <button
+                  type="button"
                   onClick={() => setDiscountMode('amount')}
                   className={(
-                    'px-2.5 h-10 text-[11px] font-bold transition-colors ' +
+                    'px-2.5 h-10 text-[11px] font-bold transition-colors cursor-pointer ' +
                     (discountMode === 'amount' ? 'bg-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 text-slate-500')
                   )}
                 >
                   مبلغ
                 </button>
                 <button
+                  type="button"
                   onClick={() => setDiscountMode('percentage')}
                   className={(
-                    'px-2.5 h-10 text-[11px] font-bold transition-colors ' +
+                    'px-2.5 h-10 text-[11px] font-bold transition-colors cursor-pointer ' +
                     (discountMode === 'percentage' ? 'bg-primary text-primary-foreground' : 'bg-slate-50 dark:bg-slate-900 text-slate-500')
                   )}
                 >
                   نسبة %
                 </button>
               </div>
-              <Input
-                type="number"
-                min={0}
-                step="any"
-                value={discountMode === 'amount' ? discount : discountPercent}
-                onChange={(e) => (discountMode === 'amount' ? setDiscount(e.target.value) : setDiscountPercent(e.target.value))}
-                placeholder={discountMode === 'percentage' ? '0-100' : '0.00'}
-                className="h-10 bg-white dark:bg-slate-800 text-sm"
-              />
+              {discountMode === 'amount' ? (
+                <Input type="number" min={0} step="any" value={discount} onChange={(e) => setDiscount(e.target.value)} className="h-10 text-sm font-mono font-bold" />
+              ) : (
+                <Input type="number" min={0} max={100} step="any" value={discountPercent} onChange={(e) => setDiscountPercent(e.target.value)} className="h-10 text-sm font-mono font-bold" />
+              )}
             </div>
           </div>
-          <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
-            <div className="flex justify-between py-1"><span>الإجمالي قبل الضريبة</span><span>{formatNumber(subtotal)}</span></div>
-            <div className="flex justify-between py-1"><span>الضريبة</span><span>{formatNumber(taxTotal)}</span></div>
-            <div className="flex justify-between py-1"><span>الخصم</span><span>{formatNumber(appliedDiscount)}
 
-{discountMode === 'percentage' ? ` (${Number(discountPercent) || 0}%)` : ''}</span></div>
-            <div className="flex justify-between py-1 text-base font-black text-primary border-t border-slate-200 dark:border-slate-700 mt-1 pt-2">
-              <span>الإجمالي</span><span>{formatNumber(total)}</span>
+          <div>
+            <span className="block text-xs font-bold text-slate-500 mb-1">إجمالي الخصم</span>
+            <div className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center text-sm font-mono font-black text-rose-600">
+              {formatNumber(appliedDiscount)} ج.م
             </div>
           </div>
-          <div className="md:col-span-2 flex items-end justify-end">
-            <Button onClick={save} disabled={isSaving} className="h-11 px-6 rounded-xl text-sm font-black flex items-center gap-2">
-              {isSaving ? 'جارٍ الحفظ...' : 'حفظ الفاتورة'} <Icons.Check />
-            </Button>
+
+          <div>
+            <span className="block text-xs font-bold text-slate-500 mb-1">إجمالي الضريبة</span>
+            <div className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center text-sm font-mono font-black text-amber-600">
+              {formatNumber(taxTotal)} ج.م
+            </div>
+          </div>
+
+          <div>
+            <span className="block text-xs font-bold text-slate-500 mb-1">الصافي المطلوب</span>
+            <div className="h-10 px-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center text-base font-mono font-black text-primary">
+              {formatNumber(total)} ج.م
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3 pt-2">
+        <Button
+          disabled={isSaving}
+          onClick={save}
+          className="h-11 px-8 rounded-xl text-sm font-black bg-primary hover:bg-primary/90 text-primary-foreground shadow-md cursor-pointer flex items-center gap-2"
+        >
+          {isSaving ? 'جارٍ الاعتماد والحفظ...' : 'اعتماد وحفظ الفاتورة'}
+        </Button>
       </div>
     </div>
   );
