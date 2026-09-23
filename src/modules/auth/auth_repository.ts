@@ -104,7 +104,7 @@ export class AuthRepository {
 
       if (error || !data?.success || !data.user) {
         console.warn('[AuthRepository] Cloud context refresh failed:', error?.message);
-        await this.establishAuthSession(identifier, password);
+        this.establishAuthSession(identifier, password).catch(() => {});
         PullSyncService.pullAll(localUser.org_id).catch(() => {});
         return null;
       }
@@ -135,7 +135,7 @@ export class AuthRepository {
       );
 
       this.saveSession(alignedUser);
-      await this.establishAuthSession(data.user.email, password);
+      this.establishAuthSession(data.user.email, password).catch(() => {});
       PullSyncService.pullAll(cloudOrgId).catch((err) => {
         console.warn('[AuthRepository] Post-login pull failed:', err);
       });
@@ -289,7 +289,7 @@ export class AuthRepository {
             );
 
             this.saveSession(data.user);
-            await this.establishAuthSession(data.user.email || cleanIdentifier, cleanPassword);
+            this.establishAuthSession(data.user.email || cleanIdentifier, cleanPassword).catch(() => {});
             return { user: data.user };
           } else if (data && !data.success && data.error && !data.error.includes('غير موجود') && !data.error.includes('كلمة المرور غير صحيحة')) {
             // E.g. account suspension or organization inactive error
