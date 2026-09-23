@@ -56,6 +56,14 @@ import {
   Scale,
   Landmark,
   TrendingUp,
+  ShoppingCart,
+  Receipt,
+  RotateCcw,
+  Undo2,
+  BarChart3,
+  CreditCard,
+  Layers,
+  PieChart,
 } from 'lucide-react';
 import type { Branch } from '@/types';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
@@ -172,8 +180,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
       label: 'المشتريات',
       icon: <Icons.Purchases />,
       subItems: [
-        { label: 'فواتير المشتريات', href: '/purchases/invoices' },
-        { label: 'مرتجع مشتريات', href: '/purchases/returns' },
+        { label: 'إضافة مشتريات', href: '/purchases/invoices/new', icon: <ShoppingCart className="w-4 h-4" /> },
+        { label: 'كل المشتريات', href: '/purchases/invoices', icon: <Receipt className="w-4 h-4" /> },
+        { label: 'مرتجع مشتريات بفاتورة', href: '/purchases/returns', icon: <RotateCcw className="w-4 h-4" /> },
+        { label: 'مرتجع مشتريات حرة', href: '/purchases/returns/new', icon: <Undo2 className="w-4 h-4" /> },
+        { label: 'تقرير المشتريات', href: '/reports/purchases', icon: <BarChart3 className="w-4 h-4" /> },
+        { label: 'قائمة المصاريف', href: '/accounts/expenses', icon: <Wallet className="w-4 h-4" /> },
+        { label: 'إضافة المصاريف', href: '/accounts/expenses?action=new', icon: <CreditCard className="w-4 h-4" /> },
+        { label: 'فئات المصاريف', href: '/accounts/expenses?tab=categories', icon: <Layers className="w-4 h-4" /> },
+        { label: 'تقرير المصاريف', href: '/reports/expenses', icon: <PieChart className="w-4 h-4" /> },
       ],
     },
     {
