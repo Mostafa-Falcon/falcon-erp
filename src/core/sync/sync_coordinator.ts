@@ -122,9 +122,10 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
     'min_sale_price', 'tax_rate', 'is_tax_inclusive', 'tracks_batch',
     'tracks_expiry', 'min_stock_alert', 'max_stock_limit', 'description',
     'image_url', 'is_active', 'created_at', 'updated_at',
+    'measurement_type', 'has_levels', 'scale_code',
   ]),
   product_units: new Set([
-    'id', 'product_id', 'unit_id', 'conversion_factor', 'barcode',
+    'id', 'org_id', 'product_id', 'unit_id', 'conversion_factor', 'barcode',
     'purchase_price', 'sale_price', 'wholesale_price', 'is_default_sale',
     'is_default_purchase', 'created_at', 'updated_at',
     'unit_name', 'level_order', 'available_quantity',

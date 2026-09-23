@@ -147,13 +147,31 @@ export function ItemTable({
     }
 
     const baseUName = unitName(p.base_unit_id);
+    const isWeightOrMeasure =
+      p.measurement_type === 'weight' ||
+      ['كجم', 'كيلوجرام', 'كيلو', 'جرام', 'جم', 'طن', 'متر', 'سم', 'لتر', 'مل', 'kg', 'g', 'm', 'l'].includes(
+        baseUName.toLowerCase().trim()
+      );
+
     const secUnits = (productUnitsByProduct[p.id] || []).filter(
-      (u) => u.unit_id !== p.base_unit_id && u.level_order !== 1 && (unitsById[u.unit_id]?.name || u.unit_name) !== baseUName
+      (u) =>
+        u.unit_id !== p.base_unit_id &&
+        u.level_order !== 1 &&
+        (unitsById[u.unit_id]?.name || u.unit_name) !== baseUName
     );
 
     let stockText = '';
-    if (secUnits.length >= 2) {
-      // 3 Levels (e.g. علبة + شريط + قرص)
+
+    // 1. الأصناف ذات الأوزان والقياسات المستمرة (كجم، جرام، متر، لتر)
+    if (isWeightOrMeasure) {
+      if (stock <= 0) {
+        stockText = `0 ${baseUName}`;
+      } else {
+        const decimals = stock % 1 === 0 ? 0 : (stock * 100) % 1 === 0 ? 2 : 3;
+        stockText = `${formatNumber(stock, decimals)} ${baseUName}`;
+      }
+    } else if (secUnits.length >= 2) {
+      // 2. الأصناف ذات 3 مستويات تعبئة (مثال: علبة + شريط + قرص / كرتونة + باكت + قطعة)
       const u2 = secUnits[0];
       const u3 = secUnits[1];
       const u2Name = unitsById[u2.unit_id]?.name || u2.unit_name || 'شريط';
@@ -176,9 +194,9 @@ export function ItemTable({
         }
       }
     } else if (secUnits.length === 1) {
-      // 2 Levels (e.g. علبة + شريط)
+      // 3. الأصناف ذات مستويين تعبئة (مثال: علبة + شريط / كرتونة + قطعة)
       const u2 = secUnits[0];
-      const u2Name = unitsById[u2.unit_id]?.name || 'شريط';
+      const u2Name = unitsById[u2.unit_id]?.name || u2.unit_name || 'شريط';
       const f2 = u2.conversion_factor && u2.conversion_factor > 0 ? u2.conversion_factor : 1;
 
       if (stock <= 0) {
@@ -194,7 +212,7 @@ export function ItemTable({
         }
       }
     } else {
-      // 1 Level (e.g. علبة)
+      // 4. الأصناف ذات المستوى الواحد (علبة، كيس، قطعة)
       if (stock <= 0) {
         stockText = `0 ${baseUName}`;
       } else {
