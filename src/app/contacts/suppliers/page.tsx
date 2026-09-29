@@ -1,5 +1,5 @@
-import { ContactsDirectory } from '@/components/contacts/ContactsDirectory';
+import { ContactsDirectory } from'@/components/contacts/ContactsDirectory';
 
 export default function SuppliersPage() {
-  return <ContactsDirectory kind="supplier" />;
+ return <ContactsDirectory kind="supplier"/>;
 }

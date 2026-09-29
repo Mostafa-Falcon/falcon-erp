@@ -23,6 +23,14 @@
 # misc
 .DS_Store
 *.pem
+*.db
+*.sqlite
+*.sqlite3
+pharmacy_system/
+
+# scratch scripts
+analyze-*.mjs
+apply-*.mjs
 
 # debug
 npm-debug.log*

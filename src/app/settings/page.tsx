@@ -1,987 +1,987 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { AppShell } from '@/components/layout/AppShell';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useSessionStore } from '@/core/state/useSessionStore';
-import { useSyncStore } from '@/core/state/useSyncStore';
-import { SettingsRepository } from '@/modules/settings/settings_repository';
-import { toast } from 'sonner';
-import { db } from '@/core/db/app_database';
-import { AuthRepository } from '@/modules/auth/auth_repository';
+import React, { useEffect, useState } from'react';
+import { AppShell } from'@/components/layout/AppShell';
+import { Input } from'@/components/ui/input';
+import { Button } from'@/components/ui/button';
+import { useSessionStore } from'@/core/state/useSessionStore';
+import { useSyncStore } from'@/core/state/useSyncStore';
+import { SettingsRepository } from'@/modules/settings/settings_repository';
+import { toast } from'sonner';
+import { db } from'@/core/db/app_database';
+import { AuthRepository } from'@/modules/auth/auth_repository';
 import {
-  Save,
-  Building2,
-  AlertTriangle,
-  Trash2,
-  Globe,
-  X,
-  Phone,
-  Mail,
-  FileText,
-  MapPin,
-  Volume2,
-  Moon,
-  CalendarDays,
-  ShieldCheck,
-  CheckCircle2,
-  Percent,
-  Lock,
-  Eye,
-  EyeOff,
-  KeyRound,
-  User as UserIcon,
-  UserPlus,
-  Info,
-  Sparkles,
-  Crown
-} from 'lucide-react';
+ Save,
+ Building2,
+ AlertTriangle,
+ Trash2,
+ Globe,
+ X,
+ Phone,
+ Mail,
+ FileText,
+ MapPin,
+ Volume2,
+ Moon,
+ CalendarDays,
+ ShieldCheck,
+ CheckCircle2,
+ Percent,
+ Lock,
+ Eye,
+ EyeOff,
+ KeyRound,
+ User as UserIcon,
+ UserPlus,
+ Info,
+ Sparkles,
+ Crown
+} from'lucide-react';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ResetPeriodModal } from '@/components/settings/ResetPeriodModal';
-import { SUBSCRIPTION_PROFILES, getSubscriptionProfile, getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from'@/components/ui/select';
+import { ResetPeriodModal } from'@/components/settings/ResetPeriodModal';
+import { SUBSCRIPTION_PROFILES, getSubscriptionProfile, getSubscriptionPermissions } from'@/core/constants/subscription_profiles';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from'next/navigation';
 
 export default function SettingsPage() {
-  const { currentUser } = useSessionStore();
-  const orgId = currentUser?.org_id || '';
-  const { isOnline } = useSyncStore();
-  const router = useRouter();
-
-  // Loading & Action states
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [isPeriodResetOpen, setIsPeriodResetOpen] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-
-  // Identity & Subscription state
-  const [nameAr, setNameAr] = useState('');
-  const [nameEn, setNameEn] = useState('');
-  const [activityType, setActivityType] = useState('retail');
-  const [subscriptionTier, setSubscriptionTier] = useState('standard');
-
-  const subProfile = getSubscriptionProfile(subscriptionTier);
-  const perms = getSubscriptionPermissions(subscriptionTier);
-
-  // Contact & Taxes state
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-  const [taxNumber, setTaxNumber] = useState('');
-  const [enableTax, setEnableTax] = useState(false);
-  const [vatRate, setVatRate] = useState('14');
-  const [isTaxInclusive, setIsTaxInclusive] = useState(false);
-  const [currency, setCurrency] = useState('EGP');
-
-  // Preferences state
-  const [enableSounds, setEnableSounds] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [allowExpiredSales, setAllowExpiredSales] = useState(false);
-  const [enableRegistration, setEnableRegistration] = useState(true);
-
-  // Owner profile state
-  const [ownerFullName, setOwnerFullName] = useState(currentUser?.full_name || '');
-  const [ownerUsername, setOwnerUsername] = useState(currentUser?.username || '');
-  const [ownerPhone, setOwnerPhone] = useState(currentUser?.phone || '');
-  const [ownerEmail, setOwnerEmail] = useState(currentUser?.email || '');
-  const [ownerNewPassword, setOwnerNewPassword] = useState('');
-  const [ownerConfirmPassword, setOwnerConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isUpdatingOwnerProfile, setIsUpdatingOwnerProfile] = useState(false);
-
-  // Load settings on mount
-  useEffect(() => {
-    if (!orgId) return;
-
-    const fetchSettings = async () => {
-      try {
-        setIsLoading(true);
-        const [orgRec, appSettings] = await Promise.all([
-          SettingsRepository.getOrganization(orgId),
-          SettingsRepository.getAppSettings(orgId)
-        ]);
-
-        if (orgRec) {
-          setNameAr(orgRec.name || '');
-          setNameEn(orgRec.legal_name || ''); // maps English name to legal_name field
-          setActivityType(orgRec.activity_type || 'retail');
-          setSubscriptionTier(orgRec.subscription_tier || 'standard');
-          setPhone(orgRec.phone || '');
-          setEmail(orgRec.email || '');
-          setAddress(orgRec.address || '');
-          setTaxNumber(orgRec.tax_number || '');
-          setCurrency(orgRec.currency || 'EGP');
-        }
-
-        const soundSetting = appSettings.find((s) => s.id === 'enable_sounds');
-        const expiredSetting = appSettings.find((s) => s.id === 'allow_expired_sales');
-        const vatSetting = appSettings.find((s) => s.id === 'vat_rate');
-        const enableTaxSetting = appSettings.find((s) => s.id === 'enable_tax');
-        const taxInclusiveSetting = appSettings.find((s) => s.id === 'is_tax_inclusive');
-        const regSetting = appSettings.find((s) => s.id === 'enable_registration');
-
-        setEnableSounds(soundSetting ? soundSetting.value === 'true' : true);
-        setAllowExpiredSales(expiredSetting ? expiredSetting.value === 'true' : false);
-        setEnableRegistration(regSetting ? regSetting.value === 'true' : true);
-        setVatRate(vatSetting?.value || '14');
-        setEnableTax(enableTaxSetting ? enableTaxSetting.value === 'true' : false);
-        setIsTaxInclusive(taxInclusiveSetting ? taxInclusiveSetting.value === 'true' : false);
-
-        // Fetch fresh owner user data from Dexie
-        if (currentUser?.id) {
-          const userRec = await db.users.get(currentUser.id);
-          if (userRec) {
-            setOwnerFullName(userRec.full_name || '');
-            setOwnerUsername(userRec.username || '');
-            setOwnerPhone(userRec.phone || '');
-            setOwnerEmail(userRec.email || '');
-          }
-        }
-
-        // Check local storage for dark mode state
-        const savedTheme = localStorage.getItem('falcon_theme');
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setDarkMode(savedTheme === 'dark' || (!savedTheme && prefersDark));
-      } catch (err) {
-        console.error('Error loading settings:', err);
-        toast.error('حدث خطأ أثناء تحميل الإعدادات');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSettings();
-  }, [orgId, currentUser?.id]);
-
-  // Update Owner Profile & Password handler
-  const handleUpdateOwnerProfile = async () => {
-    if (!currentUser?.id) {
-      toast.error('لم يتم العثور على جلسة مستخدم نشطة');
-      return;
-    }
-    if (!ownerFullName.trim()) {
-      toast.error('الاسم الكامل لصاحب المنشأة مطلوب');
-      return;
-    }
-    if (!ownerUsername.trim()) {
-      toast.error('اسم المستخدم مطلوب');
-      return;
-    }
-    if (ownerNewPassword) {
-      if (ownerNewPassword.length < 4) {
-        toast.error('كلمة المرور يجب ألا تقل عن 4 خانات أو أرقام');
-        return;
-      }
-      if (ownerNewPassword !== ownerConfirmPassword) {
-        toast.error('كلمتا المرور غير متطابقتين');
-        return;
-      }
-    }
-
-    try {
-      setIsUpdatingOwnerProfile(true);
-      const res = await AuthRepository.updateOwnerProfile({
-        userId: currentUser.id,
-        fullName: ownerFullName.trim(),
-        username: ownerUsername.trim(),
-        phone: ownerPhone.trim() || undefined,
-        newPassword: ownerNewPassword ? ownerNewPassword.trim() : undefined,
-      });
-
-      if (res.success && res.user) {
-        useSessionStore.getState().setCurrentUser(res.user);
-        setOwnerNewPassword('');
-        setOwnerConfirmPassword('');
-        toast.success('تم تحديث بيانات حساب صاحب المنشأة وكلمة المرور بنجاح');
-      } else {
-        toast.error(res.error || 'فشل تحديث بيانات الحساب');
-      }
-    } catch (err) {
-      console.error('Error updating owner profile:', err);
-      toast.error('حدث خطأ أثناء تحديث بيانات الحساب');
-    } finally {
-      setIsUpdatingOwnerProfile(false);
-    }
-  };
-
-  // Save changes handler
-  const handleSaveChanges = async () => {
-    if (!nameAr.trim()) {
-      toast.error('اسم المؤسسة باللغة العربية مطلوب');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      // Save organization details
-      await SettingsRepository.updateOrganization(orgId, {
-        name: nameAr.trim(),
-        legal_name: nameEn.trim() || undefined,
-        activity_type: activityType,
-        phone: phone.trim() || undefined,
-        email: email.trim() || undefined,
-        address: address.trim() || undefined,
-        tax_number: taxNumber.trim() || undefined,
-        currency: currency,
-      });
-
-      // Save app settings preferences
-      await Promise.all([
-        SettingsRepository.setSetting(orgId, 'enable_sounds', String(enableSounds), 'تفعيل الأصوات والتنبيهات الصوتية'),
-        SettingsRepository.setSetting(orgId, 'allow_expired_sales', String(allowExpiredSales), 'السماح ببيع المنتجات منتهية الصلاحية'),
-        SettingsRepository.setSetting(orgId, 'enable_tax', String(enableTax), 'تفعيل ضريبة القيمة المضافة (اختيارية)'),
-        SettingsRepository.setSetting(orgId, 'is_tax_inclusive', String(isTaxInclusive), 'هل الأسعار المعروضة شاملة الضريبة'),
-        SettingsRepository.setSetting(orgId, 'vat_rate', vatRate, 'نسبة ضريبة القيمة المضافة الافتراضية (%)')
-      ]);
-
-      toast.success('تم حفظ التغييرات وإعدادات النظام بنجاح');
-
-      // Dispatch custom event to notify layout of name change if needed
-      window.dispatchEvent(new Event('storage'));
-    } catch (err) {
-      console.error('Error saving settings:', err);
-      toast.error('حدث خطأ أثناء حفظ الإعدادات');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Toggle Dark Mode natively with layout
-  const handleToggleDarkMode = (checked: boolean) => {
-    setDarkMode(checked);
-    localStorage.setItem('falcon_theme', checked ? 'dark' : 'light');
-    window.dispatchEvent(new Event('falcon_theme_change'));
-  };
-
-  // Advanced Operations: Clear all transactional and stock history
-  const handleResetOperations = async () => {
-    const confirmed = window.confirm(
-      'تحذير حرج: هل أنت متأكد من تصفير كافة العمليات والمخزون؟\n\nسيقوم هذا الإجراء بحذف جميع فواتير المبيعات، المشتريات، المرتجعات، المصروفات، والورديات بالكامل وتصفير كميات المخزون مع الحفاظ على المنتجات والعملاء والموردين كما هي.'
-    );
-    if (!confirmed) return;
-
-    try {
-      setIsResetting(true);
-      await SettingsRepository.resetOperationsAndInventory();
-      toast.success('تم تصفير العمليات وحسابات المخزون بالكامل بنجاح');
-    } catch (err) {
-      console.error('Error resetting operations:', err);
-      toast.error('حدث خطأ أثناء محاولة تصفير العمليات');
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  // Advanced Operations: Factory Reset/Delete Local Account entirely
-  const handleDeleteAccount = async () => {
-    const firstConfirm = window.confirm(
-      'خطر شديد: أنت على وشك حذف كافة بيانات هذا الحساب نهائياً ومسح المنظومة بالكامل!\n\nسيتم حذف المؤسسة، الفروع، المستخدمين، المنتجات، وجميع المعاملات المالية والمخزنية بلا استثناء. هل تود الاستمرار؟'
-    );
-    if (!firstConfirm) return;
-
-    const secondConfirm = window.prompt(
-      'لتأكيد الحذف النهائي الشامل، يرجى كتابة كلمة "مسح" في الحقل أدناه:'
-    );
-    if (secondConfirm !== 'مسح') {
-      toast.error('تم إلغاء عملية الحذف لعدم تطابق كلمة التأكيد');
-      return;
-    }
-
-    try {
-      setIsDeletingAccount(true);
-      await SettingsRepository.deleteAccountEntirely();
-      localStorage.clear();
-      toast.success('تم حذف كافة بيانات الحساب بنجاح، جاري إعادة توجيهك...');
-      setTimeout(() => {
-        router.push('/register');
-      }, 1500);
-    } catch (err) {
-      console.error('Error deleting account:', err);
-      toast.error('حدث خطأ أثناء حذف بيانات المنظومة');
-    } finally {
-      setIsDeletingAccount(false);
-    }
-  };
-
-  // Save changes button component passed to top bar
-  const headerActions = (
-    <Button
-      onClick={handleSaveChanges}
-      disabled={isSaving || isLoading}
-      className="bg-[#2563eb] hover:bg-blue-700 text-white font-black text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-500/10"
-    >
-      <Save className="w-4 h-4" />
-      {isSaving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-    </Button>
-  );
-
-  if (isLoading) {
-    return (
-      <AppShell title="إعدادات النظام" subtitle="تخصيص بيانات المؤسسة، الهوية، وتفضيلات الواجهة والأصوات.">
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-bold text-slate-400">جاري تحميل إعدادات المنظومة...</span>
-        </div>
-      </AppShell>
-    );
-  }
-
-  return (
-    <AppShell
-      title="إعدادات النظام"
-      subtitle="تخصيص بيانات المؤسسة، الهوية، وتفضيلات الواجهة والأصوات."
-      actions={headerActions}
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-right" dir="rtl">
-
-        {/* ==================== LEFT COLUMN: SUMMARY & DANGER ZONE ==================== */}
-        <div className="space-y-6">
-
-          {/* Card 1: Institution Summary Card */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs transition-colors">
-            <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
-                <Building2 className="w-7 h-7" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-black text-slate-900 dark:text-white text-base truncate">
-                  {nameAr || 'مؤسستي'}
-                </h3>
-                <p className="text-xs font-bold text-slate-400 mt-0.5 font-mono truncate">
-                  {nameEn || 'My Business'}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3 text-xs font-bold text-slate-600 dark:text-slate-400">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">نوع النشاط</span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-black">
-                  {activityType === 'supermarket' ? 'سوبرماركت ومواد غذائية' :
-                   activityType === 'clothing' ? 'ملابس وأحذية وأزياء' :
-                   activityType === 'electronics' ? 'أجهزة وإلكترونيات' :
-                   activityType === 'hardware' ? 'حدايد وبويات وقطع غيار' :
-                   activityType === 'pharmacy' ? 'صيدلية ومستلزمات' :
-                   activityType === 'services' ? 'خدمات ومطاعم' : 'تجارة عامة وتجزئة'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">الفرع النشط</span>
-                <span className="text-slate-900 dark:text-white">الفرع الرئيسي</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">البريد المسجل</span>
-                <span className="text-slate-900 dark:text-white font-mono truncate max-w-[180px]">
-                  {email || 'غير محدد'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-medium">الرقم الضريبي</span>
-                <span className="text-slate-900 dark:text-white">
-                  {taxNumber || 'غير محدد'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-400 font-medium">حالة النظام</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[10px] font-black">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                  مؤسسي نشط (Enterprise)
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Danger Zone Card */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
-            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <AlertTriangle className="w-5 h-5 animate-pulse" />
-              <h3 className="text-xs font-black uppercase tracking-wider">منطقة الخطر والعمليات المتقدمة</h3>
-            </div>
-
-            {/* Sub-Action 1: Reset by Date Range (Available for VIP Tiers) */}
-            {perms.canResetByDateRange && (
-              <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 rounded-xl p-3.5 space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-5 h-5 rounded-md bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
-                    <CalendarDays className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-red-900 dark:text-red-300">تصفير المبيعات والمشتريات حسب المدة</h4>
-                    <p className="text-[10px] font-medium text-red-700/80 dark:text-red-400/80 leading-relaxed mt-1">
-                      حذف فواتير المبيعات، المشتريات، والمرتجعات خلال فترة يحددها صاحب المنشأة، مع معاينة حية للأعداد وخيارات متقدمة للمخزون والخزينة.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => setIsPeriodResetOpen(true)}
-                  className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-                >
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  تحديد المدة وتصفير العمليات
-                </Button>
-              </div>
-            )}
-
-            {/* Sub-Action 2: Reset Operations & Inventory */}
-            <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-3.5 space-y-3">
-              <div className="flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded-md bg-amber-500 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
-                  🔄
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-amber-800 dark:text-amber-400">تصفير العمليات والمخزون بالكامل</h4>
-                  <p className="text-[10px] font-medium text-amber-600/90 dark:text-amber-500/80 leading-relaxed mt-1">
-                    يمسح فواتير المبيعات، المشتريات، المرتجعات، المصروفات، والتشغيلات، ويصفر كميات المخزون إلى 0، مع الحفاظ التام على كروت الأصناف والمنتجات، العملاء، الموردين، والفروع.
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleResetOperations}
-                disabled={isResetting}
-                className="w-full h-9 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-              >
-                {isResetting ? 'جاري تصفير البيانات...' : 'تصفير العمليات والمخزون بالكامل'}
-              </Button>
-            </div>
-
-            {/* Sub-Action 2: Permanent Account Erasure */}
-            <div className="space-y-2 pt-2">
-              <p className="text-[11px] font-medium text-slate-400 leading-normal">
-                حذف حساب المؤسسة نهائياً ومسح كافة الفروع والبيانات الأساسية والمستخدمين من هذا الجهاز بالكامل.
-              </p>
-              <Button
-                onClick={handleDeleteAccount}
-                disabled={isDeletingAccount}
-                className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-[11px] font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {isDeletingAccount ? 'جاري الحذف النهائي...' : 'حذف بيانات الحساب نهائياً'}
-              </Button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* ==================== RIGHT COLUMN: MAIN FORM CONTENT ==================== */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Card 1: Organization Identity */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
-            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#2563eb] flex items-center justify-center shrink-0">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black text-slate-900 dark:text-white">هوية المؤسسة والمنشأة</h3>
-                <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                  الاسم الرسمي والبراند التجاري الذي يظهر في الفواتير والتقارير واللوحات الرسمية
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  اسم المؤسسة / المنشأة (عربي) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={nameAr}
-                    onChange={(e) => setNameAr(e.target.value)}
-                    placeholder="أدخل اسم منشأتك بالعربية"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
-                  />
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  {nameAr && (
-                    <button
-                      onClick={() => setNameAr('')}
-                      className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-full"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  اسم المؤسسة / المنشأة (إنجليزي)
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={nameEn}
-                    onChange={(e) => setNameEn(e.target.value)}
-                    placeholder="Enter business name in English"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono text-left"
-                    dir="ltr"
-                  />
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  {nameEn && (
-                    <button
-                      onClick={() => setNameEn('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-full"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-1.5 md:col-span-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                    نوع النشاط التجاري
-                  </label>
-                  {!perms.canChangeActivityType && (
-                    <span className="text-[10px] font-bold text-slate-400">
-                      (محدد ومعتمد من لوحة تحكم لوجيسكا)
-                    </span>
-                  )}
-                </div>
-                <Select
-                  value={activityType}
-                  onValueChange={setActivityType}
-                  disabled={!perms.canChangeActivityType}
-                >
-                  <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white disabled:opacity-80 disabled:cursor-not-allowed">
-                    <SelectValue placeholder="اختر نوع النشاط" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="retail">تجارة عامة وتجزئة وجملة</SelectItem>
-                    <SelectItem value="supermarket">سوبرماركت ومواد غذائية</SelectItem>
-                    <SelectItem value="clothing">ملابس وأحذية وأزياء</SelectItem>
-                    <SelectItem value="electronics">أجهزة وإلكترونيات وكمبيوتر</SelectItem>
-                    <SelectItem value="hardware">حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
-                    <SelectItem value="pharmacy">صيدلية ومستلزمات طبية</SelectItem>
-                    <SelectItem value="services">خدمات ومطاعم وكافيهات</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Card: Organization Subscription Plan & Logixa Licensing */}
-          <div className={`p-5 rounded-2xl border transition-all ${subProfile.cardStyle}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800/80 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 font-black text-xl">
-                  {subProfile.icon}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-black text-slate-900 dark:text-white">
-                      باقة الترخيص والاشتراك الحالية للمنشأة ({subProfile.nameAr})
-                    </h3>
-                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] border ${subProfile.badgeStyle}`}>
-                      {subProfile.badgeName}
-                    </span>
-                  </div>
-                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                    {subProfile.description}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 shadow-2xs">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>حالة الحساب: نشط ومعتمد</span>
-              </div>
-            </div>
-
-            {/* Active Tier Capabilities Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-4">
-              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1">حد الموظفين والمستخدمين</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.maxUsers}</span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1">حد الفروع والمستودعات</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.maxBranches}</span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1">عمليات المبيعات والكاشير</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white">
-                  {perms.canExecuteSales ? 'مفعّل بالكامل' : 'معاينة تجريبية فقط (البيع محجوب)'}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1">فواتير المشتريات والتوريد</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white">
-                  {perms.canExecutePurchases ? 'مفعّل بالكامل' : 'غير متاح في هذه الباقة'}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1">إضافة الأصناف والأدوية</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white">
-                  {perms.canAddProducts ? (perms.maxProductsLimit ? `متاح تجريبياً (حتى ${perms.maxProductsLimit} أصناف)` : 'متاح بلا حدود') : 'غير متاح'}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1">مستوى الدعم الفني</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.supportLevel}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card: Owner Account & Security */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
-                  <UserIcon className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-slate-900 dark:text-white">بيانات حساب صاحب المنشأة والأمان</h3>
-                  <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                    تعديل الاسم واسم المستخدم ورقم الهاتف وكلمة المرور الخاصة بحسابك (البريد الإلكتروني ثابت)
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                onClick={handleUpdateOwnerProfile}
-                disabled={isUpdatingOwnerProfile}
-                className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black px-4 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                {isUpdatingOwnerProfile ? 'جاري الحفظ...' : 'حفظ بيانات الحساب وكلمة المرور'}
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Full Name */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  الاسم الكامل لصاحب المنشأة <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={ownerFullName}
-                    onChange={(e) => setOwnerFullName(e.target.value)}
-                    placeholder="الاسم الكامل"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
-                  />
-                  <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              {/* Username */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  اسم المستخدم لتسجيل الدخول <span className="text-red-500">*</span>
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={ownerUsername}
-                    onChange={(e) => setOwnerUsername(e.target.value)}
-                    placeholder="username"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
-                    dir="ltr"
-                  />
-                  <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  رقم هاتف صاحب الحساب
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={ownerPhone}
-                    onChange={(e) => setOwnerPhone(e.target.value)}
-                    placeholder="01XXXXXXXXX"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
-                    dir="ltr"
-                  />
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              {/* Email - Strictly Read-Only */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    البريد الإلكتروني الأساسي
-                  </label>
-                  <span className="text-[9px] px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-900/40 flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" />
-                    غير قابل للتعديل
-                  </span>
-                </div>
-                <div className="relative group">
-                  <Input
-                    type="email"
-                    value={ownerEmail}
-                    readOnly
-                    disabled
-                    placeholder="email@domain.com"
-                    className="h-10 bg-slate-100/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono cursor-not-allowed opacity-90"
-                    dir="ltr"
-                  />
-                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              {/* New Password */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  كلمة المرور الجديدة (اتركها فارغة إذا لم ترد التغيير)
-                </label>
-                <div className="relative group">
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    value={ownerNewPassword}
-                    onChange={(e) => setOwnerNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
-                  />
-                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm New Password */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  تأكيد كلمة المرور الجديدة
-                </label>
-                <div className="relative group">
-                  <Input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={ownerConfirmPassword}
-                    onChange={(e) => setOwnerConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
-                  />
-                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Contact & Taxes Info */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
-            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center shrink-0">
-                <FileText className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black text-slate-900 dark:text-white">معلومات الاتصال والضرائب</h3>
-                <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                  بيانات التواصل الرسمي والرقم الضريبي لإصدار فواتير قانونية متوافقة مع الجهات الرقابية
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  رقم الهاتف / الواتساب
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="مثال: 0100XXXXXXX"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
-                  />
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  البريد الإلكتروني الأساسي
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="business@example.com"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
-                  />
-                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  الرقم الضريبي
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={taxNumber}
-                    onChange={(e) => setTaxNumber(e.target.value)}
-                    placeholder="سجل الرقم الضريبي للشركة"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
-                  />
-                  <FileText className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">
-                  العنوان بالتفصيل
-                </label>
-                <div className="relative group">
-                  <Input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="المحافظة، المدينة، اسم الشارع، المبنى"
-                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
-                  />
-                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Global Financial Settings */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
-            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
-                <Percent className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black text-slate-900 dark:text-white">الإعدادات المالية والضرائب</h3>
-                <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                  الضريبة اختيارية في المنظومة، يمكنك تفعيلها أو تعطيلها وتحديد نسبتها
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">العملة الافتراضية</label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EGP">جنيه مصري (EGP)</SelectItem>
-                      <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
-                      <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
-                      <SelectItem value="AED">درهم إماراتي (AED)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-black text-slate-900 dark:text-white block">تفعيل ضريبة القيمة المضافة (اختيارية)</span>
-                    <span className="text-[10px] text-slate-400 block">
-                      {enableTax ? 'الضريبة مفعلة لعمليات البيع والشراء' : 'الضريبة معطلة حالياً (0%)'}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setEnableTax(!enableTax)}
-                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                      enableTax ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
-                        enableTax ? 'right-0.5' : 'right-[22px]'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {enableTax && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-150">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300">نسبة الضريبة الافتراضية (%)</label>
-                    <div className="relative group">
-                      <Input
-                        type="number"
-                        value={vatRate}
-                        onChange={(e) => setVatRate(e.target.value)}
-                        className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 text-xs font-bold"
-                      />
-                      <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-black text-slate-900 dark:text-white block">الأسعار تشمل الضريبة</span>
-                      <span className="text-[10px] text-slate-400 block">
-                        {isTaxInclusive ? 'الأسعار المسجلة بالأصناف شاملة للضريبة' : 'تضاف الضريبة فوق سعر الصنف'}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsTaxInclusive(!isTaxInclusive)}
-                      className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
-                        isTaxInclusive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
-                          isTaxInclusive ? 'right-0.5' : 'right-[22px]'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* Period Reset Modal for Sales & Purchases */}
-      <ResetPeriodModal
-        isOpen={isPeriodResetOpen}
-        onClose={() => setIsPeriodResetOpen(false)}
-        orgId={orgId}
-        userId={currentUser?.id}
-        userName={currentUser?.full_name || currentUser?.username}
-        currency={currency}
-        onSuccess={() => {
-          // Trigger re-render / reload if needed
-          window.dispatchEvent(new Event('storage'));
-        }}
-      />
-    </AppShell>
-  );
+ const { currentUser } = useSessionStore();
+ const orgId = currentUser?.org_id ||'';
+ const { isOnline } = useSyncStore();
+ const router = useRouter();
+
+ // Loading & Action states
+ const [isLoading, setIsLoading] = useState(true);
+ const [isSaving, setIsSaving] = useState(false);
+ const [isResetting, setIsResetting] = useState(false);
+ const [isPeriodResetOpen, setIsPeriodResetOpen] = useState(false);
+ const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+ // Identity & Subscription state
+ const [nameAr, setNameAr] = useState('');
+ const [nameEn, setNameEn] = useState('');
+ const [activityType, setActivityType] = useState('retail');
+ const [subscriptionTier, setSubscriptionTier] = useState('standard');
+
+ const subProfile = getSubscriptionProfile(subscriptionTier);
+ const perms = getSubscriptionPermissions(subscriptionTier);
+
+ // Contact & Taxes state
+ const [phone, setPhone] = useState('');
+ const [email, setEmail] = useState('');
+ const [address, setAddress] = useState('');
+ const [taxNumber, setTaxNumber] = useState('');
+ const [enableTax, setEnableTax] = useState(false);
+ const [vatRate, setVatRate] = useState('14');
+ const [isTaxInclusive, setIsTaxInclusive] = useState(false);
+ const [currency, setCurrency] = useState('EGP');
+
+ // Preferences state
+ const [enableSounds, setEnableSounds] = useState(true);
+ const [darkMode, setDarkMode] = useState(false);
+ const [allowExpiredSales, setAllowExpiredSales] = useState(false);
+ const [enableRegistration, setEnableRegistration] = useState(true);
+
+ // Owner profile state
+ const [ownerFullName, setOwnerFullName] = useState(currentUser?.full_name ||'');
+ const [ownerUsername, setOwnerUsername] = useState(currentUser?.username ||'');
+ const [ownerPhone, setOwnerPhone] = useState(currentUser?.phone ||'');
+ const [ownerEmail, setOwnerEmail] = useState(currentUser?.email ||'');
+ const [ownerNewPassword, setOwnerNewPassword] = useState('');
+ const [ownerConfirmPassword, setOwnerConfirmPassword] = useState('');
+ const [showPassword, setShowPassword] = useState(false);
+ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+ const [isUpdatingOwnerProfile, setIsUpdatingOwnerProfile] = useState(false);
+
+ // Load settings on mount
+ useEffect(() => {
+ if (!orgId) return;
+
+ const fetchSettings = async () => {
+ try {
+ setIsLoading(true);
+ const [orgRec, appSettings] = await Promise.all([
+ SettingsRepository.getOrganization(orgId),
+ SettingsRepository.getAppSettings(orgId)
+ ]);
+
+ if (orgRec) {
+ setNameAr(orgRec.name ||'');
+ setNameEn(orgRec.legal_name ||''); // maps English name to legal_name field
+ setActivityType(orgRec.activity_type ||'retail');
+ setSubscriptionTier(orgRec.subscription_tier ||'standard');
+ setPhone(orgRec.phone ||'');
+ setEmail(orgRec.email ||'');
+ setAddress(orgRec.address ||'');
+ setTaxNumber(orgRec.tax_number ||'');
+ setCurrency(orgRec.currency ||'EGP');
+ }
+
+ const soundSetting = appSettings.find((s) => s.id ==='enable_sounds');
+ const expiredSetting = appSettings.find((s) => s.id ==='allow_expired_sales');
+ const vatSetting = appSettings.find((s) => s.id ==='vat_rate');
+ const enableTaxSetting = appSettings.find((s) => s.id ==='enable_tax');
+ const taxInclusiveSetting = appSettings.find((s) => s.id ==='is_tax_inclusive');
+ const regSetting = appSettings.find((s) => s.id ==='enable_registration');
+
+ setEnableSounds(soundSetting ? soundSetting.value ==='true': true);
+ setAllowExpiredSales(expiredSetting ? expiredSetting.value ==='true': false);
+ setEnableRegistration(regSetting ? regSetting.value ==='true': true);
+ setVatRate(vatSetting?.value ||'14');
+ setEnableTax(enableTaxSetting ? enableTaxSetting.value ==='true': false);
+ setIsTaxInclusive(taxInclusiveSetting ? taxInclusiveSetting.value ==='true': false);
+
+ // Fetch fresh owner user data from Dexie
+ if (currentUser?.id) {
+ const userRec = await db.users.get(currentUser.id);
+ if (userRec) {
+ setOwnerFullName(userRec.full_name ||'');
+ setOwnerUsername(userRec.username ||'');
+ setOwnerPhone(userRec.phone ||'');
+ setOwnerEmail(userRec.email ||'');
+ }
+ }
+
+ // Check local storage for dark mode state
+ const savedTheme = localStorage.getItem('falcon_theme');
+ const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+ setDarkMode(savedTheme ==='dark'|| (!savedTheme && prefersDark));
+ } catch (err) {
+ console.error('Error loading settings:', err);
+ toast.error('حدث خطأ أثناء تحميل الإعدادات');
+ } finally {
+ setIsLoading(false);
+ }
+ };
+
+ fetchSettings();
+ }, [orgId, currentUser?.id]);
+
+ // Update Owner Profile & Password handler
+ const handleUpdateOwnerProfile = async () => {
+ if (!currentUser?.id) {
+ toast.error('لم يتم العثور على جلسة مستخدم نشطة');
+ return;
+ }
+ if (!ownerFullName.trim()) {
+ toast.error('الاسم الكامل لصاحب المنشأة مطلوب');
+ return;
+ }
+ if (!ownerUsername.trim()) {
+ toast.error('اسم المستخدم مطلوب');
+ return;
+ }
+ if (ownerNewPassword) {
+ if (ownerNewPassword.length < 4) {
+ toast.error('كلمة المرور يجب ألا تقل عن 4 خانات أو أرقام');
+ return;
+ }
+ if (ownerNewPassword !== ownerConfirmPassword) {
+ toast.error('كلمتا المرور غير متطابقتين');
+ return;
+ }
+ }
+
+ try {
+ setIsUpdatingOwnerProfile(true);
+ const res = await AuthRepository.updateOwnerProfile({
+ userId: currentUser.id,
+ fullName: ownerFullName.trim(),
+ username: ownerUsername.trim(),
+ phone: ownerPhone.trim() || undefined,
+ newPassword: ownerNewPassword ? ownerNewPassword.trim() : undefined,
+ });
+
+ if (res.success && res.user) {
+ useSessionStore.getState().setCurrentUser(res.user);
+ setOwnerNewPassword('');
+ setOwnerConfirmPassword('');
+ toast.success('تم تحديث بيانات حساب صاحب المنشأة وكلمة المرور بنجاح');
+ } else {
+ toast.error(res.error ||'فشل تحديث بيانات الحساب');
+ }
+ } catch (err) {
+ console.error('Error updating owner profile:', err);
+ toast.error('حدث خطأ أثناء تحديث بيانات الحساب');
+ } finally {
+ setIsUpdatingOwnerProfile(false);
+ }
+ };
+
+ // Save changes handler
+ const handleSaveChanges = async () => {
+ if (!nameAr.trim()) {
+ toast.error('اسم المؤسسة باللغة العربية مطلوب');
+ return;
+ }
+
+ try {
+ setIsSaving(true);
+
+ // Save organization details
+ await SettingsRepository.updateOrganization(orgId, {
+ name: nameAr.trim(),
+ legal_name: nameEn.trim() || undefined,
+ activity_type: activityType,
+ phone: phone.trim() || undefined,
+ email: email.trim() || undefined,
+ address: address.trim() || undefined,
+ tax_number: taxNumber.trim() || undefined,
+ currency: currency,
+ });
+
+ // Save app settings preferences
+ await Promise.all([
+ SettingsRepository.setSetting(orgId,'enable_sounds', String(enableSounds),'تفعيل الأصوات والتنبيهات الصوتية'),
+ SettingsRepository.setSetting(orgId,'allow_expired_sales', String(allowExpiredSales),'السماح ببيع المنتجات منتهية الصلاحية'),
+ SettingsRepository.setSetting(orgId,'enable_tax', String(enableTax),'تفعيل ضريبة القيمة المضافة (اختيارية)'),
+ SettingsRepository.setSetting(orgId,'is_tax_inclusive', String(isTaxInclusive),'هل الأسعار المعروضة شاملة الضريبة'),
+ SettingsRepository.setSetting(orgId,'vat_rate', vatRate,'نسبة ضريبة القيمة المضافة الافتراضية (%)')
+ ]);
+
+ toast.success('تم حفظ التغييرات وإعدادات النظام بنجاح');
+
+ // Dispatch custom event to notify layout of name change if needed
+ window.dispatchEvent(new Event('storage'));
+ } catch (err) {
+ console.error('Error saving settings:', err);
+ toast.error('حدث خطأ أثناء حفظ الإعدادات');
+ } finally {
+ setIsSaving(false);
+ }
+ };
+
+ // Toggle Dark Mode natively with layout
+ const handleToggleDarkMode = (checked: boolean) => {
+ setDarkMode(checked);
+ localStorage.setItem('falcon_theme', checked ?'dark':'light');
+ window.dispatchEvent(new Event('falcon_theme_change'));
+ };
+
+ // Advanced Operations: Clear all transactional and stock history
+ const handleResetOperations = async () => {
+ const confirmed = window.confirm(
+'تحذير حرج: هل أنت متأكد من تصفير كافة العمليات والمخزون؟\n\nسيقوم هذا الإجراء بحذف جميع فواتير المبيعات، المشتريات، المرتجعات، المصروفات، والورديات بالكامل وتصفير كميات المخزون مع الحفاظ على المنتجات والعملاء والموردين كما هي.'
+ );
+ if (!confirmed) return;
+
+ try {
+ setIsResetting(true);
+ await SettingsRepository.resetOperationsAndInventory();
+ toast.success('تم تصفير العمليات وحسابات المخزون بالكامل بنجاح');
+ } catch (err) {
+ console.error('Error resetting operations:', err);
+ toast.error('حدث خطأ أثناء محاولة تصفير العمليات');
+ } finally {
+ setIsResetting(false);
+ }
+ };
+
+ // Advanced Operations: Factory Reset/Delete Local Account entirely
+ const handleDeleteAccount = async () => {
+ const firstConfirm = window.confirm(
+'خطر شديد: أنت على وشك حذف كافة بيانات هذا الحساب نهائياً ومسح المنظومة بالكامل!\n\nسيتم حذف المؤسسة، الفروع، المستخدمين، المنتجات، وجميع المعاملات المالية والمخزنية بلا استثناء. هل تود الاستمرار؟'
+ );
+ if (!firstConfirm) return;
+
+ const secondConfirm = window.prompt(
+'لتأكيد الحذف النهائي الشامل، يرجى كتابة كلمة"مسح"في الحقل أدناه:'
+ );
+ if (secondConfirm !=='مسح') {
+ toast.error('تم إلغاء عملية الحذف لعدم تطابق كلمة التأكيد');
+ return;
+ }
+
+ try {
+ setIsDeletingAccount(true);
+ await SettingsRepository.deleteAccountEntirely();
+ localStorage.clear();
+ toast.success('تم حذف كافة بيانات الحساب بنجاح، جاري إعادة توجيهك...');
+ setTimeout(() => {
+ router.push('/register');
+ }, 1500);
+ } catch (err) {
+ console.error('Error deleting account:', err);
+ toast.error('حدث خطأ أثناء حذف بيانات المنظومة');
+ } finally {
+ setIsDeletingAccount(false);
+ }
+ };
+
+ // Save changes button component passed to top bar
+ const headerActions = (
+ <Button
+ onClick={handleSaveChanges}
+ disabled={isSaving || isLoading}
+ className="bg-primary hover:bg-blue-700 text-white font-black text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-500/10"
+ >
+ <Save className="w-4 h-4"/>
+ {isSaving ?'جاري الحفظ...':'حفظ التغييرات'}
+ </Button>
+ );
+
+ if (isLoading) {
+ return (
+ <AppShell title="إعدادات النظام"subtitle="تخصيص بيانات المؤسسة، الهوية، وتفضيلات الواجهة والأصوات.">
+ <div className="flex flex-col items-center justify-center py-20 gap-3">
+ <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"/>
+ <span className="text-xs font-bold text-slate-400">جاري تحميل إعدادات المنظومة...</span>
+ </div>
+ </AppShell>
+ );
+ }
+
+ return (
+ <AppShell
+ title="إعدادات النظام"
+ subtitle="تخصيص بيانات المؤسسة، الهوية، وتفضيلات الواجهة والأصوات."
+ actions={headerActions}
+ >
+ <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-right"dir="rtl">
+
+ {/* ==================== LEFT COLUMN: SUMMARY & DANGER ZONE ==================== */}
+ <div className="space-y-6">
+
+ {/* Card 1: Institution Summary Card */}
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs transition-colors">
+ <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
+ <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-primary dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+ <Building2 className="w-7 h-7"/>
+ </div>
+ <div className="min-w-0 flex-1">
+ <h3 className="font-black text-slate-900 dark:text-white text-base truncate">
+ {nameAr ||'مؤسستي'}
+ </h3>
+ <p className="text-xs font-bold text-slate-400 mt-0.5 font-mono truncate">
+ {nameEn ||'My Business'}
+ </p>
+ </div>
+ </div>
+
+ <div className="space-y-3 text-xs font-bold text-slate-600 dark:text-slate-400">
+ <div className="flex items-center justify-between">
+ <span className="text-slate-400 font-medium">نوع النشاط</span>
+ <span className="text-emerald-700 dark:text-emerald-400 font-black">
+ {activityType ==='supermarket'?'سوبرماركت ومواد غذائية':
+ activityType ==='clothing'?'ملابس وأحذية وأزياء':
+ activityType ==='electronics'?'أجهزة وإلكترونيات':
+ activityType ==='hardware'?'حدايد وبويات وقطع غيار':
+ activityType ==='pharmacy'?'صيدلية ومستلزمات':
+ activityType ==='services'?'خدمات ومطاعم':'تجارة عامة وتجزئة'}
+ </span>
+ </div>
+ <div className="flex items-center justify-between">
+ <span className="text-slate-400 font-medium">الفرع النشط</span>
+ <span className="text-slate-900 dark:text-white">الفرع الرئيسي</span>
+ </div>
+ <div className="flex items-center justify-between">
+ <span className="text-slate-400 font-medium">البريد المسجل</span>
+ <span className="text-slate-900 dark:text-white font-mono truncate max-w-[180px]">
+ {email ||'غير محدد'}
+ </span>
+ </div>
+ <div className="flex items-center justify-between">
+ <span className="text-slate-400 font-medium">الرقم الضريبي</span>
+ <span className="text-slate-900 dark:text-white">
+ {taxNumber ||'غير محدد'}
+ </span>
+ </div>
+ <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60">
+ <span className="text-slate-400 font-medium">حالة النظام</span>
+ <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-3xs font-black">
+ <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
+ مؤسسي نشط (Enterprise)
+ </span>
+ </div>
+ </div>
+ </div>
+
+ {/* Card 2: Danger Zone Card */}
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+ <div className="flex items-center gap-2 text-red-600 dark:text-red-400 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+ <AlertTriangle className="w-5 h-5 animate-pulse"/>
+ <h3 className="text-xs font-black uppercase tracking-wider">منطقة الخطر والعمليات المتقدمة</h3>
+ </div>
+
+ {/* Sub-Action 1: Reset by Date Range (Available for VIP Tiers) */}
+ {perms.canResetByDateRange && (
+ <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 rounded-xl p-3.5 space-y-3">
+ <div className="flex items-start gap-2.5">
+ <div className="w-5 h-5 rounded-md bg-red-600 text-white flex items-center justify-center text-3xs font-black shrink-0 mt-0.5">
+ <CalendarDays className="w-3.5 h-3.5"/>
+ </div>
+ <div>
+ <h4 className="text-xs font-black text-red-900 dark:text-red-300">تصفير المبيعات والمشتريات حسب المدة</h4>
+ <p className="text-3xs font-medium text-red-700/80 dark:text-red-400/80 leading-relaxed mt-1">
+ حذف فواتير المبيعات، المشتريات، والمرتجعات خلال فترة يحددها صاحب المنشأة، مع معاينة حية للأعداد وخيارات متقدمة للمخزون والخزينة.
+ </p>
+ </div>
+ </div>
+ <Button
+ onClick={() => setIsPeriodResetOpen(true)}
+ className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-2xs font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+ >
+ <CalendarDays className="w-3.5 h-3.5"/>
+ تحديد المدة وتصفير العمليات
+ </Button>
+ </div>
+ )}
+
+ {/* Sub-Action 2: Reset Operations & Inventory */}
+ <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-3.5 space-y-3">
+ <div className="flex items-start gap-2.5">
+ <div className="w-5 h-5 rounded-md bg-amber-500 text-white flex items-center justify-center text-3xs font-black shrink-0 mt-0.5">
+ 🔄
+ </div>
+ <div>
+ <h4 className="text-xs font-black text-amber-800 dark:text-amber-400">تصفير العمليات والمخزون بالكامل</h4>
+ <p className="text-3xs font-medium text-amber-600/90 dark:text-amber-500/80 leading-relaxed mt-1">
+ يمسح فواتير المبيعات، المشتريات، المرتجعات، المصروفات، والتشغيلات، ويصفر كميات المخزون إلى 0، مع الحفاظ التام على كروت الأصناف والمنتجات، العملاء، الموردين، والفروع.
+ </p>
+ </div>
+ </div>
+ <Button
+ onClick={handleResetOperations}
+ disabled={isResetting}
+ className="w-full h-9 bg-amber-600 hover:bg-amber-700 text-white text-2xs font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+ >
+ {isResetting ?'جاري تصفير البيانات...':'تصفير العمليات والمخزون بالكامل'}
+ </Button>
+ </div>
+
+ {/* Sub-Action 2: Permanent Account Erasure */}
+ <div className="space-y-2 pt-2">
+ <p className="text-2xs font-medium text-slate-400 leading-normal">
+ حذف حساب المؤسسة نهائياً ومسح كافة الفروع والبيانات الأساسية والمستخدمين من هذا الجهاز بالكامل.
+ </p>
+ <Button
+ onClick={handleDeleteAccount}
+ disabled={isDeletingAccount}
+ className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-2xs font-black rounded-lg transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+ >
+ <Trash2 className="w-3.5 h-3.5"/>
+ {isDeletingAccount ?'جاري الحذف النهائي...':'حذف بيانات الحساب نهائياً'}
+ </Button>
+ </div>
+ </div>
+
+ </div>
+
+ {/* ==================== RIGHT COLUMN: MAIN FORM CONTENT ==================== */}
+ <div className="lg:col-span-2 space-y-6">
+
+ {/* Card 1: Organization Identity */}
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+ <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+ <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-primary flex items-center justify-center shrink-0">
+ <Building2 className="w-4 h-4"/>
+ </div>
+ <div>
+ <h3 className="text-xs font-black text-slate-900 dark:text-white">هوية المؤسسة والمنشأة</h3>
+ <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+ الاسم الرسمي والبراند التجاري الذي يظهر في الفواتير والتقارير واللوحات الرسمية
+ </p>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ اسم المؤسسة / المنشأة (عربي) <span className="text-red-500">*</span>
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={nameAr}
+ onChange={(e) => setNameAr(e.target.value)}
+ placeholder="أدخل اسم منشأتك بالعربية"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+ />
+ <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ {nameAr && (
+ <button
+ onClick={() => setNameAr('')}
+ className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-full"
+ >
+ <X className="w-3.5 h-3.5"/>
+ </button>
+ )}
+ </div>
+ </div>
+
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ اسم المؤسسة / المنشأة (إنجليزي)
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={nameEn}
+ onChange={(e) => setNameEn(e.target.value)}
+ placeholder="Enter business name in English"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono text-left"
+ dir="ltr"
+ />
+ <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ {nameEn && (
+ <button
+ onClick={() => setNameEn('')}
+ className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-full"
+ >
+ <X className="w-3.5 h-3.5"/>
+ </button>
+ )}
+ </div>
+ </div>
+
+ <div className="space-y-1.5 md:col-span-2">
+ <div className="flex items-center justify-between">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ نوع النشاط التجاري
+ </label>
+ {!perms.canChangeActivityType && (
+ <span className="text-3xs font-bold text-slate-400">
+ (محدد ومعتمد من لوحة تحكم لوجيسكا)
+ </span>
+ )}
+ </div>
+ <Select
+ value={activityType}
+ onValueChange={setActivityType}
+ disabled={!perms.canChangeActivityType}
+ >
+ <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white disabled:opacity-80 disabled:cursor-not-allowed">
+ <SelectValue placeholder="اختر نوع النشاط"/>
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="retail">تجارة عامة وتجزئة وجملة</SelectItem>
+ <SelectItem value="supermarket">سوبرماركت ومواد غذائية</SelectItem>
+ <SelectItem value="clothing">ملابس وأحذية وأزياء</SelectItem>
+ <SelectItem value="electronics">أجهزة وإلكترونيات وكمبيوتر</SelectItem>
+ <SelectItem value="hardware">حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
+ <SelectItem value="pharmacy">صيدلية ومستلزمات طبية</SelectItem>
+ <SelectItem value="services">خدمات ومطاعم وكافيهات</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
+ </div>
+ </div>
+
+ {/* Card: Organization Subscription Plan & Logixa Licensing */}
+ <div className={`p-5 rounded-2xl border transition-all ${subProfile.cardStyle}`}>
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800/80 pb-3">
+ <div className="flex items-center gap-2.5">
+ <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 font-black text-xl">
+ {subProfile.icon}
+ </div>
+ <div>
+ <div className="flex items-center gap-2">
+ <h3 className="text-xs font-black text-slate-900 dark:text-white">
+ باقة الترخيص والاشتراك الحالية للمنشأة ({subProfile.nameAr})
+ </h3>
+ <span className={`px-2.5 py-0.5 rounded-md text-3xs border ${subProfile.badgeStyle}`}>
+ {subProfile.badgeName}
+ </span>
+ </div>
+ <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+ {subProfile.description}
+ </p>
+ </div>
+ </div>
+
+ <div className="flex items-center gap-1.5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 shadow-2xs">
+ <ShieldCheck className="w-4 h-4 text-emerald-600"/>
+ <span>حالة الحساب: نشط ومعتمد</span>
+ </div>
+ </div>
+
+ {/* Active Tier Capabilities Grid */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+ <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+ <span className="text-3xs font-bold text-slate-400 block mb-1">حد الموظفين والمستخدمين</span>
+ <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.maxUsers}</span>
+ </div>
+
+ <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+ <span className="text-3xs font-bold text-slate-400 block mb-1">حد الفروع والمستودعات</span>
+ <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.maxBranches}</span>
+ </div>
+
+ <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+ <span className="text-3xs font-bold text-slate-400 block mb-1">عمليات المبيعات والكاشير</span>
+ <span className="text-xs font-black text-slate-900 dark:text-white">
+ {perms.canExecuteSales ?'مفعّل بالكامل':'معاينة تجريبية فقط (البيع محجوب)'}
+ </span>
+ </div>
+
+ <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+ <span className="text-3xs font-bold text-slate-400 block mb-1">فواتير المشتريات والتوريد</span>
+ <span className="text-xs font-black text-slate-900 dark:text-white">
+ {perms.canExecutePurchases ?'مفعّل بالكامل':'غير متاح في هذه الباقة'}
+ </span>
+ </div>
+
+ <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+ <span className="text-3xs font-bold text-slate-400 block mb-1">إضافة الأصناف والأدوية</span>
+ <span className="text-xs font-black text-slate-900 dark:text-white">
+ {perms.canAddProducts ? (perms.maxProductsLimit ?`متاح تجريبياً (حتى ${perms.maxProductsLimit} أصناف)`:'متاح بلا حدود') :'غير متاح'}
+ </span>
+ </div>
+
+ <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+ <span className="text-3xs font-bold text-slate-400 block mb-1">مستوى الدعم الفني</span>
+ <span className="text-xs font-black text-slate-900 dark:text-white">{subProfile.supportLevel}</span>
+ </div>
+ </div>
+ </div>
+
+ {/* Card: Owner Account & Security */}
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+ <div className="flex items-center gap-2.5">
+ <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
+ <UserIcon className="w-4 h-4"/>
+ </div>
+ <div>
+ <h3 className="text-xs font-black text-slate-900 dark:text-white">بيانات حساب صاحب المنشأة والأمان</h3>
+ <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+ تعديل الاسم واسم المستخدم ورقم الهاتف وكلمة المرور الخاصة بحسابك (البريد الإلكتروني ثابت)
+ </p>
+ </div>
+ </div>
+ <Button
+ type="button"
+ onClick={handleUpdateOwnerProfile}
+ disabled={isUpdatingOwnerProfile}
+ className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-2xs font-black px-4 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+ >
+ <KeyRound className="w-3.5 h-3.5"/>
+ {isUpdatingOwnerProfile ?'جاري الحفظ...':'حفظ بيانات الحساب وكلمة المرور'}
+ </Button>
+ </div>
+
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {/* Full Name */}
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ الاسم الكامل لصاحب المنشأة <span className="text-red-500">*</span>
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={ownerFullName}
+ onChange={(e) => setOwnerFullName(e.target.value)}
+ placeholder="الاسم الكامل"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+ />
+ <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ {/* Username */}
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ اسم المستخدم لتسجيل الدخول <span className="text-red-500">*</span>
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={ownerUsername}
+ onChange={(e) => setOwnerUsername(e.target.value)}
+ placeholder="username"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
+ dir="ltr"
+ />
+ <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ {/* Phone */}
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ رقم هاتف صاحب الحساب
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={ownerPhone}
+ onChange={(e) => setOwnerPhone(e.target.value)}
+ placeholder="01XXXXXXXXX"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
+ dir="ltr"
+ />
+ <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ {/* Email - Strictly Read-Only */}
+ <div className="space-y-1.5">
+ <div className="flex items-center justify-between">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1">
+ البريد الإلكتروني الأساسي
+ </label>
+ <span className="text-4xs px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-900/40 flex items-center gap-1">
+ <Lock className="w-2.5 h-2.5"/>
+ غير قابل للتعديل
+ </span>
+ </div>
+ <div className="relative group">
+ <Input
+ type="email"
+ value={ownerEmail}
+ readOnly
+ disabled
+ placeholder="email@domain.com"
+ className="h-10 bg-slate-100/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono cursor-not-allowed opacity-90"
+ dir="ltr"
+ />
+ <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ {/* New Password */}
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ كلمة المرور الجديدة (اتركها فارغة إذا لم ترد التغيير)
+ </label>
+ <div className="relative group">
+ <Input
+ type={showPassword ?'text':'password'}
+ value={ownerNewPassword}
+ onChange={(e) => setOwnerNewPassword(e.target.value)}
+ placeholder="••••••••"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+ />
+ <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ <button
+ type="button"
+ onClick={() => setShowPassword(!showPassword)}
+ className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+ >
+ {showPassword ? <EyeOff className="w-3.5 h-3.5"/> : <Eye className="w-3.5 h-3.5"/>}
+ </button>
+ </div>
+ </div>
+
+ {/* Confirm New Password */}
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ تأكيد كلمة المرور الجديدة
+ </label>
+ <div className="relative group">
+ <Input
+ type={showConfirmPassword ?'text':'password'}
+ value={ownerConfirmPassword}
+ onChange={(e) => setOwnerConfirmPassword(e.target.value)}
+ placeholder="••••••••"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+ />
+ <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ <button
+ type="button"
+ onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+ className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+ >
+ {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5"/> : <Eye className="w-3.5 h-3.5"/>}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ {/* Card 2: Contact & Taxes Info */}
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+ <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+ <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center shrink-0">
+ <FileText className="w-4 h-4"/>
+ </div>
+ <div>
+ <h3 className="text-xs font-black text-slate-900 dark:text-white">معلومات الاتصال والضرائب</h3>
+ <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+ بيانات التواصل الرسمي والرقم الضريبي لإصدار فواتير قانونية متوافقة مع الجهات الرقابية
+ </p>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ رقم الهاتف / الواتساب
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={phone}
+ onChange={(e) => setPhone(e.target.value)}
+ placeholder="مثال: 0100XXXXXXX"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+ />
+ <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ البريد الإلكتروني الأساسي
+ </label>
+ <div className="relative group">
+ <Input
+ type="email"
+ value={email}
+ onChange={(e) => setEmail(e.target.value)}
+ placeholder="business@example.com"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
+ />
+ <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ الرقم الضريبي
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={taxNumber}
+ onChange={(e) => setTaxNumber(e.target.value)}
+ placeholder="سجل الرقم الضريبي للشركة"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono"
+ />
+ <FileText className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
+ العنوان بالتفصيل
+ </label>
+ <div className="relative group">
+ <Input
+ type="text"
+ value={address}
+ onChange={(e) => setAddress(e.target.value)}
+ placeholder="المحافظة، المدينة، اسم الشارع، المبنى"
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
+ />
+ <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ {/* Card 3: Global Financial Settings */}
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+ <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+ <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
+ <Percent className="w-4 h-4"/>
+ </div>
+ <div>
+ <h3 className="text-xs font-black text-slate-900 dark:text-white">الإعدادات المالية والضرائب</h3>
+ <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+ الضريبة اختيارية في المنظومة، يمكنك تفعيلها أو تعطيلها وتحديد نسبتها
+ </p>
+ </div>
+ </div>
+
+ <div className="space-y-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">العملة الافتراضية</label>
+ <Select value={currency} onValueChange={setCurrency}>
+ <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold">
+ <SelectValue />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="EGP">جنيه مصري (EGP)</SelectItem>
+ <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
+ <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
+ <SelectItem value="AED">درهم إماراتي (AED)</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
+
+ <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+ <div className="space-y-0.5">
+ <span className="text-xs font-black text-slate-900 dark:text-white block">تفعيل ضريبة القيمة المضافة (اختيارية)</span>
+ <span className="text-3xs text-slate-400 block">
+ {enableTax ?'الضريبة مفعلة لعمليات البيع والشراء':'الضريبة معطلة حالياً (0%)'}
+ </span>
+ </div>
+ <button
+ type="button"
+ onClick={() => setEnableTax(!enableTax)}
+ className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
+ enableTax ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
+ }`}
+ >
+ <span
+ className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
+ enableTax ?'right-0.5':'right-[22px]'
+ }`}
+ />
+ </button>
+ </div>
+ </div>
+
+ {enableTax && (
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-150">
+ <div className="space-y-1.5">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300">نسبة الضريبة الافتراضية (%)</label>
+ <div className="relative group">
+ <Input
+ type="number"
+ value={vatRate}
+ onChange={(e) => setVatRate(e.target.value)}
+ className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 text-xs font-bold"
+ />
+ <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"/>
+ </div>
+ </div>
+
+ <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+ <div className="space-y-0.5">
+ <span className="text-xs font-black text-slate-900 dark:text-white block">الأسعار تشمل الضريبة</span>
+ <span className="text-3xs text-slate-400 block">
+ {isTaxInclusive ?'الأسعار المسجلة بالأصناف شاملة للضريبة':'تضاف الضريبة فوق سعر الصنف'}
+ </span>
+ </div>
+ <button
+ type="button"
+ onClick={() => setIsTaxInclusive(!isTaxInclusive)}
+ className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
+ isTaxInclusive ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
+ }`}
+ >
+ <span
+ className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
+ isTaxInclusive ?'right-0.5':'right-[22px]'
+ }`}
+ />
+ </button>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+
+ </div>
+
+ </div>
+
+ {/* Period Reset Modal for Sales & Purchases */}
+ <ResetPeriodModal
+ isOpen={isPeriodResetOpen}
+ onClose={() => setIsPeriodResetOpen(false)}
+ orgId={orgId}
+ userId={currentUser?.id}
+ userName={currentUser?.full_name || currentUser?.username}
+ currency={currency}
+ onSuccess={() => {
+ // Trigger re-render / reload if needed
+ window.dispatchEvent(new Event('storage'));
+ }}
+ />
+ </AppShell>
+ );
 }

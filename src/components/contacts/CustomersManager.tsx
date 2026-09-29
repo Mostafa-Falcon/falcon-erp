@@ -1,3 +1,3 @@
 'use client';
 
-export { CustomersManager } from './customers/CustomersManager';
+export { CustomersManager } from'./customers/CustomersManager';

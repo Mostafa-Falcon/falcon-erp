@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, X, DollarSign, CreditCard, Check } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
+import { roundMoney } from '@/lib/decimal';
 import { toast } from 'sonner';
 
 interface PosSplitPaymentModalProps {
@@ -24,28 +25,29 @@ export function PosSplitPaymentModal({
   useEffect(() => {
     if (isOpen) {
       // Default: half and half or cash portion
-      const half = Number((total / 2).toFixed(2));
+      const roundedTotal = roundMoney(total);
+      const half = roundMoney(roundedTotal / 2);
       setCashPart(half);
-      setCardPart(Number((total - half).toFixed(2)));
+      setCardPart(roundMoney(roundedTotal - half));
     }
   }, [isOpen, total]);
 
   if (!isOpen) return null;
 
-  const currentSum = Number((cashPart + cardPart).toFixed(2));
-  const diff = Number((total - currentSum).toFixed(2));
-  const isMatch = Math.abs(diff) < 0.01;
+  const currentSum = roundMoney(cashPart + cardPart);
+  const diff = roundMoney(total - currentSum);
+  const isMatch = Math.abs(diff) < 0.001;
 
   const handleCashChange = (val: number) => {
     const valid = Math.max(0, val);
     setCashPart(valid);
-    setCardPart(Number(Math.max(0, total - valid).toFixed(2)));
+    setCardPart(roundMoney(Math.max(0, total - valid)));
   };
 
   const handleCardChange = (val: number) => {
     const valid = Math.max(0, val);
     setCardPart(valid);
-    setCashPart(Number(Math.max(0, total - valid).toFixed(2)));
+    setCashPart(roundMoney(Math.max(0, total - valid)));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,7 +61,7 @@ export function PosSplitPaymentModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+      <div className="bg-surface border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600">

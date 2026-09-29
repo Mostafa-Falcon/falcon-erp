@@ -1,142 +1,142 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { AppShell } from '@/components/layout/AppShell';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useSessionStore } from '@/core/state/useSessionStore';
-import { formatNumber } from '@/lib/format';
-import { toast } from 'sonner';
-import { RefreshCw, Printer, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { getIncomeStatement } from '@/modules/accounting/accounting_reports';
+import React, { useCallback, useEffect, useState } from'react';
+import { AppShell } from'@/components/layout/AppShell';
+import { Button } from'@/components/ui/button';
+import { Input } from'@/components/ui/input';
+import { useSessionStore } from'@/core/state/useSessionStore';
+import { formatNumber } from'@/lib/format';
+import { toast } from'sonner';
+import { RefreshCw, Printer, TrendingUp, TrendingDown, Minus } from'lucide-react';
+import { getIncomeStatement } from'@/modules/accounting/accounting_reports';
 
 export default function IncomeStatementPage() {
-  const { currentUser } = useSessionStore();
-  const orgId = currentUser?.org_id || '';
+ const { currentUser } = useSessionStore();
+ const orgId = currentUser?.org_id ||'';
 
-  const [data, setData] = useState<Awaited<ReturnType<typeof getIncomeStatement>> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+ const [data, setData] = useState<Awaited<ReturnType<typeof getIncomeStatement>> | null>(null);
+ const [isLoading, setIsLoading] = useState(true);
+ const [from, setFrom] = useState('');
+ const [to, setTo] = useState('');
 
-  const loadData = useCallback(async () => {
-    if (!orgId) return;
-    try {
-      setIsLoading(true);
-      setData(await getIncomeStatement(orgId, from || null, to || null));
-    } catch (err) {
-      console.error('Income statement error:', err);
-      toast.error('حدث خطأ أثناء تحميل قائمة الدخل');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [orgId, from, to]);
+ const loadData = useCallback(async () => {
+ if (!orgId) return;
+ try {
+ setIsLoading(true);
+ setData(await getIncomeStatement(orgId, from || null, to || null));
+ } catch (err) {
+ console.error('Income statement error:', err);
+ toast.error('حدث خطأ أثناء تحميل قائمة الدخل');
+ } finally {
+ setIsLoading(false);
+ }
+ }, [orgId, from, to]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+ useEffect(() => {
+ loadData();
+ }, [loadData]);
 
-  const revenues = data?.rows.filter((r) => r.type === 'revenue' && r.period !== 0) ?? [];
-  const expenses = data?.rows.filter((r) => r.type === 'expense' && r.period !== 0) ?? [];
-  const totalRevenue = revenues.reduce((s, r) => s + r.period, 0);
-  const totalExpense = expenses.reduce((s, r) => s + r.period, 0);
+ const revenues = data?.rows.filter((r) => r.type ==='revenue'&& r.period !== 0) ?? [];
+ const expenses = data?.rows.filter((r) => r.type ==='expense'&& r.period !== 0) ?? [];
+ const totalRevenue = revenues.reduce((s, r) => s + r.period, 0);
+ const totalExpense = expenses.reduce((s, r) => s + r.period, 0);
 
-  return (
-    <AppShell
-      title="قائمة الدخل"
-      subtitle="نتيجة أعمال الفترة من الإيرادات والمصروفات الصافية حسب القيود المرحّلة."
-      actions={
-        <Button onClick={loadData} className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs gap-2 shadow-sm transition-all active:scale-95">
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /> تحديث
-        </Button>
-      }
-    >
-      <div className="space-y-6 text-right" dir="rtl">
-        <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-black text-slate-400">من تاريخ</label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-black text-slate-400">إلى تاريخ</label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold" />
-          </div>
-          <Button variant="outline" onClick={() => { setFrom(''); setTo(''); }} className="h-10 rounded-xl text-xs font-bold">
-            مسح الفلتر
-          </Button>
-        </div>
+ return (
+ <AppShell
+ title="قائمة الدخل"
+ subtitle="نتيجة أعمال الفترة من الإيرادات والمصروفات الصافية حسب القيود المرحّلة."
+ actions={
+ <Button onClick={loadData} className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs gap-2 shadow-sm transition-all active:scale-95">
+ <RefreshCw className={`w-4 h-4 ${isLoading ?'animate-spin':''}`} /> تحديث
+ </Button>
+ }
+ >
+ <div className="space-y-6 text-right"dir="rtl">
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 flex flex-wrap items-end gap-3">
+ <div className="flex flex-col gap-1">
+ <label className="text-2xs font-black text-slate-400">من تاريخ</label>
+ <Input type="date"value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold"/>
+ </div>
+ <div className="flex flex-col gap-1">
+ <label className="text-2xs font-black text-slate-400">إلى تاريخ</label>
+ <Input type="date"value={to} onChange={(e) => setTo(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold"/>
+ </div>
+ <Button variant="outline"onClick={() => { setFrom(''); setTo(''); }} className="h-10 rounded-xl text-xs font-bold">
+ مسح الفلتر
+ </Button>
+ </div>
 
-        {data && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card label="إجمالي الإيرادات" value={totalRevenue} icon={<TrendingUp className="w-5 h-5" />} color="emerald" />
-            <Card label="إجمالي المصروفات" value={totalExpense} icon={<TrendingDown className="w-5 h-5" />} color="red" />
-            <Card label="مجمل الربح" value={data.grossProfit} icon={<Minus className="w-5 h-5" />} color="blue" />
-            <Card label="صافي الربح" value={data.netIncome} icon={<TrendingUp className="w-5 h-5" />} color={data.netIncome >= 0 ? 'emerald' : 'red'} />
-          </div>
-        )}
+ {data && (
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+ <Card label="إجمالي الإيرادات"value={totalRevenue} icon={<TrendingUp className="w-5 h-5"/>} color="emerald"/>
+ <Card label="إجمالي المصروفات"value={totalExpense} icon={<TrendingDown className="w-5 h-5"/>} color="red"/>
+ <Card label="مجمل الربح"value={data.grossProfit} icon={<Minus className="w-5 h-5"/>} color="blue"/>
+ <Card label="صافي الربح"value={data.netIncome} icon={<TrendingUp className="w-5 h-5"/>} color={data.netIncome >= 0 ?'emerald':'red'} />
+ </div>
+ )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-black text-emerald-600">الإيرادات</h3>
-            </div>
-            <div className="p-3 space-y-1">
-              {revenues.map((r) => (
-                <Row key={`${r.code}-rev`} label={`${r.code} - ${r.name}`} value={r.period} />
-              ))}
-              {revenues.length === 0 && <Empty />}
-            </div>
-          </div>
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+ <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+ <h3 className="text-sm font-black text-emerald-600">الإيرادات</h3>
+ </div>
+ <div className="p-3 space-y-1">
+ {revenues.map((r) => (
+ <Row key={`${r.code}-rev`} label={`${r.code} - ${r.name}`} value={r.period} />
+ ))}
+ {revenues.length === 0 && <Empty />}
+ </div>
+ </div>
 
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-black text-red-600">المصروفات وتكلفة المبيعات</h3>
-            </div>
-            <div className="p-3 space-y-1">
-              {expenses.map((r) => (
-                <Row key={`${r.code}-exp`} label={`${r.code} - ${r.name}`} value={r.period} />
-              ))}
-              {expenses.length === 0 && <Empty />}
-            </div>
-          </div>
-        </div>
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+ <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+ <h3 className="text-sm font-black text-red-600">المصروفات وتكلفة المبيعات</h3>
+ </div>
+ <div className="p-3 space-y-1">
+ {expenses.map((r) => (
+ <Row key={`${r.code}-exp`} label={`${r.code} - ${r.name}`} value={r.period} />
+ ))}
+ {expenses.length === 0 && <Empty />}
+ </div>
+ </div>
+ </div>
 
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={() => window.print()} className="h-10 rounded-xl text-xs font-bold gap-2">
-            <Printer className="w-4 h-4" /> طباعة
-          </Button>
-        </div>
-      </div>
-    </AppShell>
-  );
+ <div className="flex justify-end">
+ <Button variant="outline"onClick={() => window.print()} className="h-10 rounded-xl text-xs font-bold gap-2">
+ <Printer className="w-4 h-4"/> طباعة
+ </Button>
+ </div>
+ </div>
+ </AppShell>
+ );
 }
 
 function Row({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
-      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{label}</span>
-      <span className="text-xs font-black font-mono text-slate-800 dark:text-slate-100">{formatNumber(value)}</span>
-    </div>
-  );
+ return (
+ <div className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
+ <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{label}</span>
+ <span className="text-xs font-black font-mono text-slate-800 dark:text-slate-100">{formatNumber(value)}</span>
+ </div>
+ );
 }
 
 function Empty() {
-  return <div className="py-6 text-center text-[11px] font-bold text-slate-400">لا توجد حركات</div>;
+ return <div className="py-6 text-center text-2xs font-bold text-slate-400">لا توجد حركات</div>;
 }
 
-function Card({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: 'emerald' | 'red' | 'blue' }) {
-  const colors = {
-    emerald: 'bg-emerald-50 text-emerald-600',
-    red: 'bg-red-50 text-red-600',
-    blue: 'bg-blue-50 text-blue-600',
-  };
-  return (
-    <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 flex items-center gap-4 shadow-xs">
-      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${colors[color]}`}>{icon}</div>
-      <div>
-        <span className="text-[11px] font-bold text-slate-400 block mb-1">{label}</span>
-        <span className={`text-lg font-black font-mono ${colors[color].split(' ')[1]}`}>{formatNumber(value)}</span>
-      </div>
-    </div>
-  );
+function Card({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color:'emerald'|'red'|'blue'}) {
+ const colors = {
+ emerald:'bg-emerald-50 text-emerald-600',
+ red:'bg-red-50 text-red-600',
+ blue:'bg-blue-50 text-blue-600',
+ };
+ return (
+ <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 flex items-center gap-4 shadow-xs">
+ <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${colors[color]}`}>{icon}</div>
+ <div>
+ <span className="text-2xs font-bold text-slate-400 block mb-1">{label}</span>
+ <span className={`text-lg font-black font-mono ${colors[color].split('')[1]}`}>{formatNumber(value)}</span>
+ </div>
+ </div>
+ );
 }

@@ -1,1 +1,1 @@
-export * from './stocktake_repository';
+export * from'./stocktake_repository';

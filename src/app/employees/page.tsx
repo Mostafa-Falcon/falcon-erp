@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from'react';
+import { useRouter } from'next/navigation';
 
 export default function EmployeesIndexPage() {
-  const router = useRouter();
+ const router = useRouter();
 
-  useEffect(() => {
-    router.replace('/employees/directory');
-  }, [router]);
+ useEffect(() => {
+ router.replace('/employees/directory');
+ }, [router]);
 
-  return null;
+ return null;
 }

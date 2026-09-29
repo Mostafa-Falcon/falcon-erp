@@ -1,4 +1,4 @@
 'use client';
 
-export * from './monitoring-dashboard';
-export { MonitoringDashboard as default } from './monitoring-dashboard';
+export { MonitoringDashboard, default } from './monitoring-dashboard';
+export * from './monitoring-dashboard/types';
