@@ -844,16 +844,22 @@ export class SalesRepository {
       }
 
       for (const item of params.items) {
-        const origItem = originalItems.find((o) => o.product_id === item.productId);
-        const origQty = origItem ? origItem.quantity : 0;
-        const prevQty = prevReturnedItems
-          .filter((p) => p.product_id === item.productId)
-          .reduce((sum, p) => sum + (p.quantity || 0), 0);
+        const factor = item.conversionFactor || 1;
+        const origBaseQty = originalItems
+          .filter((o) => o.product_id === item.productId)
+          .reduce((sum, o) => sum + (o.base_quantity ?? (o.quantity * (o.conversion_factor || 1))), 0);
 
-        const maxAllowedReturn = Math.max(0, origQty - prevQty);
-        if (item.quantity > maxAllowedReturn + 0.0001) {
+        const prevReturnedBaseQty = prevReturnedItems
+          .filter((p) => p.product_id === item.productId)
+          .reduce((sum, p) => sum + (p.base_quantity ?? (p.quantity * (p.conversion_factor || 1))), 0);
+
+        const maxAllowedBaseQty = Math.max(0, origBaseQty - prevReturnedBaseQty);
+        const requestedBaseQty = item.quantity * factor;
+
+        if (requestedBaseQty > maxAllowedBaseQty + 0.0001) {
+          const maxInCurrentUnit = (maxAllowedBaseQty / factor).toFixed(2);
           throw new Error(
-            `الكمية المطلوبة للإرجاع (${item.quantity}) تتجاوز الكمية المتاحة للإرجاع (${maxAllowedReturn}) المتبقية من الفاتورة الأصلية.`
+            `الكمية المطلوبة للإرجاع (${item.quantity}) تتجاوز الكمية المتاحة للإرجاع المتبقية من الفاتورة الأصلية (${maxInCurrentUnit}).`
           );
         }
       }
@@ -1188,6 +1194,14 @@ export class SalesRepository {
  if (!existing) throw new Error('فاتورة المبيعات غير موجودة');
  if (existing.is_deleted || existing.status ==='cancelled') {
  throw new Error('لا يمكن تعديل فاتورة ملغاة أو محذوفة');
+ }
+
+ const existingReturns = await db.sales_returns
+ .where('original_invoice_id')
+ .equals(params.invoiceId)
+ .toArray();
+ if (existingReturns.length > 0) {
+ throw new Error('لا يمكن تعديل فاتورة مبيعات توجد لها مرتجعات مسجلة مسبقاً. يرجى معالجة المرتجع أو إلغاؤه أولاً.');
  }
 
  const now = new Date().toISOString();

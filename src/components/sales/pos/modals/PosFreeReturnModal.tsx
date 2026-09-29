@@ -172,19 +172,22 @@ export function PosFreeReturnModal({
  unitCost: Number(l.unitCost) || 0,
  }));
 
- await SalesRepository.createSalesReturn({
- orgId: currentUser.org_id ||'',
- branchId: currentUser.branch_id ||'',
- warehouseId: targetWarehouseId,
- originalInvoiceId: null, // Free return without prior invoice
- shiftId: activeShift?.id || null,
- customerId: selectedCustomerId && selectedCustomerId !=='cash'? selectedCustomerId : null,
- items,
- treasuryId: targetTreasuryId,
- userId: currentUser.id,
- reason: reason.trim() ||'مرتجع مبيعات حر (بدون فاتورة أصلية)',
- refundType,
- });
+    const isCashCustomer = !selectedCustomerId || selectedCustomerId === 'cash';
+    const effectiveRefundType = isCashCustomer ? 'cash' : refundType;
+
+    await SalesRepository.createSalesReturn({
+      orgId: currentUser.org_id || '',
+      branchId: currentUser.branch_id || '',
+      warehouseId: targetWarehouseId,
+      originalInvoiceId: null, // Free return without prior invoice
+      shiftId: activeShift?.id || null,
+      customerId: isCashCustomer ? null : selectedCustomerId,
+      items,
+      treasuryId: targetTreasuryId,
+      userId: currentUser.id,
+      reason: reason.trim() || 'مرتجع مبيعات حر (بدون فاتورة أصلية)',
+      refundType: effectiveRefundType,
+    });
 
  toast.success(
 `تم تسجيل المرتجع الحر بنجاح بقيمة ${formatNumber(totalReturnAmount)} ج.م واسترجاع الأصناف للمخزن`

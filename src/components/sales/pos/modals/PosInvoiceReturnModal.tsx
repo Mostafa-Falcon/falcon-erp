@@ -119,12 +119,16 @@ export function PosInvoiceReturnModal({
             const prod = pMap[it.product_id];
             const unit = unitsById[it.unit_id]?.name || 'وحدة';
 
-            // Calculate previously returned quantity for this line
-            const prevQty = prevReturnedItems
-              .filter((p) => p.product_id === it.product_id)
-              .reduce((sum, p) => sum + (p.quantity || 0), 0);
+            const factor = it.conversion_factor || 1;
+            const origBaseQty = it.base_quantity ?? (it.quantity * factor);
 
-            const remainingReturnableQty = Math.max(0, it.quantity - prevQty);
+            const prevReturnedBaseQty = prevReturnedItems
+              .filter((p) => p.product_id === it.product_id)
+              .reduce((sum, p) => sum + (p.base_quantity ?? (p.quantity * (p.conversion_factor || 1))), 0);
+
+            const remainingReturnableBaseQty = Math.max(0, origBaseQty - prevReturnedBaseQty);
+            const remainingReturnableQty = remainingReturnableBaseQty / factor;
+
             // Calculate net unit price after discount
             const netUnitPrice = it.quantity > 0 ? it.total / it.quantity : it.unit_price;
 

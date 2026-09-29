@@ -120,15 +120,45 @@ export function SalesReturnForm({
 
  if (presetInvoiceId && invoice) {
  setSourceInfo({ title:`مرتجع من فاتورة «${invoice.invoice_number}»`, invoice });
+
+ const { db } = await import('@/core/db/app_database');
+ const previousReturns = await db.sales_returns
+ .where('original_invoice_id')
+ .equals(presetInvoiceId)
+ .toArray();
+
+ const prevReturnIds = previousReturns.map((r) => r.id);
+ let prevReturnedItems: SalesInvoiceItem[] = [];
+ if (prevReturnIds.length > 0) {
+ prevReturnedItems = await db.sales_invoice_items
+ .where('invoice_id')
+ .anyOf(prevReturnIds)
+ .toArray();
+ }
+
  setLines(
- invoiceItems.map((it: SalesInvoiceItem) => ({
+ invoiceItems
+ .map((it: SalesInvoiceItem) => {
+ const factor = it.conversion_factor || 1;
+ const origBaseQty = it.base_quantity ?? (it.quantity * factor);
+
+ const prevReturnedBaseQty = prevReturnedItems
+ .filter((p) => p.product_id === it.product_id)
+ .reduce((sum, p) => sum + (p.base_quantity ?? (p.quantity * (p.conversion_factor || 1))), 0);
+
+ const remainingBaseQty = Math.max(0, origBaseQty - prevReturnedBaseQty);
+ const remainingQty = remainingBaseQty / factor;
+
+ return {
  productId: it.product_id,
  unitId: it.unit_id,
  factor: it.conversion_factor,
- qty: String(it.quantity),
+ qty: String(remainingQty),
  price: String(it.unit_price),
  discountPct:'0',
- }))
+ };
+ })
+ .filter((l) => Number(l.qty) > 0.0001)
  );
  } else {
  setSourceInfo(null);

@@ -844,20 +844,51 @@ export function POS() {
  return;
  }
 
- const returnableItems = invoiceItems.map((item) => {
+ const previousReturns = await db.sales_returns
+ .where('original_invoice_id')
+ .equals(inv.id)
+ .toArray();
+
+ const prevReturnIds = previousReturns.map((r) => r.id);
+ let prevReturnedItems: any[] = [];
+ if (prevReturnIds.length > 0) {
+ prevReturnedItems = await db.sales_invoice_items
+ .where('invoice_id')
+ .anyOf(prevReturnIds)
+ .toArray();
+ }
+
+ const returnableItems = invoiceItems
+ .map((item) => {
  const prod = products.find((p) => p.id === item.product_id);
+ const factor = item.conversion_factor || 1;
+ const origBaseQty = item.base_quantity ?? (item.quantity * factor);
+
+ const prevReturnedBaseQty = prevReturnedItems
+ .filter((p) => p.product_id === item.product_id)
+ .reduce((sum, p) => sum + (p.base_quantity ?? (p.quantity * (p.conversion_factor || 1))), 0);
+
+ const remainingBaseQty = Math.max(0, origBaseQty - prevReturnedBaseQty);
+ const remainingQty = remainingBaseQty / factor;
+
  return {
  productId: item.product_id,
  batchId: item.batch_id ||'',
  unitId: item.unit_id,
- factor: item.conversion_factor || 1,
- qty: item.quantity,
+ factor,
+ qty: remainingQty,
  price: item.unit_price,
  discount: item.discount_amount || 0,
  cost: item.unit_cost || (prod?.purchase_price || 0),
  taxRate: item.tax_rate || 0,
  };
- });
+ })
+ .filter((item) => item.qty > 0.0001);
+
+ if (returnableItems.length === 0) {
+ toast.error('تم إرجاع جميع أصناف هذه الفاتورة بالكامل مسبقاً!');
+ return;
+ }
 
  startInvoiceReturn(inv, returnableItems);
  toast.info(`معلومة: تم تفعيل وضع المرتجع وتحميل أصناف الفاتورة #${inv.invoice_number}`);
