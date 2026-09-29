@@ -783,16 +783,18 @@ export class SalesRepository {
  originalInvoiceId?: string | null;
  shiftId?: string | null;
  customerId?: string | null;
- items: {
- productId: string;
- unitId: string;
- conversionFactor: number;
- quantity: number;
- unitPrice: number;
- unitCost: number;
- discountAmount?: number;
- taxRate?: number;
- }[];
+  items: {
+    productId: string;
+    batchId?: string;
+    batchNumber?: string;
+    unitId: string;
+    conversionFactor: number;
+    quantity: number;
+    unitPrice: number;
+    unitCost: number;
+    discountAmount?: number;
+    taxRate?: number;
+  }[];
  discountAmount?: number;
  discountPercent?: number;
  enableTax?: boolean;
@@ -807,10 +809,55 @@ export class SalesRepository {
  const returnId = uuidv4();
  const returnNumber = await DocumentNumberService.nextSalesReturnNumber(params.orgId, params.branchId);
 
- const refundType = params.refundType ||'cash';
- if (refundType ==='credit'&& !params.customerId) {
- throw new Error('لا يمكن إرجاع المبلغ كرصيد بدون تحديد العميل.');
- }
+    const refundType = params.refundType || 'cash';
+    if (refundType === 'credit' && !params.customerId) {
+      throw new Error('لا يمكن إرجاع المبلغ كرصيد بدون تحديد العميل.');
+    }
+
+    // Check previously returned quantities if linked to an original invoice
+    if (params.originalInvoiceId) {
+      const originalInvoice = await db.sales_invoices.get(params.originalInvoiceId);
+      if (!originalInvoice) {
+        throw new Error('الفاتورة الأصلية غير موجودة.');
+      }
+      if (originalInvoice.is_deleted || originalInvoice.status === 'cancelled') {
+        throw new Error('لا يمكن إرجاع أصناف من فاتورة مبيعات ملغاة أو محذوفة.');
+      }
+
+      const originalItems = await db.sales_invoice_items
+        .where('invoice_id')
+        .equals(params.originalInvoiceId)
+        .toArray();
+
+      const previousReturns = await db.sales_returns
+        .where('original_invoice_id')
+        .equals(params.originalInvoiceId)
+        .toArray();
+
+      const prevReturnIds = previousReturns.map((r) => r.id);
+      let prevReturnedItems: SalesInvoiceItem[] = [];
+      if (prevReturnIds.length > 0) {
+        prevReturnedItems = await db.sales_invoice_items
+          .where('invoice_id')
+          .anyOf(prevReturnIds)
+          .toArray();
+      }
+
+      for (const item of params.items) {
+        const origItem = originalItems.find((o) => o.product_id === item.productId);
+        const origQty = origItem ? origItem.quantity : 0;
+        const prevQty = prevReturnedItems
+          .filter((p) => p.product_id === item.productId)
+          .reduce((sum, p) => sum + (p.quantity || 0), 0);
+
+        const maxAllowedReturn = Math.max(0, origQty - prevQty);
+        if (item.quantity > maxAllowedReturn + 0.0001) {
+          throw new Error(
+            `الكمية المطلوبة للإرجاع (${item.quantity}) تتجاوز الكمية المتاحة للإرجاع (${maxAllowedReturn}) المتبقية من الفاتورة الأصلية.`
+          );
+        }
+      }
+    }
 
  // Returns support the same optional discounts (amount/% on item or invoice)
  // and optional tax as sales invoices; free-of-charge = 100% discount.
@@ -867,35 +914,67 @@ export class SalesRepository {
  await db.transaction(
 'rw',
  [
- db.sales_returns,
- db.stock_levels,
- db.inventory_transactions,
- db.treasuries,
- db.contacts,
- db.contact_transactions,
- db.cashier_shifts,
- db.sync_queue,
- ],
- async () => {
- await db.sales_returns.add(returnDoc);
- await SyncQueueManager.enqueue('sales_returns', returnId,'insert', returnDoc);
+      db.sales_returns,
+      db.sales_invoice_items,
+      db.stock_levels,
+      db.inventory_transactions,
+      db.product_batches,
+      db.treasuries,
+      db.contacts,
+      db.contact_transactions,
+      db.cashier_shifts,
+      db.sync_queue,
+    ],
+    async () => {
+      await db.sales_returns.add(returnDoc);
+      await SyncQueueManager.enqueue('sales_returns', returnId, 'insert', returnDoc);
 
- // 1. Return stock to warehouse
- for (const item of params.items) {
- await InventoryRepository.recordStockMovement({
- orgId: params.orgId,
- warehouseId: params.warehouseId,
- productId: item.productId,
- transactionType:'sale_return',
- quantity: item.quantity,
- unitId: item.unitId,
- conversionFactor: item.conversionFactor,
- unitCost: item.unitCost,
- referenceType:'sale_invoice',
- referenceId: returnId,
- userId: params.userId,
- });
- }
+      // Save return line items
+      const returnItemsToInsert: SalesInvoiceItem[] = params.items.map((item) => {
+        const lineGross = roundMoney(item.quantity * item.unitPrice);
+        const lineDisc = roundMoney(Math.min(lineGross, Math.max(0, item.discountAmount || 0)));
+        const lineTotal = roundMoney(lineGross - lineDisc);
+        return {
+          id: uuidv4(),
+          invoice_id: returnId,
+          product_id: item.productId,
+          batch_id: item.batchId,
+          unit_id: item.unitId,
+          conversion_factor: item.conversionFactor,
+          quantity: item.quantity,
+          base_quantity: item.quantity * item.conversionFactor,
+          unit_price: item.unitPrice,
+          unit_cost: item.unitCost,
+          discount_amount: lineDisc,
+          tax_rate: item.taxRate || 0,
+          tax_amount: 0,
+          total: lineTotal,
+        };
+      });
+
+      await db.sales_invoice_items.bulkAdd(returnItemsToInsert);
+      for (const rItem of returnItemsToInsert) {
+        await SyncQueueManager.enqueue('sales_invoice_items', rItem.id, 'insert', rItem);
+      }
+
+      // 1. Return stock to warehouse (restocking specific batch if provided)
+      for (const item of params.items) {
+        await InventoryRepository.recordStockMovement({
+          orgId: params.orgId,
+          warehouseId: params.warehouseId,
+          productId: item.productId,
+          batchId: item.batchId,
+          batchNumber: item.batchNumber,
+          transactionType: 'sale_return',
+          quantity: item.quantity,
+          unitId: item.unitId,
+          conversionFactor: item.conversionFactor,
+          unitCost: item.unitCost,
+          referenceType: 'sale_invoice',
+          referenceId: returnId,
+          userId: params.userId,
+        });
+      }
 
  // 2. Refund either from treasury (cash) or as store credit for the customer
  if (cashRefund > 0) {
@@ -960,11 +1039,19 @@ export class SalesRepository {
  userId: string;
  reason?: string;
  }): Promise<SalesInvoice> {
- const invoice = await db.sales_invoices.get(params.invoiceId);
- if (!invoice) throw new Error('فاتورة المبيعات غير موجودة');
- if (invoice.is_deleted || invoice.status ==='cancelled') {
- throw new Error('تم حذف أو إلغاء هذه الفاتورة مسبقاً');
- }
+    const invoice = await db.sales_invoices.get(params.invoiceId);
+    if (!invoice) throw new Error('فاتورة المبيعات غير موجودة');
+    if (invoice.is_deleted || invoice.status === 'cancelled') {
+      throw new Error('تم حذف أو إلغاء هذه الفاتورة مسبقاً');
+    }
+
+    const existingReturns = await db.sales_returns
+      .where('original_invoice_id')
+      .equals(params.invoiceId)
+      .toArray();
+    if (existingReturns.length > 0) {
+      throw new Error('لا يمكن حذف أو إلغاء فاتورة مبيعات توجد لها مرتجعات مسجلة مسبقاً.');
+    }
 
  const now = new Date().toISOString();
  const items = await db.sales_invoice_items.where('invoice_id').equals(params.invoiceId).toArray();

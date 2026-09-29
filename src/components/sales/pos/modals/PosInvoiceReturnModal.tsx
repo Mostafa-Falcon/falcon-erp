@@ -47,16 +47,17 @@ interface PosInvoiceReturnModalProps {
 }
 
 interface ReturnLine {
- itemId: string;
- productId: string;
- unitId: string;
- conversionFactor: number;
- unitPrice: number;
- unitCost: number;
- originalQty: number;
- returnQty: number;
- productName: string;
- unitName: string;
+  itemId: string;
+  productId: string;
+  batchId?: string;
+  unitId: string;
+  conversionFactor: number;
+  unitPrice: number;
+  unitCost: number;
+  originalQty: number;
+  returnQty: number;
+  productName: string;
+  unitName: string;
 }
 
 export function PosInvoiceReturnModal({
@@ -85,88 +86,114 @@ export function PosInvoiceReturnModal({
  }
 
  let isMounted = true;
- const loadItems = async () => {
- setIsLoading(true);
- try {
- const items = await db.sales_invoice_items
- .where('invoice_id')
- .equals(invoice.id)
- .toArray();
+    const loadItems = async () => {
+      setIsLoading(true);
+      try {
+        const items = await db.sales_invoice_items
+          .where('invoice_id')
+          .equals(invoice.id)
+          .toArray();
 
- if (!isMounted) return;
+        // Calculate previously returned quantities for this original invoice
+        const previousReturns = await db.sales_returns
+          .where('original_invoice_id')
+          .equals(invoice.id)
+          .toArray();
 
- const pMap: Record<string, Product> = {};
- for (const p of products) pMap[p.id] = p;
+        const prevReturnIds = previousReturns.map((r) => r.id);
+        let prevReturnedItems: SalesInvoiceItem[] = [];
+        if (prevReturnIds.length > 0) {
+          prevReturnedItems = await db.sales_invoice_items
+            .where('invoice_id')
+            .anyOf(prevReturnIds)
+            .toArray();
+        }
 
- setLines(
- items.map((it) => {
- const prod = pMap[it.product_id];
- const unit = unitsById[it.unit_id]?.name ||'وحدة';
+        if (!isMounted) return;
 
- return {
- itemId: it.id,
- productId: it.product_id,
- unitId: it.unit_id,
- conversionFactor: it.conversion_factor || 1,
- unitPrice: it.unit_price,
- unitCost: it.unit_cost,
- originalQty: it.quantity,
- returnQty: it.quantity, // Default: return full line, user can edit
- productName: prod?.name ||'صنف',
- unitName: unit,
- };
- })
- );
- } catch (err) {
- console.error('Error loading invoice items for return:', err);
- } finally {
- if (isMounted) setIsLoading(false);
- }
- };
+        const pMap: Record<string, Product> = {};
+        for (const p of products) pMap[p.id] = p;
 
- loadItems();
- return () => {
- isMounted = false;
- };
- }, [invoice, isOpen, products, unitsById]);
+        setLines(
+          items.map((it) => {
+            const prod = pMap[it.product_id];
+            const unit = unitsById[it.unit_id]?.name || 'وحدة';
 
- if (!invoice) return null;
+            // Calculate previously returned quantity for this line
+            const prevQty = prevReturnedItems
+              .filter((p) => p.product_id === it.product_id)
+              .reduce((sum, p) => sum + (p.quantity || 0), 0);
 
- const totalReturnAmount = lines.reduce(
- (sum, l) => sum + (l.returnQty > 0 ? l.returnQty * l.unitPrice : 0),
- 0
- );
+            const remainingReturnableQty = Math.max(0, it.quantity - prevQty);
+            // Calculate net unit price after discount
+            const netUnitPrice = it.quantity > 0 ? it.total / it.quantity : it.unit_price;
 
- const activeReturnCount = lines.filter((l) => l.returnQty > 0).length;
+            return {
+              itemId: it.id,
+              productId: it.product_id,
+              batchId: it.batch_id,
+              unitId: it.unit_id,
+              conversionFactor: it.conversion_factor || 1,
+              unitPrice: netUnitPrice,
+              unitCost: it.unit_cost,
+              originalQty: remainingReturnableQty,
+              returnQty: remainingReturnableQty,
+              productName: prod?.name || 'صنف',
+              unitName: unit,
+            };
+          })
+        );
+      } catch (err) {
+        console.error('Error loading invoice items for return:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
 
- const handleUpdateQty = (idx: number, qty: number) => {
- const updated = [...lines];
- const max = updated[idx].originalQty;
- const cleanQty = Math.max(0, Math.min(max, qty));
- updated[idx].returnQty = cleanQty;
- setLines(updated);
- };
+    loadItems();
+    return () => {
+      isMounted = false;
+    };
+  }, [invoice, isOpen, products, unitsById]);
 
- const handleProcessReturn = async (e: React.FormEvent) => {
- e.preventDefault();
- if (!currentUser) return;
- if (activeReturnCount === 0) {
- toast.error('يرجى تحديد كمية للإرجاع (أكبر من صفر) لصنف واحد على الأقل');
- return;
- }
+  if (!invoice) return null;
 
- try {
- setIsSaving(true);
- const itemsToReturn = lines
- .filter((l) => l.returnQty > 0)
- .map((l) => ({
- productId: l.productId,
- unitId: l.unitId,
- conversionFactor: l.conversionFactor,
- quantity: l.returnQty,
- unitPrice: l.unitPrice,
- unitCost: l.unitCost,
- }));
+  const totalReturnAmount = lines.reduce(
+    (sum, l) => sum + (l.returnQty > 0 ? l.returnQty * l.unitPrice : 0),
+    0
+  );
+
+  const activeReturnCount = lines.filter((l) => l.returnQty > 0).length;
+
+  const handleUpdateQty = (idx: number, qty: number) => {
+    const updated = [...lines];
+    const max = updated[idx].originalQty;
+    const cleanQty = Math.max(0, Math.min(max, qty));
+    updated[idx].returnQty = cleanQty;
+    setLines(updated);
+  };
+
+  const handleProcessReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    if (activeReturnCount === 0) {
+      toast.error('يرجى تحديد كمية للإرجاع (أكبر من صفر) لصنف واحد على الأقل');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const itemsToReturn = lines
+        .filter((l) => l.returnQty > 0)
+        .map((l) => ({
+          productId: l.productId,
+          batchId: l.batchId,
+          unitId: l.unitId,
+          conversionFactor: l.conversionFactor,
+          quantity: l.returnQty,
+          unitPrice: l.unitPrice,
+          unitCost: l.unitCost,
+        }));
 
  const targetTreasuryId =
  invoice.treasury_id ||
