@@ -12,6 +12,7 @@ export interface CartLine {
  cost: number;
  taxRate: number;
  priceTier?:'default'|'old'|'wholesale';
+ serialNumber?: string;
  maxReturnQty?: number;
  isReturnLine?: boolean;
  originalInvoiceItemId?: string;

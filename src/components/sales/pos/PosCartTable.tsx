@@ -129,6 +129,11 @@ export function PosCartTable({
  </div>
  <div className="text-3xs text-slate-400 font-mono mt-1 flex items-center gap-2">
  <span>كود: {product?.sku || line.productId}</span>
+ {line.serialNumber && (
+ <span className="px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold">
+ IMEI: {line.serialNumber}
+ </span>
+ )}
  {line.isReturnLine && (
  <Badge variant="destructive"className="h-4 px-1 text-4xs">
  مرتجع
