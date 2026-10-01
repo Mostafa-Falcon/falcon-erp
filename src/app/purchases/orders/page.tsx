@@ -121,6 +121,50 @@ function PurchaseOrdersContent() {
  }
  };
 
+ const handleConvertToInvoice = async (po: PurchaseOrder) => {
+ if (!currentUser) return;
+ try {
+ const items = await PurchaseOrdersRepository.getPurchaseOrderItems(po.id);
+ if (!items || items.length === 0) {
+ toast.error('لا توجد أصناف في أمر الشراء هذا');
+ return;
+ }
+
+ const { db } = await import('@/core/db/app_database');
+ const { PurchasesRepository } = await import('@/modules/purchases/purchases_repository');
+ const warehouse = (await db.warehouses.where('org_id').equals(orgId).first()) || { id: po.warehouse_id || currentUser.branch_id ||'' };
+ const treasury = (await db.treasuries.where('org_id').equals(orgId).first()) || { id:'' };
+
+ const createdInvoice = await PurchasesRepository.createPurchaseInvoice({
+ orgId,
+ branchId: po.branch_id || currentUser.branch_id ||'',
+ warehouseId: warehouse.id,
+ supplierId: po.supplier_id || null,
+ invoiceNumber:`PUR-${po.po_number}`,
+ invoiceDate: new Date().toISOString().split('T')[0],
+ paymentType:'credit',
+ treasuryId: treasury.id,
+ userId: currentUser.id,
+ notes:`تحويل تلقائي من أمر شراء رقم #${po.po_number}`,
+ items: items.map((it) => ({
+ productId: it.product_id,
+ unitId: it.unit_id ||'',
+ conversionFactor: it.conversion_factor || 1,
+ quantity: it.quantity,
+ unitCost: it.unit_cost,
+ })),
+ });
+
+ await PurchaseOrdersRepository.updateStatus(po.id,'received');
+ toast.success(`تم تحويل أمر الشراء #${po.po_number} إلى فاتورة مشتريات #${createdInvoice.invoice_number} وزيادة الرصيد بالمخزن!`);
+ loadData();
+ setIsDetailOpen(false);
+ } catch (e: any) {
+ console.error(e);
+ toast.error(e?.message ||'فشل تحويل أمر الشراء إلى فاتورة مشتريات');
+ }
+ };
+
  const getStatusBadge = (status: PurchaseOrderStatus) => {
  switch (status) {
  case'received':
@@ -366,14 +410,30 @@ function PurchaseOrdersContent() {
  </Table>
  </div>
 
- {/* Summary */}
- <div className="flex flex-col items-end gap-1 text-xs border-t pt-3">
+ {/* Summary & Actions */}
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t pt-3">
+ <Button
+ type="button"
+ onClick={() => handleConvertToInvoice(selectedOrder)}
+ className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 cursor-pointer"
+ >
+ <PackageCheck className="w-4 h-4" />
+ <span>تحويل إلى فاتورة مشتريات وتأكيد الرصيد بالمخزن</span>
+ </Button>
+
+ <div className="flex flex-col items-end gap-1 font-semibold">
  <div className="flex justify-between w-60">
- <span className="text-slate-500 font-bold">المجموع الفرعي:</span>
- <span className="font-bold">{formatNumber(selectedOrder.subtotal)} د.ع</span>
+ <span className="text-slate-500">المجموع الفرعي:</span>
+ <span className="font-mono">{formatNumber(selectedOrder.subtotal)} ج.م</span>
  </div>
- <div className="flex justify-between w-60 text-base font-black border-t pt-2 text-primary">
+ <div className="flex justify-between w-60 text-base font-black border-t pt-1 text-primary">
  <span>الإجمالي النهائي:</span>
+ <span className="font-mono text-emerald-600">{formatNumber(selectedOrder.total)} ج.م</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
  <span>{formatNumber(selectedOrder.total)} د.ع</span>
  </div>
  </div>

@@ -7,6 +7,7 @@ import {
  Search,
  X,
  Phone,
+ Camera,
 } from'lucide-react';
 import { formatNumber } from'@/lib/format';
 import { cn } from'@/lib/utils';
@@ -40,6 +41,7 @@ interface PosSearchCustomerBarProps {
  cartCount: number;
  priceTier: string;
  setPriceTier: (tier: string) => void;
+ onOpenCameraScanner?: () => void;
 }
 
 export function PosSearchCustomerBar({
@@ -63,6 +65,7 @@ export function PosSearchCustomerBar({
  cartCount,
  priceTier,
  setPriceTier,
+ onOpenCameraScanner,
 }: PosSearchCustomerBarProps) {
  const router = useRouter();
  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
@@ -469,8 +472,18 @@ export function PosSearchCustomerBar({
  </button>
  )}
 
- {/* F2 shortcut tag badge (Desktop) */}
- <div className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2">
+ {/* Camera Scanner & F2 shortcut tag badge */}
+ <div className="hidden sm:flex items-center gap-1 absolute left-2 top-1/2 -translate-y-1/2">
+ {onOpenCameraScanner && (
+ <button
+ type="button"
+ onClick={onOpenCameraScanner}
+ title="مسح باركود بالكاميرا"
+ className="w-7 h-7 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center transition-colors cursor-pointer"
+ >
+ <Camera className="w-4 h-4"/>
+ </button>
+ )}
  <span className="bg-slate-200/70 dark:bg-slate-700/70 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-mono text-3xs font-bold px-1.5 py-0.5 rounded-md">
  F2
  </span>

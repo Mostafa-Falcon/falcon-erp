@@ -22,7 +22,8 @@ import {
  FileText,
  X,
  Store,
- ChevronRight
+ ChevronRight,
+ Share2,
 } from'lucide-react';
 import { db } from'@/core/db/app_database';
 import { formatNumber, formatDateTime } from'@/lib/format';
@@ -92,6 +93,24 @@ export function InvoiceDetailModal({
 
  const handlePrintReceipt = () => {
  window.print();
+ };
+
+ const handleShareInvoice = async () => {
+ const shareText = `🧾 فاتورة مبيعات #${invoice.invoice_number}\nالعميل: ${customer?.name ||'عميل نقدي'}\nالإجمالي: ${formatNumber(invoice.total)} ج.م\nالتاريخ: ${formatDateTime(invoice.invoice_date || invoice.created_at)}`;
+ if (navigator.share) {
+ try {
+ await navigator.share({
+ title:`فاتورة #${invoice.invoice_number}`,
+ text: shareText,
+ });
+ toast.success('تم فتح خيارات المشاركة بنجاح');
+ } catch (e) {
+ // user cancelled
+ }
+ } else {
+ await navigator.clipboard.writeText(shareText);
+ toast.success('تم نسخ تفاصيل الفاتورة للحافظة لمشاركتها عبر الواتساب أو التطبيقات');
+ }
  };
 
  return (
@@ -299,6 +318,16 @@ export function InvoiceDetailModal({
  >
  <Printer className="w-4 h-4"/>
  <span>طباعة إيصال</span>
+ </Button>
+
+ <Button
+ type="button"
+ variant="outline"
+ onClick={handleShareInvoice}
+ className="h-9 px-4 rounded-xl border-slate-200 dark:border-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+ >
+ <Share2 className="w-4 h-4 text-emerald-600"/>
+ <span>مشاركة الفاتورة</span>
  </Button>
  </div>
 

@@ -41,6 +41,7 @@ import { PosCustomerPaymentModal } from'./modals/PosCustomerPaymentModal';
 import { PosDiscountsModal } from'./modals/PosDiscountsModal';
 import { PosMaintenancePaymentModal } from'./modals/PosMaintenancePaymentModal';
 import { PosDigitalWalletModal } from'./modals/PosDigitalWalletModal';
+import { PosCameraScannerModal } from'./modals/PosCameraScannerModal';
 
 import { OpenShiftModal } from'@/components/sales/shifts/OpenShiftModal';
 import { ShiftDetailModal } from'@/components/sales/shifts/ShiftDetailModal';
@@ -109,6 +110,7 @@ export function POS() {
  // Mobile & Electronics POS Modal State
  const [isMaintenancePaymentOpen, setIsMaintenancePaymentOpen] = useState(false);
  const [isDigitalWalletOpen, setIsDigitalWalletOpen] = useState(false);
+ const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
 
  // Discounts & Shipping Modal State
  const [isDiscountsModalOpen, setIsDiscountsModalOpen] = useState(false);
@@ -575,6 +577,7 @@ export function POS() {
  cartCount={cart.length}
  priceTier={priceTier}
  setPriceTier={setPriceTier}
+ onOpenCameraScanner={() => setIsCameraScannerOpen(true)}
  />
 
  {/* Main Working Area: Cart Table + Left Quick Items Sidebar */}
@@ -1075,6 +1078,16 @@ export function POS() {
  if (refreshed) setActiveShift(refreshed);
  }
  loadData();
+ }}
+ />
+
+ {/* 10. Camera Barcode Scanner Modal */}
+ <PosCameraScannerModal
+ isOpen={isCameraScannerOpen}
+ onClose={() => setIsCameraScannerOpen(false)}
+ onScanCode={(code) => {
+ setSearchQuery(code);
+ handleSearchSubmit();
  }}
  />
 

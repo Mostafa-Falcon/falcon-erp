@@ -122,6 +122,49 @@ function QuotesContent() {
  }
  };
 
+ const handleConvertToInvoice = async (quote: Quotation) => {
+ if (!currentUser) return;
+ try {
+ const items = await QuotationsRepository.getQuotationItems(quote.id);
+ if (!items || items.length === 0) {
+ toast.error('لا توجد أصناف في عرض السعر هذا');
+ return;
+ }
+
+ const { db } = await import('@/core/db/app_database');
+ const { SalesRepository } = await import('@/modules/sales/sales_repository');
+ const warehouse = (await db.warehouses.where('org_id').equals(orgId).first()) || { id: currentUser.branch_id ||'' };
+ const treasury = (await db.treasuries.where('org_id').equals(orgId).first()) || { id:'' };
+
+ const createdInvoice = await SalesRepository.createSalesInvoice({
+ orgId,
+ branchId: quote.branch_id || currentUser.branch_id ||'',
+ warehouseId: warehouse.id,
+ customerId: quote.customer_id || null,
+ items: items.map((it) => ({
+ productId: it.product_id,
+ unitId: it.unit_id ||'',
+ conversionFactor: it.conversion_factor || 1,
+ quantity: it.quantity,
+ unitPrice: it.unit_price,
+ unitCost: it.unit_cost || 0,
+ })),
+ paymentType:'credit',
+ treasuryId: treasury.id,
+ userId: currentUser.id,
+ notes:`تحويل تلقائي من عرض سعر #${quote.quotation_number}`,
+ });
+
+ await QuotationsRepository.updateStatus(quote.id,'accepted');
+ toast.success(`تم تحويل عرض السعر #${quote.quotation_number} إلى فاتورة مبيعات #${createdInvoice.invoice_number} بنجاح!`);
+ loadData();
+ setIsDetailOpen(false);
+ } catch (e: any) {
+ console.error(e);
+ toast.error(e?.message ||'فشل تحويل عرض السعر إلى فاتورة مبيعات');
+ }
+ };
+
  const getStatusBadge = (status: QuotationStatus) => {
  switch (status) {
  case'accepted':
@@ -380,19 +423,32 @@ function QuotesContent() {
  </Table>
  </div>
 
- {/* Summary */}
- <div className="flex flex-col items-end gap-1 text-xs border-t pt-3">
+ {/* Summary & Actions */}
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t pt-3">
+ <Button
+ type="button"
+ onClick={() => handleConvertToInvoice(selectedQuote)}
+ className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 cursor-pointer"
+ >
+ <CheckCircle className="w-4 h-4" />
+ <span>تحويل إلى فاتورة مبيعات ومخصوم مخزنياً</span>
+ </Button>
+
+ <div className="flex flex-col items-end gap-1 font-semibold">
  <div className="flex justify-between w-60">
- <span className="text-slate-500 font-bold">المجموع الفرعي:</span>
- <span className="font-bold">{formatNumber(selectedQuote.subtotal)} د.ع</span>
+ <span className="text-slate-500">المجموع الفرعي:</span>
+ <span className="font-mono">{formatNumber(selectedQuote.subtotal)} ج.م</span>
  </div>
+ {selectedQuote.discount_amount > 0 && (
  <div className="flex justify-between w-60 text-rose-600">
- <span className="font-bold">إجمالي الخصم:</span>
- <span className="font-bold">-{formatNumber(selectedQuote.discount_amount)} د.ع</span>
+ <span>إجمالي الخصم:</span>
+ <span className="font-mono">-{formatNumber(selectedQuote.discount_amount)} ج.م</span>
  </div>
- <div className="flex justify-between w-60 text-base font-black border-t pt-2 text-primary">
+ )}
+ <div className="flex justify-between w-60 text-base font-black border-t pt-1 text-primary">
  <span>الإجمالي النهائي:</span>
- <span>{formatNumber(selectedQuote.total)} د.ع</span>
+ <span className="font-mono text-emerald-600">{formatNumber(selectedQuote.total)} ج.م</span>
+ </div>
  </div>
  </div>
  </div>
