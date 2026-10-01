@@ -41,6 +41,8 @@ import {
  Store,
  QrCode,
  Wallet,
+ Smartphone,
+ Wrench,
  Check,
  History,
  UserCheck,
@@ -208,6 +210,16 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
  { label:'مراجعة الروشتات', href:'/sales/prescriptions', icon: <FileCheck className="w-4 h-4"/> },
  { label:'مرتجعات المبيعات', href:'/sales/returns'},
  { label:'ورديات الكاشير', href:'/sales/shifts'},
+ ],
+ },
+ {
+ id:'mobile',
+ label:'الموبايل والصيانة',
+ icon: <Smartphone className="w-4 h-4 text-sky-500"/>,
+ subItems: [
+ { label:'مركز أذونات الصيانة', href:'/mobile/maintenance', icon: <Wrench className="w-4 h-4"/> },
+ { label:'تتبع السيريال والـ IMEI', href:'/mobile/serials', icon: <QrCode className="w-4 h-4"/> },
+ { label:'المحافظ والشحن كاش', href:'/mobile/wallets', icon: <Wallet className="w-4 h-4"/> },
  ],
  },
  {

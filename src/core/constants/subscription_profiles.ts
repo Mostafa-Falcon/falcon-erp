@@ -125,6 +125,9 @@ export interface SubscriptionPermissions {
  canUploadProductImages: boolean;
  canExportReports: boolean;
  canUploadInvoiceLogo: boolean;
+ canManageMobileShop?: boolean;
+ canManageMaintenance?: boolean;
+ canManageWallets?: boolean;
  maxProductsLimit?: number;
  reasonIfBlocked?: string;
 }
@@ -183,6 +186,9 @@ export function getSubscriptionPermissions(
  canUploadProductImages: false, // حصرية لباقة VIP جولد
  canExportReports: false, // ميزة حصرية لباقات VIP
  canUploadInvoiceLogo: false, // ميزة حصرية لباقات VIP الفضية والذهبية
+ canManageMobileShop: true,
+ canManageMaintenance: true,
+ canManageWallets: true,
  };
  case'vip_bronze':
  return {
@@ -196,6 +202,9 @@ export function getSubscriptionPermissions(
  canUploadProductImages: false,
  canExportReports: true, // تفعيل تصدير التقارير لباقة VIP برونز
  canUploadInvoiceLogo: false,
+ canManageMobileShop: true,
+ canManageMaintenance: true,
+ canManageWallets: true,
  };
  case'vip_silver':
  return {
@@ -209,6 +218,9 @@ export function getSubscriptionPermissions(
  canUploadProductImages: false,
  canExportReports: true,
  canUploadInvoiceLogo: true, // تفعيل طباعة الشعار لباقة VIP سيلفر
+ canManageMobileShop: true,
+ canManageMaintenance: true,
+ canManageWallets: true,
  };
  case'vip_gold':
  default:
@@ -223,6 +235,9 @@ export function getSubscriptionPermissions(
  canUploadProductImages: true, // ميزة حصرية لباقة VIP جولد 👑
  canExportReports: true, // ميزة حصرية لباقات VIP
  canUploadInvoiceLogo: true, // ميزة حصرية لباقات VIP سيلفر وجولد
+ canManageMobileShop: true,
+ canManageMaintenance: true,
+ canManageWallets: true,
  };
  }
 }

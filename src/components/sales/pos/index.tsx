@@ -39,6 +39,8 @@ import { PosExpenseModal } from'./modals/PosExpenseModal';
 import { PosSupplierPaymentModal } from'./modals/PosSupplierPaymentModal';
 import { PosCustomerPaymentModal } from'./modals/PosCustomerPaymentModal';
 import { PosDiscountsModal } from'./modals/PosDiscountsModal';
+import { PosMaintenancePaymentModal } from'./modals/PosMaintenancePaymentModal';
+import { PosDigitalWalletModal } from'./modals/PosDigitalWalletModal';
 
 import { OpenShiftModal } from'@/components/sales/shifts/OpenShiftModal';
 import { ShiftDetailModal } from'@/components/sales/shifts/ShiftDetailModal';
@@ -103,6 +105,10 @@ export function POS() {
 
  // Customer Payment Modal State
  const [isCustomerPaymentModalOpen, setIsCustomerPaymentModalOpen] = useState(false);
+
+ // Mobile & Electronics POS Modal State
+ const [isMaintenancePaymentOpen, setIsMaintenancePaymentOpen] = useState(false);
+ const [isDigitalWalletOpen, setIsDigitalWalletOpen] = useState(false);
 
  // Discounts & Shipping Modal State
  const [isDiscountsModalOpen, setIsDiscountsModalOpen] = useState(false);
@@ -1022,6 +1028,51 @@ export function POS() {
  if (refreshed) {
  setActiveShift(refreshed);
  }
+ }
+ loadData();
+ }}
+ />
+
+ {/* 8. Maintenance Ticket Payment Modal */}
+ <PosMaintenancePaymentModal
+ isOpen={isMaintenancePaymentOpen}
+ onClose={() => setIsMaintenancePaymentOpen(false)}
+ orgId={orgId}
+ onSelectTicket={async (ticket) => {
+ try {
+ const { MaintenanceRepository } = await import('@/modules/mobile/maintenance_repository');
+ const targetTr = activeShift?.treasury_id || treasuries[0]?.id || '';
+ await MaintenanceRepository.payTicket({
+ ticketId: ticket.id,
+ amountPaid: ticket.remaining_amount,
+ treasuryId: targetTr,
+ userId: currentUser?.id || '',
+ });
+ toast.success(`تم تحصيل مبلغ صيانة التكت #${ticket.ticket_number} بنجاح!`);
+ if (activeShift) {
+ const { db } = await import('@/core/db/app_database');
+ const refreshed = await db.cashier_shifts.get(activeShift.id);
+ if (refreshed) setActiveShift(refreshed);
+ }
+ loadData();
+ } catch (e: any) {
+ toast.error(e?.message || 'تعذر تحصيل النقدية');
+ }
+ }}
+ />
+
+ {/* 9. Fast Digital Wallet / Top-Up Modal */}
+ <PosDigitalWalletModal
+ isOpen={isDigitalWalletOpen}
+ onClose={() => setIsDigitalWalletOpen(false)}
+ activeShift={activeShift}
+ currentUser={currentUser}
+ treasuries={treasuries}
+ onProcessed={async () => {
+ if (activeShift) {
+ const { db } = await import('@/core/db/app_database');
+ const refreshed = await db.cashier_shifts.get(activeShift.id);
+ if (refreshed) setActiveShift(refreshed);
  }
  loadData();
  }}

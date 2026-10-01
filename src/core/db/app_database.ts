@@ -121,6 +121,12 @@ export class FalconAppDatabase extends Dexie {
  sales_reps!: Table<SalesRep, string>;
  crm_leads!: Table<CrmLead, string>;
 
+ // Mobile, Electronics, Maintenance & Digital Wallets
+ product_serials!: Table<import('@/types').ProductSerial, string>;
+ maintenance_tickets!: Table<import('@/types').MaintenanceTicket, string>;
+ maintenance_ticket_items!: Table<import('@/types').MaintenanceTicketItem, string>;
+ digital_wallet_transactions!: Table<import('@/types').DigitalWalletTransaction, string>;
+
  sync_queue!: Table<SyncQueueItem, string>;
  activity_logs!: Table<ActivityLog, string>;
 
@@ -246,6 +252,14 @@ export class FalconAppDatabase extends Dexie {
  customer_groups:'id, org_id, is_active, sync_status',
  sales_reps:'id, org_id, is_active, sync_status',
  crm_leads:'id, org_id, status, sales_rep_id, created_at, sync_status',
+ });
+
+ // Incremental upgrade: adds product_serials, maintenance_tickets, maintenance_ticket_items, digital_wallet_transactions.
+ this.version(13).stores({
+ product_serials:'id, org_id, product_id, serial_number, imei2, status, condition, purchase_invoice_id, sale_invoice_id, sync_status',
+ maintenance_tickets:'id, org_id, branch_id, ticket_number, customer_id, customer_phone, device_model, imei_or_serial, status, payment_status, technician_id, sync_status',
+ maintenance_ticket_items:'id, ticket_id, product_id',
+ digital_wallet_transactions:'id, org_id, branch_id, shift_id, treasury_id, service_type, reference_number, user_id, sync_status',
  });
  }
 }

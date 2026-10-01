@@ -86,6 +86,8 @@ export interface Product {
  // Inventory tracking flags
  tracks_batch: boolean; // For batch / lot numbers
  tracks_expiry: boolean; // For expiry dates (food, consumables, chemicals)
+ tracks_serial?: boolean; // For mobile devices IMEI / serial numbers
+ compatible_models?: string; // الموديلات المتوافقة (محلات الموبايل والإلكترونيات)
  expiry_alert_days?: number; // أيام التنبيه قبل انتهاء الصلاحية
  min_stock_alert: number;
  max_stock_limit?: number;
