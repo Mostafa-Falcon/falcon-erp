@@ -29,18 +29,18 @@ export const SUBSCRIPTION_PROFILES: Record<string, SubscriptionProfile> = {
  trial: {
  id:'trial',
  nameAr:'حساب تجريبي (7 أيام)',
- nameEn:'7-Day Demo Trial',
- badgeName:'حساب تجريبي ⏳',
+ nameEn:'7-Day Full Trial',
+ badgeName:'حساب تجريبي (7 أيام) ⏳',
  icon:'⏳',
  isVip: false,
  badgeStyle:'bg-rose-500/15 text-rose-700 border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-400 font-black',
  cardStyle:'border-rose-300 dark:border-rose-800 bg-gradient-to-br from-rose-50/60 via-white to-pink-50/30 dark:from-rose-950/20 dark:via-[#131b2e] dark:to-rose-900/10 shadow-xs',
  gradientText:'text-rose-600 dark:text-rose-400 font-black',
  glowEffect:'ring-1 ring-rose-400/30',
- description:'حساب استكشافي لمدة 7 أيام للتعرف على واجهات النظام وإضافة أصناف تجريبية (البيع والمشتريات محجوبة حتى الترقية).',
- maxUsers:'مالك الحساب فقط (معاينة)',
- maxBranches:'الفرع التجريبي الرئيسي',
- supportLevel:'دعم تجريبي استكشافي',
+ description:'حساب تجريبي شامل لجميع ميزات وإمكانيات النظام لمدة 7 أيام.',
+ maxUsers:'جميع المستخدمين والأنشطة',
+ maxBranches:'كافة الفروع والخدمات',
+ supportLevel:'دعم تجريبي شامل',
  },
  standard: {
  id:'standard',
@@ -153,26 +153,29 @@ export function getSubscriptionPermissions(
  canUploadProductImages: false,
  canExportReports: false,
  canUploadInvoiceLogo: false,
- reasonIfBlocked:'انتهت فترة اشتراك أو تجربة المنشأة. يرجى الترقية للتفعيل.',
+ canManageMobileShop: false,
+ canManageMaintenance: false,
+ canManageWallets: false,
+ reasonIfBlocked:'انتهت فترة التجربة المجانية (7 أيام) أو اشتراك المنشأة. يرجى التواصل عبر الواتساب على رقم 01116603371 لاختيار الاشتراك المناسب وتفعيل الحساب.',
  };
  }
 
  switch (key) {
  case'trial':
  return {
- canExecuteSales: false, // الكاشير وشاشة POS للمعاينة والاستعراض فقط (لا تنفذ بيع)
- canExecutePurchases: false, // فواتير المشتريات غير متاحة
- canAddProducts: true, // مسموح إضافة أصناف تجريبية للمعاينة
- canManageEmployees: false,
- canManageBranches: false,
- canChangeActivityType: false,
- canResetByDateRange: false,
- canUploadProductImages: false,
- canExportReports: false,
- canUploadInvoiceLogo: false,
- maxProductsLimit: 15,
- reasonIfBlocked:
-'الحساب التجريبي مخصص للمعاينة واستكشاف النظام فقط (يمكنك استعراض الكاشير وإضافة أصناف تجريبية، بينما تنفيذ البيع والمشتريات محجوب لحين الترقية).',
+ canExecuteSales: true,
+ canExecutePurchases: true,
+ canAddProducts: true,
+ canManageEmployees: true,
+ canManageBranches: true,
+ canChangeActivityType: true,
+ canResetByDateRange: true,
+ canUploadProductImages: true,
+ canExportReports: true,
+ canUploadInvoiceLogo: true,
+ canManageMobileShop: true,
+ canManageMaintenance: true,
+ canManageWallets: true,
  };
  case'standard':
  return {

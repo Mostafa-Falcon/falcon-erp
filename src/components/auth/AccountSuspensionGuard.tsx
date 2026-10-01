@@ -6,7 +6,7 @@ import { db } from'@/core/db/app_database';
 import { supabase, isSupabaseConfigured } from'@/core/supabase/supabase_client';
 import { networkListener } from'@/core/sync/network_listener';
 import { Button } from'@/components/ui/button';
-import { ShieldAlert, RefreshCw, LogOut, PhoneCall, Building2 } from'lucide-react';
+import { ShieldAlert, RefreshCw, LogOut, PhoneCall, Building2, MessageSquare } from'lucide-react';
 import { toast } from'sonner';
 import { useRouter } from'next/navigation';
 
@@ -56,6 +56,9 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
  } else if (localUser && localUser.is_active === false) {
  suspended = true;
  reason ='تم إيقاف حسابك من قبل الإدارة.';
+ } else if (localOrg && localOrg.subscription_expires_at && new Date(localOrg.subscription_expires_at) < new Date()) {
+ suspended = true;
+ reason ='انتهت فترة التجربة المجانية (7 أيام) أو اشتراك المنشأة. يرجى التواصل معنا عبر الواتساب على رقم 01116603371 لاختيار الاشتراك المناسب وتفعيل حسابك.';
  }
 
  setIsSuspended(suspended);
@@ -214,13 +217,23 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
 
  {/* Actions */}
  <div className="space-y-3 pt-2">
+ <a
+ href="https://wa.me/201116603371?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D8%AA%D8%AC%D8%AF%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B4%D8%AA%D8%B1%D8%A7%D9%83%20%D9%88%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%20%D8%A8%D8%A7%D9%82%D8%A9%20%D9%85%D9%86%D8%A7%D8%B3%D8%A8%D8%A9%20%D9%84%D9%85%D9%86%D8%B4%D8%A3%D8%AA%D9%8A%20%D9%81%D9%8A%20Falcon%20ERP"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-600/30"
+ >
+ <MessageSquare className="w-4 h-4"/>
+ <span>التواصل عبر الواتساب لتحديد الاشتراك (01116603371)</span>
+ </a>
+
  <Button
  onClick={handleRevalidateNow}
  disabled={isRevalidating}
- className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-600/20"
+ className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-600/20"
  >
  <RefreshCw className={`w-4 h-4 ${isRevalidating ?'animate-spin':''}`} />
- {isRevalidating ?'جاري التحقق من السحابة...':'التحقق من حالة الحساب الآن'}
+ {isRevalidating ?'جاري التحقق من حالة الحساب...':'التحقق من حالة الحساب الآن'}
  </Button>
 
  <Button

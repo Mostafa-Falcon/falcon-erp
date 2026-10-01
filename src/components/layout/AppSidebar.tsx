@@ -311,10 +311,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
  if (item.id ==='purchases'&& !perms.canExecutePurchases) {
  return false;
  }
- // 3. Module'accounts'requires non-trial
- if (item.id ==='accounts'&& orgSubscription ==='trial') {
- return false;
- }
  return true;
  }).map((item) => {
  // Hide'الفروع والمناطق'under Settings if perms.canManageBranches is false
