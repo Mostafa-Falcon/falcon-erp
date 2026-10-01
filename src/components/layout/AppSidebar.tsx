@@ -43,6 +43,7 @@ import {
  Wallet,
  Smartphone,
  Wrench,
+ CreditCard,
  Check,
  History,
  UserCheck,
@@ -206,6 +207,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
  subItems: [
  { label: domain.posTitle, href:'/sales/pos'},
  { label:'فواتير المبيعات', href:'/sales/invoices'},
+ { label:'إدارة المبيعات بالتقسيط', href:'/sales/installments', icon: <CreditCard className="w-4 h-4 text-indigo-500"/> },
  { label:'عروض الأسعار', href:'/sales/quotes', icon: <FileText className="w-4 h-4"/> },
  { label:'مراجعة الروشتات', href:'/sales/prescriptions', icon: <FileCheck className="w-4 h-4"/> },
  { label:'مرتجعات المبيعات', href:'/sales/returns'},

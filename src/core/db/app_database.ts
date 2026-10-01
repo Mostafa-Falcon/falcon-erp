@@ -127,6 +127,11 @@ export class FalconAppDatabase extends Dexie {
  maintenance_ticket_items!: Table<import('@/types').MaintenanceTicketItem, string>;
  digital_wallet_transactions!: Table<import('@/types').DigitalWalletTransaction, string>;
 
+ // Deferred Installments & Guarantors
+ installment_plans!: Table<import('@/types').InstallmentPlan, string>;
+ installment_schedules!: Table<import('@/types').InstallmentSchedule, string>;
+ guarantors!: Table<import('@/types').Guarantor, string>;
+
  sync_queue!: Table<SyncQueueItem, string>;
  activity_logs!: Table<ActivityLog, string>;
 
@@ -260,6 +265,13 @@ export class FalconAppDatabase extends Dexie {
  maintenance_tickets:'id, org_id, branch_id, ticket_number, customer_id, customer_phone, device_model, imei_or_serial, status, payment_status, technician_id, sync_status',
  maintenance_ticket_items:'id, ticket_id, product_id',
  digital_wallet_transactions:'id, org_id, branch_id, shift_id, treasury_id, service_type, reference_number, user_id, sync_status',
+ });
+
+ // Incremental upgrade: adds installment_plans, installment_schedules, guarantors.
+ this.version(14).stores({
+ installment_plans:'id, org_id, branch_id, invoice_id, customer_id, plan_number, status, created_at, sync_status',
+ installment_schedules:'id, plan_id, org_id, installment_number, due_date, status, sync_status',
+ guarantors:'id, plan_id, org_id, customer_id, national_id, sync_status',
  });
  }
 }

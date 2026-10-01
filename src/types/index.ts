@@ -17,3 +17,4 @@ export * from'./prescriptions';
 export * from'./delivery';
 export * from'./crm';
 export * from'./mobile';
+export * from'./installments';
