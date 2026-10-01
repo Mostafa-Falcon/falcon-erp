@@ -65,19 +65,27 @@ export class DigitalWalletRepository {
       await SyncQueueManager.enqueue('digital_wallet_transactions', id, 'insert', transaction);
 
       // 2. Adjust Treasury/Wallet Balance:
-      // For deposit/outward transfer: the net change to treasury is +commission (if cash collected exceeds wallet balance deduction)
-      // or +totalCollected in cash treasury.
+      // Cash-Out (سحب نقدي لعميل): النقدية بالدرج تنقص بالمبلغ الكاش، والعمولة ربح صافي
+      // Cash-In / Top-up (إيداع/شحن لعميل): النقدية بالدرج تزيد بالمبلغ الكلي (المبلغ + العمولة)
       if (params.treasuryId) {
-        await TreasuryRepository.adjustBalance(params.treasuryId, commission);
+        const netCashAdjustment = params.serviceType === 'vodafone_cash_withdraw'
+          ? -amount + commission
+          : totalCollected;
+
+        await TreasuryRepository.adjustBalance(params.treasuryId, netCashAdjustment);
       }
 
       // 3. Update active cashier shift running totals if attached
       if (params.shiftId) {
         const shift = await db.cashier_shifts.get(params.shiftId);
         if (shift && shift.status === 'open') {
+          const shiftAdjustment = params.serviceType === 'vodafone_cash_withdraw'
+            ? -amount + commission
+            : totalCollected;
+
           const updatedShift = {
             ...shift,
-            expected_closing_balance: shift.expected_closing_balance + totalCollected,
+            expected_closing_balance: Math.max(0, shift.expected_closing_balance + shiftAdjustment),
             sync_status: 'pending' as const,
           };
           await db.cashier_shifts.put(updatedShift);

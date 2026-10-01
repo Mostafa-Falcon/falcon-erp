@@ -39,6 +39,7 @@ export interface CreateSalesInvoiceParams {
  unitCost: number;
  discountAmount?: number;
  taxRate?: number;
+ serialNumber?: string;
  }[];
  discountAmount?: number;
  discountPercent?: number;
@@ -430,6 +431,14 @@ export class SalesRepository {
 
  if (!result.success) {
  throw new Error(result.error ||'عجز في المخزون أثناء إتمام الفاتورة');
+ }
+ }
+
+ // 2.5 Mark IMEI / Serial numbers sold if present
+ for (const item of params.items) {
+ if (item.serialNumber) {
+ const { ProductSerialRepository } = await import('@/modules/mobile/product_serial_repository');
+ await ProductSerialRepository.markSerialSold(item.serialNumber, invoiceId, params.customerId);
  }
  }
 

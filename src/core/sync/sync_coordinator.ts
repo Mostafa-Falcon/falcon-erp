@@ -61,6 +61,13 @@ const TABLE_SYNC_ORDER: Record<string, number> = {
   quotation_items: 48,
   purchase_orders: 49,
   purchase_order_items: 50,
+  product_serials: 51,
+  maintenance_tickets: 52,
+  maintenance_ticket_items: 53,
+  digital_wallet_transactions: 54,
+  installment_plans: 55,
+  installment_schedules: 56,
+  guarantors: 57,
 };
 
 /**
@@ -330,6 +337,48 @@ const CLOUD_COLUMN_MAP: Record<string, Set<string>> = {
   ]),
   purchase_order_items: new Set([
     'id', 'po_id', 'product_id', 'quantity', 'unit_cost', 'total',
+  ]),
+  product_serials: new Set([
+    'id', 'org_id', 'branch_id', 'warehouse_id', 'product_id', 'product_name',
+    'serial_number', 'imei2', 'condition', 'status', 'cost_price', 'selling_price',
+    'warranty_months', 'supplier_id', 'customer_id', 'purchase_invoice_id',
+    'sale_invoice_id', 'notes', 'created_at', 'updated_at',
+  ]),
+  maintenance_tickets: new Set([
+    'id', 'org_id', 'branch_id', 'warehouse_id', 'ticket_number', 'customer_id',
+    'customer_name', 'customer_phone', 'device_model', 'imei_or_serial',
+    'passcode_or_pattern', 'problem_description', 'accessories_received',
+    'status', 'payment_status', 'technician_id', 'technician_name',
+    'estimated_cost', 'actual_parts_cost', 'labor_fee', 'discount_amount',
+    'total_amount', 'paid_amount', 'remaining_amount', 'treasury_id', 'notes',
+    'received_at', 'ready_at', 'delivered_at', 'created_by', 'created_at', 'updated_at',
+  ]),
+  maintenance_ticket_items: new Set([
+    'id', 'ticket_id', 'product_id', 'product_name', 'unit_id', 'conversion_factor',
+    'quantity', 'unit_price', 'unit_cost', 'total', 'created_at',
+  ]),
+  digital_wallet_transactions: new Set([
+    'id', 'org_id', 'branch_id', 'shift_id', 'treasury_id', 'service_type',
+    'service_label', 'phone_number', 'amount', 'commission_amount', 'total_collected',
+    'reference_number', 'customer_id', 'customer_name', 'notes', 'user_id',
+    'created_at', 'updated_at',
+  ]),
+  installment_plans: new Set([
+    'id', 'org_id', 'branch_id', 'invoice_id', 'invoice_number', 'customer_id',
+    'customer_name', 'customer_phone', 'plan_number', 'total_invoice_amount',
+    'down_payment', 'financed_amount', 'interest_rate_percent', 'interest_amount',
+    'total_financed_with_interest', 'number_of_installments', 'installment_frequency',
+    'installment_amount', 'start_date', 'status', 'notes', 'created_by',
+    'created_at', 'updated_at',
+  ]),
+  installment_schedules: new Set([
+    'id', 'plan_id', 'org_id', 'installment_number', 'due_date', 'amount',
+    'principal_amount', 'interest_amount', 'paid_amount', 'remaining_amount',
+    'status', 'paid_at', 'treasury_id', 'voucher_id', 'notes', 'created_at', 'updated_at',
+  ]),
+  guarantors: new Set([
+    'id', 'plan_id', 'org_id', 'customer_id', 'full_name', 'national_id',
+    'phone', 'work_place', 'relationship', 'address', 'notes', 'created_at', 'updated_at',
   ]),
 };
 

@@ -273,6 +273,12 @@ export class FalconAppDatabase extends Dexie {
  installment_schedules:'id, plan_id, org_id, installment_number, due_date, status, sync_status',
  guarantors:'id, plan_id, org_id, customer_id, national_id, sync_status',
  });
+
+ // Incremental upgrade: compound performance indexes for IMEI serials and overdue installment schedules.
+ this.version(15).stores({
+ product_serials:'id, org_id, product_id, serial_number, [org_id+serial_number], [org_id+status], imei2, status, condition, purchase_invoice_id, sale_invoice_id, sync_status',
+ installment_schedules:'id, plan_id, org_id, [org_id+due_date], [org_id+status], installment_number, due_date, status, sync_status',
+ });
  }
 }
 

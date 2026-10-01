@@ -325,19 +325,22 @@ export class InstallmentsRepository {
       }
     );
 
-    // Post Double-Entry Accounting Entry for Revenue Recognition
+    // Post Double-Entry Accounting Entry for Interest Revenue Recognition
     try {
-      await AccountingRepository.postServiceRevenue({
-        orgId: plan.org_id,
-        branchId: plan.branch_id,
-        referenceId: schedule.id,
-        referenceNumber: `${plan.plan_number}-Q${schedule.installment_number}`,
-        amount: payAmount,
-        treasuryId: params.treasuryId,
-        customerId: plan.customer_id,
-        description: `سداد قسط تقسيط شهرى - خطة #${plan.plan_number} (قسط ${schedule.installment_number}/${plan.number_of_installments})`,
-        userId: params.userId,
-      });
+      const interestPortion = Math.min(payAmount, schedule.interest_amount);
+      if (interestPortion > 0) {
+        await AccountingRepository.postServiceRevenue({
+          orgId: plan.org_id,
+          branchId: plan.branch_id,
+          referenceId: schedule.id,
+          referenceNumber: `${plan.plan_number}-Q${schedule.installment_number}`,
+          amount: interestPortion,
+          treasuryId: params.treasuryId,
+          customerId: plan.customer_id,
+          description: `إيراد أرباح/فوائد تقسيط - خطة #${plan.plan_number} (قسط ${schedule.installment_number}/${plan.number_of_installments})`,
+          userId: params.userId,
+        });
+      }
     } catch (e) {
       console.warn('[Accounting] Installment payment journal entry warning:', e);
     }

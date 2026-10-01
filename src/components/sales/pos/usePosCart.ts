@@ -125,6 +125,7 @@ export function usePosCart({
  factor?: number;
  qty?: number;
  batchId?: string;
+ serialNumber?: string;
  priceTier?:'default'|'old'|'wholesale';
  }
  ) => {
@@ -234,6 +235,7 @@ export function usePosCart({
  cost: lineCost,
  taxRate: resolvedTaxRate,
  priceTier: lineTier,
+ serialNumber: options?.serialNumber,
  },
  ]);
 
@@ -309,6 +311,22 @@ export function usePosCart({
  }
  }
 
+ // 1. Check if scanned barcode matches an IMEI / Serial number in product_serials
+ const serialMatch = await db.product_serials
+ .where('serial_number')
+ .equals(q)
+ .filter((s) => s.status ==='in_stock')
+ .first();
+
+ if (serialMatch) {
+ const serialProd = products.find((p) => p.id === serialMatch.product_id);
+ if (serialProd) {
+ addToCart(serialProd, { serialNumber: serialMatch.serial_number });
+ toast.success(`📱 تم إيجاد الجهاز بالـ IMEI: «${serialProd.name}» (سيريال: ${serialMatch.serial_number})`);
+ return;
+ }
+ }
+
  // Exact barcode or SKU match
  const exact = products.find(
  (p) => p.sku.toLowerCase() === q.toLowerCase()
@@ -322,7 +340,7 @@ export function usePosCart({
  addToCart(targetProduct);
  }
  } else {
- toast.error(`لا يوجد صنف مسجل بهذا الكود: «${q}»`);
+ toast.error(`لا يوجد صنف أو جهاز مسجل بهذا الكود/السيريال: «${q}»`);
  }
  }
  };
