@@ -43,7 +43,6 @@ import {
  Wallet,
  Smartphone,
  Wrench,
- CreditCard,
  Check,
  History,
  UserCheck,

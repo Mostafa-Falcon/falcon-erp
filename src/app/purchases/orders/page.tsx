@@ -434,11 +434,6 @@ function PurchaseOrdersContent() {
  </div>
  </div>
  )}
- <span>{formatNumber(selectedOrder.total)} د.ع</span>
- </div>
- </div>
- </div>
- )}
  </DialogContent>
  </Dialog>
  </div>

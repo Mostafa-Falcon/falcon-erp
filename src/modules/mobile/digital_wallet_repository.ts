@@ -4,9 +4,9 @@
  */
 
 import { db } from '@/core/db/app_database';
-import { SyncQueueManager } from '@/core/sync/sync_coordinator';
-import { TreasuryRepository } from '@/modules/finance/treasury_repository';
-import { AccountingRepository } from '@/modules/finance/accounting_repository';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { TreasuryRepository } from '@/modules/treasury/treasury_repository';
+import { AccountingRepository } from '@/modules/accounting/accounting_repository';
 import type { DigitalWalletTransaction, WalletServiceType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 

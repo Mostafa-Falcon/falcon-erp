@@ -4,7 +4,7 @@
  */
 
 import { db } from '@/core/db/app_database';
-import { SyncQueueManager } from '@/core/sync/sync_coordinator';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import type { ProductSerial, DeviceCondition, SerialStatus } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 

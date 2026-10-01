@@ -252,7 +252,7 @@ export function usePosCart({
  }, [searchQuery]);
 
  // Direct Barcode Scan / Keyboard Navigation & Selection (ArrowUp / ArrowDown / Enter / Escape)
- const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+ const handleSearchKeyDown = async (e: React.KeyboardEvent) => {
  if (e.key ==='ArrowDown') {
  if (isSearchOpen && searchResults.length > 0) {
  e.preventDefault();
