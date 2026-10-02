@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from'react';
-import Link from'next/link';
-import { usePathname } from'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
+import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Icons } from'@/components/ui/Icons';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { ScrollArea } from'@/components/ui/scroll-area';
@@ -91,6 +91,9 @@ interface NavItem {
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClose }) => {
  const pathname = usePathname();
+ const searchParams = useSearchParams();
+ const currentQueryString = searchParams ? searchParams.toString() : '';
+ const currentFullPath = currentQueryString ? `${pathname}?${currentQueryString}` : pathname;
  const { currentUser, activeBranchId, setActiveBranchId } = useSessionStore();
  const [orgName, setOrgName] = useState('لوجيسكا ERP');
  const [orgActivity, setOrgActivity] = useState('retail');
@@ -479,8 +482,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
  </AccordionTrigger>
  <AccordionContent className="pb-1 pr-9 pl-2 space-y-1">
  {item.subItems?.map((sub, idx) => {
- const baseHref = sub.href.split('?')[0];
- const isSubActive = pathname === baseHref;
+ const hasQueryParams = sub.href.includes('?');
+ const isSubActive = hasQueryParams
+ ? currentFullPath === sub.href
+ : pathname === sub.href && !currentQueryString;
  return (
  <Link
  key={idx}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useSyncExternalStore } from'react';
+import React, { useState, useEffect, useSyncExternalStore, Suspense } from'react';
 import { useRouter } from'next/navigation';
 import { AppSidebar } from'./AppSidebar';
 import { AppHeader } from'./AppHeader';
@@ -174,11 +174,13 @@ export const AppShell: React.FC<AppShellProps> = ({
  return (
  <AccountSuspensionGuard>
  <div className="flex h-screen w-full overflow-hidden bg-app transition-colors duration-200 select-none">
+ <Suspense fallback={<div className="w-(--spacing-sidebar) shrink-0" />}>
  <AppSidebar
  isOpen={sidebarOpen}
  isDesktop={isDesktop}
  onClose={() => setSidebarOpen(false)}
  />
+ </Suspense>
 
  <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
  <AppHeader
