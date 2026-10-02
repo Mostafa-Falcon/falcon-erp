@@ -112,7 +112,7 @@ export function BarcodeTableToolbar({
  value={tableFilter}
  onChange={(e) => setTableFilter(e.target.value)}
  placeholder="بحث سريع في الجدول..."
- className="h-9 text-xs pr-3 pl-8 bg-background"
+ className="h-9 text-xs bg-background"
  icon={<Search className="w-3.5 h-3.5 text-muted-foreground"/>}
  />
  </div>

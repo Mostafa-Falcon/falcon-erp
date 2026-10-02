@@ -157,7 +157,7 @@ export function PosQuickItemsSidebar({
  ?'بحث في الأصناف السريعة...'
  :'بحث في كل الأصناف...'
  }
- className="w-full h-8 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pr-8 pl-7 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full h-8 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pr-9 pl-7 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
  />
  {searchQuery && (
  <button

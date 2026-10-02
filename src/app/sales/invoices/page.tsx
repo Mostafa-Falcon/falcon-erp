@@ -411,7 +411,7 @@ function InvoicesContent() {
                     setCurrentPage(1);
                   }}
                   placeholder="بحث سريع في الجدول..."
-                  className="h-8 w-52 sm:w-64 pr-8 pl-12 rounded-lg text-xs font-semibold"
+                  className="h-8 w-52 sm:w-64 pr-9 pl-12 rounded-lg text-xs font-semibold"
                 />
                 <ScanBarcode className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
                 <Badge
