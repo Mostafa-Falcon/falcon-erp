@@ -17,12 +17,14 @@ import {
  TableRow,
 } from'@/components/ui/table';
 import {
- Dialog,
- DialogContent,
- DialogDescription,
- DialogHeader,
- DialogTitle,
-} from'@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
  Select,
  SelectContent,
@@ -136,97 +138,65 @@ function ReturnsContent() {
  actions={
  <Button
  onClick={() => router.push('/purchases/returns/new')}
- className="h-11 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-xs font-black flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
+ className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
  >
  <Plus className="w-4 h-4"/>
  <span>مرتجع شراء جديد</span>
  </Button>
  }
  >
- <div className="space-y-6 select-none"dir="rtl">
- {/* KPI Cards */}
+ <div className="space-y-5 select-none" dir="rtl">
+ {/* KPI Cards — Unified Design System */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي عمليات المرتجع</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{filtered.length}</span>
- <span className="text-3xs font-bold text-slate-400">عملية</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0 shadow-xs">
- <RotateCcw className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي قيمة المرتجعات</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{formatNumber(totals)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0 shadow-xs">
- <DollarSign className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">استرداد نقدي للخزينة</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(cashReturns)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
- <Wallet className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">خصم من حسابات الموردين</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono">{formatNumber(creditReturns)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
- <FileText className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
+ <KpiCard
+ label="إجمالي عمليات المرتجع"
+ value={filtered.length}
+ unit="عملية"
+ variant="slate"
+ icon={<RotateCcw className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="إجمالي قيمة المرتجعات"
+ value={formatNumber(totals)}
+ unit="ج.م"
+ variant="rose"
+ icon={<DollarSign className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="استرداد نقدي للخزينة"
+ value={formatNumber(cashReturns)}
+ unit="ج.م"
+ variant="emerald"
+ icon={<Wallet className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="خصم من حسابات الموردين"
+ value={formatNumber(creditReturns)}
+ unit="ج.م"
+ variant="blue"
+ icon={<FileText className="w-5 h-5"/>}
+ />
  </div>
 
- {/* Toolbar & Filter */}
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface overflow-hidden">
- <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+ {/* Toolbar & Filter Bar */}
+ <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
  <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
- <div className="relative flex-1 max-w-xs">
+ <div className="relative flex-1 max-w-sm">
  <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"/>
  <Input
  type="text"
  value={search}
  onChange={(e) => setSearch(e.target.value)}
- placeholder="بحث بالرقم أو المورد..."
- className="h-11 text-xs font-semibold rounded-xl pr-10 border-slate-200 dark:border-slate-800"
+ placeholder="بحث برقم المرتجع أو اسم المورد..."
+ className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
  />
  </div>
- <div className="w-56">
+ <div className="w-48">
  <Select value={supplierFilter} onValueChange={setSupplierFilter}>
- <SelectTrigger className="h-11 text-xs font-bold rounded-xl border-slate-200 dark:border-slate-800">
+ <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
  <SelectValue placeholder="كل الموردين"/>
  </SelectTrigger>
- <SelectContent className="max-h-60 rounded-xl">
+ <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
  <SelectItem value="all">كل الموردين</SelectItem>
  {suppliers.map((c) => (
  <SelectItem key={c.id} value={c.id}>
@@ -239,15 +209,22 @@ function ReturnsContent() {
  </div>
  </div>
 
+ {/* Table Container */}
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface overflow-hidden shadow-2xs">
  {isLoading ? (
  <div className="py-16 text-center text-xs font-bold text-slate-400">جارٍ تحميل المرتجعات...</div>
  ) : filtered.length === 0 ? (
- <div className="py-16 text-center">
- <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400">
- <RotateCcw className="w-7 h-7"/>
- </div>
- <p className="text-sm font-bold text-slate-600 dark:text-slate-300">لا توجد مرتجعات مشتريات مسجلة بعد.</p>
- <p className="mt-1 text-xs text-slate-400">ابدأ بمرتجع من فاتورة مشتريات أو مرتجع مباشر.</p>
+ <div className="p-4">
+ <EmptyState
+ icon={<RotateCcw className="w-7 h-7 text-slate-400"/>}
+ title="لا توجد مرتجعات مشتريات مسجلة بعد"
+ description="ابدأ بتسجيل مرتجع جديد من فاتورة مشتريات سابقة أو تسجيل مرتجع مباشر للمورد."
+ action={{
+ label: "مرتجع شراء جديد",
+ icon: <Plus className="w-4 h-4"/>,
+ onClick: () => router.push('/purchases/returns/new'),
+ }}
+ />
  </div>
  ) : (
  <div className="overflow-x-auto min-h-[300px]">

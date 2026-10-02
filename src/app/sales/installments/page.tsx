@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   CreditCard,
   Plus,
@@ -160,6 +162,20 @@ export default function InstallmentsPage() {
     });
   }, [plans, searchQuery, statusFilter]);
 
+  const kpis = useMemo(() => {
+    const totalOriginal = filteredPlans.reduce((acc, p) => acc + (p.total_invoice_amount || 0), 0);
+    const totalDownPayment = filteredPlans.reduce((acc, p) => acc + (p.down_payment || 0), 0);
+    const totalFinancedWithInterest = filteredPlans.reduce((acc, p) => acc + (p.total_financed_with_interest || p.financed_amount || 0), 0);
+    const activeCount = filteredPlans.filter((p) => p.status === 'active').length;
+    return {
+      totalCount: filteredPlans.length,
+      activeCount,
+      totalOriginal,
+      totalDownPayment,
+      totalFinancedWithInterest,
+    };
+  }, [filteredPlans]);
+
   // Live Plan Breakdown Preview
   const previewBreakdown = useMemo(() => {
     const total = parseFloat(totalInvoiceAmount) || 0;
@@ -260,53 +276,96 @@ export default function InstallmentsPage() {
       actions={
         <Button
           onClick={() => setIsNewPlanOpen(true)}
-          className="h-11 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
+          className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>فتح خطة تقسيط جديدة</span>
         </Button>
       }
     >
-      <div className="space-y-6 text-right" dir="rtl">
-
-      {/* Toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="relative sm:col-span-2">
-          <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث برقم الخطة، اسم العميل، الهاتف، أو رقم الفاتورة..."
-            className="pr-10 h-11 rounded-2xl bg-surface text-xs font-semibold border-slate-200 dark:border-slate-800"
+      <div className="space-y-5 text-right select-none" dir="rtl">
+        {/* KPI Cards — Unified Design System */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="إجمالي خطط التقسيط"
+            value={kpis.totalCount}
+            unit="خطة مسجلة"
+            variant="blue"
+            icon={<CreditCard className="w-5 h-5" />}
+            subtitle={`${kpis.activeCount} خطة سداد نشطة`}
+          />
+          <KpiCard
+            label="إجمالي مبيعات التقسيط"
+            value={formatNumber(kpis.totalOriginal)}
+            unit="ج.م"
+            variant="indigo"
+            icon={<DollarSign className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="المقدمات النقدية المستلمة"
+            value={formatNumber(kpis.totalDownPayment)}
+            unit="ج.م"
+            variant="emerald"
+            icon={<Receipt className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي الممول بالفوائد"
+            value={formatNumber(kpis.totalFinancedWithInterest)}
+            unit="ج.م"
+            variant="amber"
+            icon={<Coins className="w-5 h-5" />}
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
-            <SelectValue placeholder="تصفية بحالة التقسيط..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كافة الحالات</SelectItem>
-            {Object.entries(PLAN_STATUS_LABELS).map(([key, st]) => (
-              <SelectItem key={key} value={key}>
-                {st.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        {/* Toolbar & Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
+          <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث برقم الخطة، اسم العميل، الهاتف، أو رقم الفاتورة..."
+                className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
+              />
+            </div>
 
-      {/* Plans List */}
-      {isLoading ? (
-        <div className="py-20 text-center text-xs font-bold text-slate-400 flex flex-col items-center gap-2">
-          <Loader2 className="w-7 h-7 animate-spin text-indigo-500" />
-          <span>جاري تحميل خطط التقسيط...</span>
+            <div className="w-48">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
+                  <SelectValue placeholder="تصفية بحالة التقسيط..." />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+                  <SelectItem value="all">كافة الحالات</SelectItem>
+                  {Object.entries(PLAN_STATUS_LABELS).map(([key, st]) => (
+                    <SelectItem key={key} value={key}>
+                      {st.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
-      ) : filteredPlans.length === 0 ? (
-        <div className="py-16 text-center text-xs font-bold text-slate-400 bg-surface rounded-3xl border border-slate-200 dark:border-slate-800">
-          لا توجد خطط تقسيط مسجلة مطابقة لبيانات البحث
-        </div>
-      ) : (
+
+        {/* Plans List */}
+        {isLoading ? (
+          <div className="py-20 text-center text-xs font-bold text-slate-400 flex flex-col items-center gap-2">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <span>جاري تحميل خطط التقسيط...</span>
+          </div>
+        ) : filteredPlans.length === 0 ? (
+          <EmptyState
+            icon={<CreditCard className="w-7 h-7 text-slate-400" />}
+            title="لا توجد خطط تقسيط مسجلة"
+            description="ابدأ بجدولة أول عملية بيع بالتقسيط مع تحديد الدفعة المقدمة والفوائد والأقساط الشهرية."
+            action={{
+              label: "فتح خطة تقسيط جديدة",
+              icon: <Plus className="w-4 h-4" />,
+              onClick: () => setIsNewPlanOpen(true),
+            }}
+          />
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPlans.map((plan) => {
             const st = PLAN_STATUS_LABELS[plan.status];

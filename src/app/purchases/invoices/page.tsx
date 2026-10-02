@@ -36,7 +36,9 @@ import { useSessionStore } from'@/core/state/useSessionStore';
 import { PurchasesRepository } from'@/modules/purchases/purchases_repository';
 import { formatNumber, formatDateTime } from'@/lib/format';
 import { toast } from'sonner';
-import { Pencil, Ban, Eye, RotateCcw, Plus, Receipt, ShoppingBag, CheckCircle2, Clock } from 'lucide-react';
+import { Pencil, Ban, Eye, RotateCcw, Plus, Receipt, ShoppingBag, CheckCircle2, Clock, Search } from 'lucide-react';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Contact, Product, PurchaseInvoice, PurchaseInvoiceItem, Treasury, Unit, Warehouse } from'@/types';
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -185,124 +187,103 @@ function InvoicesContent() {
  const viewItems = viewId ? itemsByInvoice[viewId] || [] : [];
 
  return (
- <AppShell title="فواتير المشتريات"subtitle="سجل فواتير الشراء والتوريد ومتابعة الأرصدة والمستحقات">
- <div className="space-y-4 select-none"dir="rtl">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
-            <CardContent className="p-5 flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي الفواتير</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{kpis.count}</span>
-                  <span className="text-3xs font-bold text-slate-400">فاتورة</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
-                <Receipt className="w-6 h-6" />
-              </div>
-            </CardContent>
-          </Card>
+ <AppShell
+  title="فواتير المشتريات"
+  subtitle="سجل فواتير الشراء والتوريد ومتابعة الأرصدة والمستحقات المالية"
+  actions={
+    <Button
+      onClick={() => router.push('/purchases/invoices/new')}
+      className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
+    >
+      <Plus className="w-4 h-4" />
+      <span>فاتورة مشتريات جديدة</span>
+    </Button>
+  }
+>
+  <div className="space-y-5 select-none" dir="rtl">
+    {/* KPI Cards — Unified Design System */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <KpiCard
+        label="إجمالي الفواتير"
+        value={kpis.count}
+        unit="فاتورة"
+        variant="blue"
+        icon={<Receipt className="w-5 h-5" />}
+      />
+      <KpiCard
+        label="إجمالي قيمة المشتريات"
+        value={formatNumber(kpis.total)}
+        unit="ج.م"
+        variant="amber"
+        icon={<ShoppingBag className="w-5 h-5" />}
+      />
+      <KpiCard
+        label="المسدد للموردين"
+        value={formatNumber(kpis.paid)}
+        unit="ج.م"
+        variant="emerald"
+        icon={<CheckCircle2 className="w-5 h-5" />}
+      />
+      <KpiCard
+        label="المتبقي (ذمم آجلة)"
+        value={formatNumber(kpis.remaining)}
+        unit="ج.م"
+        variant="rose"
+        icon={<Clock className="w-5 h-5" />}
+      />
+    </div>
 
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
-            <CardContent className="p-5 flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي قيمة المشتريات</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{formatNumber(kpis.total)}</span>
-                  <span className="text-3xs font-bold text-slate-400">ج.م</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0 shadow-xs">
-                <ShoppingBag className="w-6 h-6" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
-            <CardContent className="p-5 flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المسدد للموردين</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(kpis.paid)}</span>
-                  <span className="text-3xs font-bold text-slate-400">ج.م</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
-            <CardContent className="p-5 flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المتبقي (ذمم آجلة)</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{formatNumber(kpis.remaining)}</span>
-                  <span className="text-3xs font-bold text-slate-400">ج.م</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0 shadow-xs">
-                <Clock className="w-6 h-6" />
-              </div>
-            </CardContent>
-          </Card>
+    {/* Toolbar & Filter Bar */}
+    <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
+      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث برقم الفاتورة أو المورد..."
+            className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
+          />
         </div>
+        <div className="w-48">
+          <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+            <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
+              <SelectValue placeholder="كل الموردين" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+              <SelectItem value="all">كل الموردين</SelectItem>
+              {suppliers.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
 
- {/* Toolbar & Filters */}
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface overflow-hidden">
- <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
- <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
- <div className="w-64">
- <Input
- type="text"
- placeholder="بحث برقم الفاتورة أو المورد..."
- value={search}
- onChange={(e) => setSearch(e.target.value)}
- className="h-10 text-xs font-semibold rounded-xl"
- />
- </div>
- <div className="w-56">
- <Select value={supplierFilter} onValueChange={setSupplierFilter}>
- <SelectTrigger className="h-10 text-xs font-bold rounded-xl">
- <SelectValue placeholder="تصفية حسب المورد"/>
- </SelectTrigger>
- <SelectContent className="max-h-60">
- <SelectItem value="all">كل الموردين</SelectItem>
- {suppliers.map((c) => (
- <SelectItem key={c.id} value={c.id}>
- {c.name}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- </div>
-
- <Button
- onClick={() => router.push('/purchases/invoices/new')}
- className="h-10 px-4 bg-[#558b2f] hover:bg-[#436d25] text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xs cursor-pointer"
- >
- <Plus className="w-4 h-4"/>
- <span>فاتورة مشتريات جديدة</span>
- </Button>
- </div>
-
- {/* Table */}
- {isLoading ? (
- <div className="py-16 text-center text-xs font-bold text-slate-400">جارٍ تحميل فواتير المشتريات...</div>
- ) : filtered.length === 0 ? (
- <div className="py-16 text-center">
- <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400">
- <Receipt className="w-7 h-7"/>
- </div>
- <p className="text-sm font-bold text-slate-600 dark:text-slate-300">لا توجد فواتير مشتريات مسجلة بعد.</p>
- <p className="mt-1 text-xs text-slate-400">ابدأ بتسجيل أول فاتورة من زر «فاتورة مشتريات جديدة».</p>
- </div>
- ) : (
- <div className="overflow-x-auto min-h-[300px]">
- <Table className="text-right text-xs">
+    {/* Table Container */}
+    <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface overflow-hidden shadow-2xs">
+      {isLoading ? (
+        <div className="py-16 text-center text-xs font-bold text-slate-400">جارٍ تحميل فواتير المشتريات...</div>
+      ) : filtered.length === 0 ? (
+        <div className="p-4">
+          <EmptyState
+            icon={<Receipt className="w-7 h-7 text-slate-400" />}
+            title="لا توجد فواتير مشتريات مسجلة بعد"
+            description="ابدأ بتسجيل أول فاتورة مشتريات وتوريد بضائع للمخازن."
+            action={{
+              label: "فاتورة مشتريات جديدة",
+              icon: <Plus className="w-4 h-4" />,
+              onClick: () => router.push('/purchases/invoices/new'),
+            }}
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto min-h-[300px]">
+          <Table className="text-right text-xs">
  <TableHeader className="bg-slate-50/70 dark:bg-slate-900/50">
  <TableRow className="border-b border-slate-200/80 dark:border-slate-800">
  <TableHead className="py-3 px-4 font-bold text-slate-600 dark:text-slate-300 text-right">الرقم</TableHead>

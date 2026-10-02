@@ -3,11 +3,14 @@
 import React, { useEffect, useMemo, useState } from'react';
 import { Suspense } from'react';
 import Link from'next/link';
+import { useRouter } from 'next/navigation';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
 import { Badge } from'@/components/ui/badge';
 import { Input } from'@/components/ui/input';
-import { Card, CardContent } from'@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
  Table,
  TableBody,
@@ -67,6 +70,7 @@ import { EditInvoiceModal } from'@/components/sales/invoices/EditInvoiceModal';
 import { DeleteInvoiceDialog } from'@/components/sales/invoices/DeleteInvoiceDialog';
 
 function InvoicesContent() {
+ const router = useRouter();
  const { currentUser, activeBranchId } = useSessionStore();
  const orgId = currentUser?.org_id ||'';
  const branchId = activeBranchId || currentUser?.branch_id ||'';
@@ -213,110 +217,67 @@ function InvoicesContent() {
  }, [filteredInvoices, currentPage, pageSize]);
 
  return (
- <AppShell>
- <div className="space-y-4 select-none"dir="rtl">
- {/* Top Action Bar */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+ <AppShell
+ title={isArchiveMode ? 'أرشيف فواتير المبيعات المحذوفة' : 'فواتير البيع'}
+ subtitle="سجل فواتير المبيعات الصادرة، التحصيلات النقدية والآجلة، وتتبع المدفوعات"
+ actions={
  <div className="flex items-center gap-2">
- <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
- {isArchiveMode ?'أرشيف فواتير المبيعات المحذوفة':'فواتير البيع'}
- </h1>
- {isArchiveMode && (
- <Badge variant="destructive"className="font-bold">
- أرشيف
- </Badge>
- )}
- </div>
-
- <div className="flex items-center gap-2 self-start sm:self-auto">
  <Link href="/sales/pos">
  <Button
  type="button"
- className="h-9 px-4 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+ className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:shadow-md transition-all cursor-pointer"
  >
  <Plus className="w-4 h-4"/>
  <span>فاتورة جديدة</span>
  </Button>
  </Link>
-
  <Button
  type="button"
- variant={isArchiveMode ?'default':'outline'}
+ variant={isArchiveMode ? 'default' : 'outline'}
  onClick={() => {
  setIsArchiveMode(!isArchiveMode);
  setCurrentPage(1);
  }}
- className="h-9 px-3.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+ className="h-10 px-3.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
  >
- <History className="w-3.5 h-3.5 text-pink-600"/>
- <span>{isArchiveMode ?'العودة للفواتير النشطة':'أرشيف المحذوفات'}</span>
+ <History className="w-3.5 h-3.5 text-primary"/>
+ <span>{isArchiveMode ? 'العودة للفواتير النشطة' : 'أرشيف المحذوفات'}</span>
  </Button>
  </div>
- </div>
-
- {/* Summary KPI Stat Cards Grid */}
+ }
+ >
+ <div className="space-y-5 select-none" dir="rtl">
+ {/* KPI Cards — Unified Design System */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي الفواتير الصادرة</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{filteredInvoices.length}</span>
- <span className="text-3xs font-bold text-slate-400">فاتورة</span>
+ <KpiCard
+ label="إجمالي الفواتير الصادرة"
+ value={filteredInvoices.length}
+ unit="فاتورة"
+ variant="blue"
+ icon={<Receipt className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="إجمالي قيمة المبيعات"
+ value={formatNumber(totalSales)}
+ unit="ج.م"
+ variant="indigo"
+ icon={<ShoppingBag className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="المحصل نقداً / تحويل"
+ value={formatNumber(paidSales)}
+ unit="ج.م"
+ variant="emerald"
+ icon={<CheckCircle2 className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="المتبقي على العملاء (آجل)"
+ value={formatNumber(remainingSales)}
+ unit="ج.م"
+ variant="amber"
+ icon={<Clock className="w-5 h-5"/>}
+ />
  </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
- <Receipt className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي قيمة المبيعات</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-pink-600 dark:text-pink-400 font-mono">{formatNumber(totalSales)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center border border-pink-500/20 shrink-0 shadow-xs">
- <ShoppingBag className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المحصل نقداً / تحويل</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(paidSales)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
- <CheckCircle2 className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المتبقي على العملاء (آجل)</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{formatNumber(remainingSales)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0 shadow-xs">
- <Clock className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
- </div>
-
  {/* Filter Bar */}
  <div className="flex flex-wrap items-center gap-3 justify-start">
  <Button
@@ -469,10 +430,19 @@ function InvoicesContent() {
  جاري تحميل فواتير المبيعات...
  </div>
  ) : filteredInvoices.length === 0 ? (
- <div className="py-20 text-center text-xs font-bold text-slate-400">
- {isArchiveMode ?'لا توجد فواتير محذوفة في الأرشيف.':'لا توجد فواتير مبيعات مسجلة مطابقة للبحث.'}
- </div>
- ) : (
+  <div className="p-4">
+    <EmptyState
+      icon={<Receipt className="w-7 h-7 text-slate-400" />}
+      title={isArchiveMode ? 'لا توجد فواتير محذوفة في الأرشيف' : 'لا توجد فواتير مبيعات مسجلة مطابقة للبحث'}
+      description={isArchiveMode ? 'سجل الأرشيف نظيف ولا توجد أي فواتير تم حذفها.' : 'ابدأ بإنشاء أول فاتورة مبيعات عبر الكاشير أو نقطة البيع السريعة.'}
+      action={!isArchiveMode ? {
+        label: "فاتورة جديدة (POS)",
+        icon: <Plus className="w-4 h-4" />,
+        onClick: () => router.push('/sales/pos'),
+      } : undefined}
+    />
+  </div>
+) : (
  <div className="overflow-x-auto min-h-[350px]">
  <Table className="text-right text-xs">
  <TableHeader className="bg-slate-50/70 dark:bg-slate-900/50">

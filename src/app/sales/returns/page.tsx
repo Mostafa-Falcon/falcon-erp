@@ -33,7 +33,9 @@ import {
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { SalesRepository } from'@/modules/sales/sales_repository';
 import { formatNumber, formatDateTime } from'@/lib/format';
-import { Plus, RotateCcw, Search, Eye } from'lucide-react';
+import { Plus, RotateCcw, Search, Eye, DollarSign, Receipt } from 'lucide-react';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Contact, InventoryTransaction, Product, SalesReturn, Treasury, Unit, Warehouse } from'@/types';
 import { toast } from'sonner';
 
@@ -124,85 +126,96 @@ function ReturnsContent() {
  const viewItems = viewId ? itemsByReturn[viewId] || [] : [];
 
  return (
- <AppShell title="مرتجعات المبيعات"subtitle="سجل البضائع المرتجعة من العملاء وتسوية أرصدة الخزينة والحسابات">
- <div className="space-y-4 select-none"dir="rtl">
- {/* KPI Cards */}
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">إجمالي عمليات المرتجع</div>
- <div className="mt-1 text-2xl font-black text-slate-900 dark:text-white font-mono">{filtered.length}</div>
- </CardContent>
- </Card>
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">إجمالي قيمة المرتجعات</div>
- <div className="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{formatNumber(totals)} ج.م</div>
- </CardContent>
- </Card>
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">مرتجع من فاتورة سابقة</div>
- <div className="mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
- {filtered.filter((r) => r.original_invoice_id).length}
- </div>
- </CardContent>
- </Card>
- </div>
+ <AppShell
+  title="مرتجعات المبيعات"
+  subtitle="سجل البضائع المرتجعة من العملاء وتسوية أرصدة الخزينة والحسابات"
+  actions={
+    <Button
+      onClick={() => router.push('/sales/returns/new')}
+      className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
+    >
+      <Plus className="w-4 h-4" />
+      <span>مرتجع مبيعات جديد</span>
+    </Button>
+  }
+>
+  <div className="space-y-5 select-none" dir="rtl">
+    {/* KPI Cards — Unified Design System */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <KpiCard
+        label="إجمالي عمليات المرتجع"
+        value={filtered.length}
+        unit="عملية"
+        variant="slate"
+        icon={<RotateCcw className="w-5 h-5" />}
+      />
+      <KpiCard
+        label="إجمالي قيمة المرتجعات"
+        value={formatNumber(totals)}
+        unit="ج.م"
+        variant="rose"
+        icon={<DollarSign className="w-5 h-5" />}
+      />
+      <KpiCard
+        label="مرتجع من فاتورة سابقة"
+        value={filtered.filter((r) => r.original_invoice_id).length}
+        unit="عملية"
+        variant="blue"
+        icon={<Receipt className="w-5 h-5" />}
+      />
+    </div>
 
- {/* Toolbar & Filter */}
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface overflow-hidden">
- <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
- <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
- <div className="relative w-64">
- <Input
- type="text"
- value={search}
- onChange={(e) => setSearch(e.target.value)}
- placeholder="بحث بالرقم أو العميل..."
- className="h-10 text-xs font-semibold rounded-xl pr-9"
- />
- <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
- </div>
- <div className="w-56">
- <Select value={customerFilter} onValueChange={setCustomerFilter}>
- <SelectTrigger className="h-10 text-xs font-bold rounded-xl">
- <SelectValue placeholder="كل العملاء"/>
- </SelectTrigger>
- <SelectContent className="max-h-60">
- <SelectItem value="all">كل العملاء</SelectItem>
- {customers.map((c) => (
- <SelectItem key={c.id} value={c.id}>
- {c.name}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- </div>
+    {/* Toolbar & Filter Bar */}
+    <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
+      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث بالرقم أو العميل..."
+            className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
+          />
+        </div>
+        <div className="w-56">
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
+              <SelectValue placeholder="كل العملاء" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+              <SelectItem value="all">كل العملاء</SelectItem>
+              {customers.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
 
- <Button
- onClick={() => router.push('/sales/returns/new')}
- className="h-10 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xs cursor-pointer"
- >
- <Plus className="w-4 h-4"/>
- <span>مرتجع مبيعات جديد</span>
- </Button>
- </div>
-
- {isLoading ? (
- <div className="py-16 text-center text-xs font-bold text-slate-400">جارٍ تحميل المرتجعات...</div>
- ) : filtered.length === 0 ? (
- <div className="py-16 text-center">
- <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400">
- <RotateCcw className="w-7 h-7"/>
- </div>
- <p className="text-sm font-bold text-slate-600 dark:text-slate-300">لا توجد مرتجعات مبيعات مسجلة بعد.</p>
- <p className="mt-1 text-xs text-slate-400">ابدأ بمرتجع من فاتورة مبيعات أو مرتجع مباشر.</p>
- </div>
- ) : (
- <div className="overflow-x-auto min-h-[300px]">
- <Table className="text-right text-xs">
+    {/* Table Container */}
+    <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface overflow-hidden shadow-2xs">
+      {isLoading ? (
+        <div className="py-16 text-center text-xs font-bold text-slate-400">جارٍ تحميل المرتجعات...</div>
+      ) : filtered.length === 0 ? (
+        <div className="p-4">
+          <EmptyState
+            icon={<RotateCcw className="w-7 h-7 text-slate-400" />}
+            title="لا توجد مرتجعات مبيعات مسجلة بعد"
+            description="ابدأ بتسجيل مرتجع جديد من فاتورة مبيعات سابقة أو تسجيل مرتجع مباشر للعميل."
+            action={{
+              label: "مرتجع مبيعات جديد",
+              icon: <Plus className="w-4 h-4" />,
+              onClick: () => router.push('/sales/returns/new'),
+            }}
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto min-h-[300px]">
+          <Table className="text-right text-xs">
  <TableHeader className="bg-slate-50/70 dark:bg-slate-900/50">
  <TableRow className="border-b border-slate-200/80 dark:border-slate-800">
  <TableHead className="py-3 px-4 font-bold text-slate-600 dark:text-slate-300 text-right">رقم المرتجع</TableHead>
