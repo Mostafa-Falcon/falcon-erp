@@ -206,33 +206,33 @@ function VouchersContent() {
  return (
  <AppShell
  title="سندات القبض والدفع"
- subtitle="إدارة عمليات التحصيل من العملاء والسداد للموردين وتسوية العهد المالية."
- >
- <div className="space-y-6 text-right"dir="rtl">
-
- {/* ==================== ACTION BUTTONS ==================== */}
- <div className="flex items-center gap-3">
+ subtitle="إدارة عمليات التحصيل من العملاء والسداد للموردين وتسوية العهد المالية"
+ actions={
+ <div className="flex items-center gap-2">
  <Button
  onClick={() => { setActiveModalType('receipt'); setIsVoucherModalOpen(true); }}
- className="h-11 px-6 bg-[#10b981] hover:bg-emerald-600 text-white font-black text-sm rounded-xl flex items-center gap-2 shadow-sm shadow-emerald-500/10 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95"
+ className="h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-2xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
  >
- <Plus className="w-5 h-5"/>
- سند قبض
+ <Plus className="w-4 h-4"/>
+ <span>سند قبض جديد</span>
  </Button>
  <Button
  onClick={() => { setActiveModalType('payment'); setIsVoucherModalOpen(true); }}
- className="h-11 px-6 bg-[#ef4444] hover:bg-red-600 text-white font-black text-sm rounded-xl flex items-center gap-2 shadow-sm shadow-red-500/10 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95"
+ className="h-11 px-5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-2xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
  >
- <Minus className="w-5 h-5"/>
- سند صرف
+ <Minus className="w-4 h-4"/>
+ <span>سند صرف جديد</span>
  </Button>
  </div>
+ }
+ >
+ <div className="space-y-6 text-right"dir="rtl">
 
  {/* ==================== SUMMARY CARDS ==================== */}
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
- <StatCard label="إجمالي القبض"value={stats.totalReceipts} icon={<ArrowDownCircle className="w-6 h-6"/>} color="emerald"/>
- <StatCard label="إجمالي الدفع"value={stats.totalPayments} icon={<ArrowUpCircle className="w-6 h-6"/>} color="red"/>
- <StatCard label="صافي الخزينة"value={stats.netBalance} icon={<Wallet className="w-6 h-6"/>} color="blue"/>
+ <StatCard label="إجمالي المقبوضات (سندات القبض)"value={stats.totalReceipts} icon={<ArrowDownCircle className="w-6 h-6"/>} color="emerald"/>
+ <StatCard label="إجمالي المدفوعات (سندات الصرف)"value={stats.totalPayments} icon={<ArrowUpCircle className="w-6 h-6"/>} color="red"/>
+ <StatCard label="صافي حركة الخزينة"value={stats.netBalance} icon={<Wallet className="w-6 h-6"/>} color="blue"/>
  </div>
 
  {/* ==================== FILTERS & TOOLBAR ==================== */}
@@ -567,26 +567,38 @@ function VouchersContent() {
 }
 
 function StatCard({ label, value, icon, color }: { label: string, value: number, icon: React.ReactNode, color:'emerald'|'red'|'blue'}) {
- const colors = {
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100',
- red:'bg-red-50 text-red-600 border-red-100',
- blue:'bg-blue-50 text-blue-600 border-blue-100'
+ const colorMap = {
+ emerald: {
+ accentBg:'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+ text:'text-emerald-600 dark:text-emerald-400',
+ },
+ red: {
+ accentBg:'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20',
+ text:'text-rose-600 dark:text-rose-400',
+ },
+ blue: {
+ accentBg:'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+ text:'text-blue-600 dark:text-blue-400',
+ },
  };
 
+ const style = colorMap[color];
+
  return (
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 flex items-center justify-between shadow-xs">
- <div className="flex items-center gap-4">
- <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${colors[color]}`}>
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">{label}</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className={`text-2xl font-black font-mono ${style.text}`}>{formatNumber(value)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${style.accentBg}`}>
  {icon}
  </div>
- <div>
- <span className="text-xs font-bold text-slate-400 block mb-1">{label}</span>
- <span className={`text-xl font-black ${colors[color].split('')[1]}`}>
- {formatNumber(value)} <span className="text-3xs font-bold mr-0.5">ج.م</span>
- </span>
- </div>
- </div>
- </div>
+ </CardContent>
+ </Card>
  );
 }
 

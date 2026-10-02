@@ -326,7 +326,7 @@ function ExpensesContent() {
  <Button
  variant={showReversed ?'secondary':'outline'}
  onClick={() => setShowReversed((v) => !v)}
- className={`h-11 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
+ className={`h-11 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
  showReversed ?'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300':''
  }`}
  >
@@ -335,15 +335,9 @@ function ExpensesContent() {
  <Button
  variant="outline"
  onClick={() => setShowCategories((v) => !v)}
- className="h-11 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 border-slate-200 dark:border-slate-800"
+ className="h-11 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 border-slate-200 dark:border-slate-800 cursor-pointer"
  >
  <Icons.Filter /> الفئات
- </Button>
- <Button
- onClick={() => setShowCreate((v) => !v)}
- className="h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm"
- >
- {showCreate ?'إغلاق':'مصروف جديد'} {showCreate ? <Icons.X /> : <Icons.Plus />}
  </Button>
  </div>
 
