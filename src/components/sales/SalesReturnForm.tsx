@@ -399,19 +399,19 @@ export function SalesReturnForm({
  <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
  <button
  onClick={() => setDiscountMode('amount')}
- className={(
-'px-3 h-10 text-2xs font-bold transition-colors'+
- (discountMode ==='amount'?'bg-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 text-slate-500')
- )}
+ className={
+'px-3 h-10 text-2xs font-bold transition-all cursor-pointer '+
+ (discountMode ==='amount'?'bg-blue-600 text-white font-black':'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
+ }
  >
  مبلغ
  </button>
  <button
  onClick={() => setDiscountMode('percentage')}
- className={(
-'px-3 h-10 text-2xs font-bold transition-colors'+
- (discountMode ==='percentage'?'bg-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 text-slate-500')
- )}
+ className={
+'px-3 h-10 text-2xs font-bold transition-all cursor-pointer '+
+ (discountMode ==='percentage'?'bg-blue-600 text-white font-black':'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
+ }
  >
  نسبة %
  </button>
@@ -456,11 +456,11 @@ export function SalesReturnForm({
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
  <div className="flex items-center justify-between">
  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
- <span className="text-red-500"><Icons.ReturnArrow /></span>
+ <span className="text-rose-600"><Icons.ReturnArrow /></span>
  أصناف المرتجع
  </h3>
- <Button onClick={addLine} className="h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5">
- <Icons.Plus /> إضافة صنف
+ <Button onClick={addLine} className="h-10 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow transition-all">
+ <Icons.Plus className="w-4 h-4" /> <span>إضافة صنف</span>
  </Button>
  </div>
 
@@ -536,10 +536,10 @@ export function SalesReturnForm({
 
  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
  <div className="text-sm font-black text-slate-900 dark:text-white">
- إجمالي المرتجع: <span className="text-red-500">{formatNumber(total)}</span>
+ إجمالي المرتجع: <span className="text-rose-600 font-mono text-base font-black">{formatNumber(total)} ج.م</span>
  </div>
- <Button onClick={save} disabled={isSaving} className="h-11 px-6 rounded-xl text-sm font-black flex items-center gap-2">
- {isSaving ?'جارِ التنفيذ...':'تنفيذ المرتجع'} <Icons.Check />
+ <Button onClick={save} disabled={isSaving} className="h-12 px-8 rounded-xl text-sm font-black bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/25 transition-all cursor-pointer flex items-center gap-2">
+ {isSaving ?'جارِ التنفيذ...':'تنفيذ المرتجع'} <Icons.Check className="w-4 h-4" />
  </Button>
  </div>
  </div>

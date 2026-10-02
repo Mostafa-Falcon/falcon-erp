@@ -432,20 +432,24 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  <button
  type="button"
  onClick={() => setPaymentType('cash')}
- className={(
-'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors cursor-pointer'+
- (paymentType ==='cash'?'bg-primary border-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300')
- )}
+ className={
+'h-10 flex-1 rounded-xl border text-xs font-bold transition-all cursor-pointer '+
+ (paymentType ==='cash'
+ ?'bg-blue-600 border-blue-600 text-white shadow-sm font-black'
+ :'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100')
+ }
  >
  نقدي
  </button>
  <button
  type="button"
  onClick={() => setPaymentType('credit')}
- className={(
-'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors cursor-pointer'+
- (paymentType ==='credit'?'bg-primary border-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300')
- )}
+ className={
+'h-10 flex-1 rounded-xl border text-xs font-bold transition-all cursor-pointer '+
+ (paymentType ==='credit'
+ ?'bg-blue-600 border-blue-600 text-white shadow-sm font-black'
+ :'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100')
+ }
  >
  آجل
  </button>
@@ -479,11 +483,11 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
  <div className="flex items-center justify-between">
  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
- <span className="text-primary"><Icons.Receipt /></span>
+ <span className="text-blue-600"><Icons.Receipt /></span>
  أصناف الفاتورة ({lines.length})
  </h3>
- <Button onClick={addLine} className="h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer">
- <Icons.Plus /> إضافة صنف
+ <Button onClick={addLine} className="h-10 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow transition-all">
+ <Icons.Plus className="w-4 h-4" /> <span>إضافة صنف</span>
  </Button>
  </div>
 
@@ -587,20 +591,20 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  <button
  type="button"
  onClick={() => setDiscountMode('amount')}
- className={(
-'px-2.5 h-10 text-2xs font-bold transition-colors cursor-pointer'+
- (discountMode ==='amount'?'bg-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 text-slate-500')
- )}
+ className={
+'px-3 h-10 text-2xs font-bold transition-all cursor-pointer '+
+ (discountMode ==='amount'?'bg-blue-600 text-white font-black':'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
+ }
  >
  مبلغ
  </button>
  <button
  type="button"
  onClick={() => setDiscountMode('percentage')}
- className={(
-'px-2.5 h-10 text-2xs font-bold transition-colors cursor-pointer'+
- (discountMode ==='percentage'?'bg-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 text-slate-500')
- )}
+ className={
+'px-3 h-10 text-2xs font-bold transition-all cursor-pointer '+
+ (discountMode ==='percentage'?'bg-blue-600 text-white font-black':'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
+ }
  >
  نسبة %
  </button>
@@ -629,7 +633,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
 
  <div>
  <span className="block text-xs font-bold text-slate-500 mb-1">الصافي المطلوب</span>
- <div className="h-10 px-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center text-base font-mono font-black text-primary">
+ <div className="h-10 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center text-base font-mono font-black text-emerald-600 dark:text-emerald-400">
  {formatNumber(total)} ج.م
  </div>
  </div>
@@ -640,7 +644,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  <Button
  disabled={isSaving}
  onClick={save}
- className="h-11 px-8 rounded-xl text-sm font-black bg-primary hover:bg-primary/90 text-primary-foreground shadow-md cursor-pointer flex items-center gap-2"
+ className="h-12 px-8 rounded-xl text-sm font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-2"
  >
  {isSaving ?'جارٍ الاعتماد والحفظ...':'اعتماد وحفظ الفاتورة'}
  </Button>

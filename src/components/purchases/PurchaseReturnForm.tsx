@@ -377,19 +377,23 @@ export function PurchaseReturnForm({
  <div className="flex gap-2">
  <button
  onClick={() => setRefundType('treasury')}
- className={(
-'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors'+
- (refundType ==='treasury'?'bg-primary border-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300')
- )}
+ className={
+'h-10 flex-1 rounded-xl border text-xs font-bold transition-all cursor-pointer '+
+ (refundType ==='treasury'
+ ?'bg-blue-600 border-blue-600 text-white shadow-sm font-black'
+ :'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100')
+ }
  >
  استرداد نقدي
  </button>
  <button
  onClick={() => setRefundType('credit')}
- className={(
-'h-10 flex-1 rounded-lg border text-xs font-bold transition-colors'+
- (refundType ==='credit'?'bg-primary border-primary text-primary-foreground':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300')
- )}
+ className={
+'h-10 flex-1 rounded-xl border text-xs font-bold transition-all cursor-pointer '+
+ (refundType ==='credit'
+ ?'bg-blue-600 border-blue-600 text-white shadow-sm font-black'
+ :'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100')
+ }
  >
  خصم من ذمم المورد
  </button>
@@ -425,11 +429,11 @@ export function PurchaseReturnForm({
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
  <div className="flex items-center justify-between">
  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
- <span className="text-red-500"><Icons.ReturnArrow /></span>
+ <span className="text-rose-600"><Icons.ReturnArrow /></span>
  أصناف المرتجع
  </h3>
- <Button onClick={addLine} className="h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5">
- <Icons.Plus /> إضافة صنف
+ <Button onClick={addLine} className="h-10 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow transition-all">
+ <Icons.Plus className="w-4 h-4" /> <span>إضافة صنف</span>
  </Button>
  </div>
 
@@ -505,10 +509,10 @@ export function PurchaseReturnForm({
 
  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
  <div className="text-sm font-black text-slate-900 dark:text-white">
- إجمالي المرتجع: <span className="text-red-500">{formatNumber(total)}</span>
+ إجمالي المرتجع: <span className="text-rose-600 font-mono text-base font-black">{formatNumber(total)} ج.م</span>
  </div>
- <Button onClick={save} disabled={isSaving} className="h-11 px-6 rounded-xl text-sm font-black flex items-center gap-2">
- {isSaving ?'جارِ التنفيذ...':'تنفيذ المرتجع'} <Icons.Check />
+ <Button onClick={save} disabled={isSaving} className="h-12 px-8 rounded-xl text-sm font-black bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/25 transition-all cursor-pointer flex items-center gap-2">
+ {isSaving ?'جارِ التنفيذ...':'تنفيذ المرتجع'} <Icons.Check className="w-4 h-4" />
  </Button>
  </div>
  </div>
