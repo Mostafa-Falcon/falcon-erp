@@ -69,7 +69,7 @@ export interface FinancialVoucher {
  sync_status?:'synced'|'pending'|'failed';
 }
 
-export type JournalEntryType ='general'|'sales'|'purchases'|'expenses'|'opening'|'payroll'|'voucher'|'adjustment'|'reversal';
+export type JournalEntryType ='general'|'sales'|'purchases'|'expenses'|'opening'|'payroll'|'voucher'|'adjustment'|'reversal'|'receipt';
 
 export interface JournalEntry {
  id: EntityId;

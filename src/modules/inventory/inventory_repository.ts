@@ -55,7 +55,7 @@ export class InventoryRepository {
  unitId: string;
  conversionFactor: number;
  unitCost: number;
- referenceType?:'sale_invoice'|'purchase_invoice'|'transfer'|'manual';
+ referenceType?:'sale_invoice'|'purchase_invoice'|'transfer'|'manual'|'adjustment'|'maintenance_ticket';
  referenceId?: string | null;
  notes?: string;
  userId: string;

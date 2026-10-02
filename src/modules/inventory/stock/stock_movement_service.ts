@@ -147,7 +147,7 @@ export class StockMovementService {
  unitId: string;
  conversionFactor: number;
  unitCost: number;
- referenceType?:'sale_invoice'|'purchase_invoice'|'transfer'|'manual';
+ referenceType?:'sale_invoice'|'purchase_invoice'|'transfer'|'manual'|'adjustment'|'maintenance_ticket';
  referenceId?: string | null;
  /** اسم الوحدة/المستوى كما أدخله صاحب المنشأة (نسخة ثابتة على الحركة). */
  unitName?: string;

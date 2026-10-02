@@ -108,7 +108,7 @@ export class ContactsRepository {
  public static async adjustBalance(params: {
  orgId: string;
  contactId: string;
- referenceType:'sale_invoice'|'sale_return'|'purchase_invoice'|'purchase_return'|'receipt_voucher'|'payment_voucher';
+ referenceType:'sale_invoice'|'sale_return'|'purchase_invoice'|'purchase_return'|'receipt_voucher'|'payment_voucher'|'opening_balance'|'maintenance_ticket'|'installment_plan'|'installment_schedule'|'manual';
  referenceId: string;
  debit: number; // مدين (يزيد مديونية العميل)
  credit: number; // دائن (يسدد أو يزيد استحقاق المورد)
