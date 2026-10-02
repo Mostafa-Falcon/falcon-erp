@@ -1,6 +1,5 @@
-'use client';
-
 import React, { useState, useEffect, useMemo } from 'react';
+import { AppShell } from '@/components/layout/AppShell';
 import { db } from '@/core/db/app_database';
 import { ProductSerialRepository } from '@/modules/mobile/product_serial_repository';
 import { useSessionStore } from '@/core/state/useSessionStore';
@@ -169,23 +168,10 @@ export default function SerialsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 text-right" dir="rtl">
-      {/* Header Banner */}
-      <div className="p-5 rounded-3xl bg-surface border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
-            <QrCode className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>تتبع السيريال والـ IMEI للأجهزة</span>
-            </h1>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              إدارة أرقام الـ IMEI للأجهزة الجديدة والمستعملة وتتبع فترات الضمان والبيع
-            </p>
-          </div>
-        </div>
-
+    <AppShell
+      title="تتبع السيريال والـ IMEI للأجهزة"
+      subtitle="إدارة أرقام الـ IMEI للأجهزة الجديدة والمستعملة وتتبع فترات الضمان والبيع"
+      actions={
         <Button
           onClick={() => setIsNewSerialOpen(true)}
           className="h-11 px-5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
@@ -193,7 +179,9 @@ export default function SerialsPage() {
           <Plus className="w-4 h-4" />
           <span>تسجيل جهاز / IMEI جديد</span>
         </Button>
-      </div>
+      }
+    >
+      <div className="space-y-6 text-right" dir="rtl">
 
       {/* Toolbar Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -418,5 +406,6 @@ export default function SerialsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppShell>
   );
 }

@@ -1,8 +1,7 @@
-'use client';
-
 import React, { useEffect, useState } from'react';
 import { useRouter } from'next/navigation';
 import { useSessionStore } from'@/core/state/useSessionStore';
+import { AppShell } from'@/components/layout/AppShell';
 import { POS } from'@/components/sales/pos';
 
 export default function PosPage() {
@@ -31,5 +30,9 @@ export default function PosPage() {
  );
  }
 
- return <POS />;
+ return (
+ <AppShell hideHeaderBanner title="نقطة البيع الكاشير (POS)">
+ <POS />
+ </AppShell>
+ );
 }

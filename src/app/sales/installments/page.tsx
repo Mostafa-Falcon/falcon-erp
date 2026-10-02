@@ -1,6 +1,5 @@
-'use client';
-
 import React, { useState, useEffect, useMemo } from 'react';
+import { AppShell } from '@/components/layout/AppShell';
 import { db } from '@/core/db/app_database';
 import { InstallmentsRepository } from '@/modules/sales/installments_repository';
 import { useSessionStore } from '@/core/state/useSessionStore';
@@ -253,23 +252,10 @@ export default function InstallmentsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 text-right" dir="rtl">
-      {/* Header Banner */}
-      <div className="p-5 rounded-3xl bg-surface border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-            <CreditCard className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>إدارة مبيعات التقسيط والضامنين</span>
-            </h1>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              جدولة الأقساط الشهرية للأجهزة والأثاث، حساب الفوائد، الضامنين، ومتابعة الأقساط المستحقة والمتأخرة
-            </p>
-          </div>
-        </div>
-
+    <AppShell
+      title="إدارة مبيعات التقسيط والضامنين"
+      subtitle="جدولة الأقساط الشهرية للأجهزة والأثاث، حساب الفوائد، الضامنين، ومتابعة الأقساط المستحقة والمتأخرة"
+      actions={
         <Button
           onClick={() => setIsNewPlanOpen(true)}
           className="h-11 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
@@ -277,7 +263,9 @@ export default function InstallmentsPage() {
           <Plus className="w-4 h-4" />
           <span>فتح خطة تقسيط جديدة</span>
         </Button>
-      </div>
+      }
+    >
+      <div className="space-y-6 text-right" dir="rtl">
 
       {/* Toolbar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -714,5 +702,6 @@ export default function InstallmentsPage() {
         </Dialog>
       )}
     </div>
+    </AppShell>
   );
 }

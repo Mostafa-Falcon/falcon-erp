@@ -1,6 +1,5 @@
-'use client';
-
 import React, { useState, useEffect, useMemo } from 'react';
+import { AppShell } from '@/components/layout/AppShell';
 import { db } from '@/core/db/app_database';
 import { DigitalWalletRepository } from '@/modules/mobile/digital_wallet_repository';
 import { useSessionStore } from '@/core/state/useSessionStore';
@@ -157,25 +156,11 @@ export default function WalletsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 text-right" dir="rtl">
-      {/* Header Banner */}
-      <div className="p-5 rounded-3xl bg-surface border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+    <AppShell
+      title="المحافظ الرقمية وخدمات الشحن والتحويل"
+      subtitle="إدارة حركات فودافون كاش، إنستاباي، فوري، شحن الرصيد، وتسجيل عمولات المحل تلقائياً"
+      actions={
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
-            <Wallet className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>المحافظ الرقمية وخدمات الشحن والتحويل</span>
-            </h1>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              إدارة حركات فودافون كاش، إنستاباي، فوري، شحن الرصيد، وتسجيل عمولات المحل تلقائياً
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Commission KPI badge */}
           <div className="px-4 py-2 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-right">
             <span className="text-3xs text-purple-600 dark:text-purple-300 font-bold block">إجمالي العمولات والأرباح:</span>
             <span className="font-mono font-black text-sm text-purple-700 dark:text-purple-300">
@@ -191,7 +176,9 @@ export default function WalletsPage() {
             <span>تنفيذ عملية شحن / تحويل جديدة</span>
           </Button>
         </div>
-      </div>
+      }
+    >
+      <div className="space-y-6 text-right" dir="rtl">
 
       {/* Toolbar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -382,5 +369,6 @@ export default function WalletsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppShell>
   );
 }

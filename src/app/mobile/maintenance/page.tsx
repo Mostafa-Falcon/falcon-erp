@@ -1,6 +1,5 @@
-'use client';
-
 import React, { useState, useEffect, useMemo } from 'react';
+import { AppShell } from '@/components/layout/AppShell';
 import { db } from '@/core/db/app_database';
 import { MaintenanceRepository } from '@/modules/mobile/maintenance_repository';
 import { useSessionStore } from '@/core/state/useSessionStore';
@@ -295,23 +294,10 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 text-right" dir="rtl">
-      {/* Header Banner */}
-      <div className="p-5 rounded-3xl bg-surface border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <Wrench className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>مركز الصيانة وتكت الإصلاح</span>
-            </h1>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              إدارة أذونات صيانة الموبايل والإلكترونيات، تتبع الحالات، قطع الغيار المستهلكة، والتسليم
-            </p>
-          </div>
-        </div>
-
+    <AppShell
+      title="مركز الصيانة وتكت الإصلاح"
+      subtitle="إدارة أذونات صيانة الموبايل والإلكترونيات، تتبع الحالات، قطع الغيار المستهلكة، والتسليم"
+      actions={
         <Button
           onClick={() => setIsNewTicketOpen(true)}
           className="h-11 px-5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
@@ -319,9 +305,10 @@ export default function MaintenancePage() {
           <Plus className="w-4 h-4" />
           <span>إنشاء تكت صيانة جديد</span>
         </Button>
-      </div>
-
-      {/* Search & Filters Toolbar */}
+      }
+    >
+      <div className="space-y-6 text-right" dir="rtl">
+        {/* Search & Filters Toolbar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Search */}
         <div className="relative col-span-2">
@@ -830,5 +817,6 @@ export default function MaintenancePage() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppShell>
   );
 }
