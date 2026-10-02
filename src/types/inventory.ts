@@ -211,7 +211,7 @@ export interface InventoryTransaction {
  product_id: EntityId;
  batch_id?: EntityId | null;
  transaction_type: InventoryTransactionType;
- reference_type?:'sale_invoice'|'purchase_invoice'|'transfer'|'manual'|'adjustment';
+ reference_type?:'sale_invoice'|'purchase_invoice'|'transfer'|'manual'|'adjustment'|'maintenance_ticket';
  reference_id?: EntityId | null;
  quantity: number;
  unit_id: EntityId;

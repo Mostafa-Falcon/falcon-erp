@@ -959,6 +959,44 @@ export class AccountingRepository {
  });
  }
 
+ /**
+ * Posts service revenue (Digital Wallets commissions, Maintenance Services, Installment Interest).
+ */
+ public static async postServiceRevenue(params: {
+ orgId: string;
+ branchId?: string | null;
+ referenceId: string;
+ referenceNumber: string;
+ amount: number;
+ treasuryId?: string | null;
+ customerId?: string | null;
+ description: string;
+ userId?: string | null;
+ }): Promise<void> {
+ if (params.amount <= 0) return;
+
+ const cashAccount = params.treasuryId
+ ? await this.resolveTreasuryAccountId(params.orgId, await db.treasuries.get(params.treasuryId))
+ : await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.CASH);
+
+ const otherRevenue = await this.accountId(params.orgId, NATIVE_ACCOUNT_CODES.OTHER_REVENUE);
+
+ await this.journalize({
+ org_id: params.orgId,
+ branch_id: params.branchId,
+ type:'receipt',
+ entry_date: new Date().toISOString().split('T')[0],
+ description: params.description,
+ reference_type:'manual',
+ reference_id: params.referenceId,
+ lines: [
+ { account_id: cashAccount, debit: params.amount, credit: 0 },
+ { account_id: otherRevenue, debit: 0, credit: params.amount },
+ ],
+ created_by: params.userId,
+ });
+ }
+
  /** Reverses the journal entry of a source document (used on delete/cancel). */
  public static async reverseDocument(
  orgId: string,

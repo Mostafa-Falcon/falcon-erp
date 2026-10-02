@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from'react';
 import { toast } from'sonner';
 import { ScaleManager, ScaleConfig } from'@/lib/scale_manager';
+import { db } from'@/core/db/app_database';
 import type { Product, ProductBatch, Unit } from'@/types';
 import type { CartLine, HeldSale, UnitOption } from'./types';
 
@@ -315,7 +316,7 @@ export function usePosCart({
  const serialMatch = await db.product_serials
  .where('serial_number')
  .equals(q)
- .filter((s) => s.status ==='in_stock')
+ .filter((s: any) => s.status ==='in_stock')
  .first();
 
  if (serialMatch) {

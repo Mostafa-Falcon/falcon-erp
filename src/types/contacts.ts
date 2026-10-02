@@ -30,7 +30,7 @@ export interface ContactTransaction {
  id: EntityId;
  org_id: EntityId;
  contact_id: EntityId;
- reference_type:'sale_invoice'|'sale_return'|'purchase_invoice'|'purchase_return'|'receipt_voucher'|'payment_voucher'|'opening_balance';
+ reference_type:'sale_invoice'|'sale_return'|'purchase_invoice'|'purchase_return'|'receipt_voucher'|'payment_voucher'|'opening_balance'|'maintenance_ticket'|'installment_plan'|'installment_schedule'|'manual';
  reference_id: EntityId;
  debit: number; // مدين
  credit: number; // دائن

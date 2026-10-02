@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { CreditCard, Search, Loader2 } from 'lucide-react';
 import { db } from '@/core/db/app_database';
 import { InstallmentsRepository } from '@/modules/sales/installments_repository';

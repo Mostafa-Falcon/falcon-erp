@@ -27,7 +27,8 @@ export default function RegisterPage() {
 
  const [fullName, setFullName] = useState('');
  const [email, setEmail] = useState('');
- const [activityType, setActivityType] = useState('retail');
+ const [activityType, setActivityType] = useState('mobile_shop');
+ const [enableInstallments, setEnableInstallments] = useState(true);
  const [password, setPassword] = useState('');
  const [confirmPassword, setConfirmPassword] = useState('');
  const [showPassword, setShowPassword] = useState(false);
@@ -478,16 +479,35 @@ export default function RegisterPage() {
  <SelectValue placeholder="اختر نوع النشاط"/>
  </div>
  </SelectTrigger>
- <SelectContent>
- <SelectItem value="retail">تجارة عامة وتجزئة وجملة</SelectItem>
- <SelectItem value="supermarket">سوبرماركت ومواد غذائية</SelectItem>
- <SelectItem value="clothing">ملابس وأحذية وأزياء</SelectItem>
- <SelectItem value="electronics">أجهزة وإلكترونيات وكمبيوتر</SelectItem>
- <SelectItem value="hardware">حدايد وبويات وقطع غيار</SelectItem>
- <SelectItem value="pharmacy">صيدلية ومستلزمات طبية</SelectItem>
- <SelectItem value="services">خدمات ومطاعم وكافيهات</SelectItem>
+ <SelectContent className="rounded-xl">
+ <SelectItem value="mobile_shop">📱 محلات وتجارة الموبايل ورش الصيانة</SelectItem>
+ <SelectItem value="electronics">🔌 أجهزة منزلية وإلكترونيات وتكنولوجيا</SelectItem>
+ <SelectItem value="retail">🛒 تجارة عامة وتجزئة وجملة</SelectItem>
+ <SelectItem value="supermarket">🥬 سوبرماركت وبقالة ومواد غذائية</SelectItem>
+ <SelectItem value="clothing">👕 ملابس وأحذية وأزياء</SelectItem>
+ <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار</SelectItem>
+ <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
+ <SelectItem value="services">☕ خدمات ومطاعم وكافيهات</SelectItem>
  </SelectContent>
  </Select>
+ </div>
+
+ {/* Enable Installments Feature Toggle */}
+ <div className="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50 flex items-center justify-between cursor-pointer" onClick={() => setEnableInstallments(!enableInstallments)}>
+ <div className="space-y-0.5 text-right">
+ <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+ تفعيل مبيعات التقسيط والضامنين (إمكانية إضافية)
+ </span>
+ <span className="text-3xs text-slate-500 dark:text-slate-400 block font-medium">
+ تتيح جدولة الأقساط الشهريّة، حاسبة الفوائد، وتسجيل الضامنين
+ </span>
+ </div>
+ <input
+ type="checkbox"
+ checked={enableInstallments}
+ onChange={(e) => setEnableInstallments(e.target.checked)}
+ className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+ />
  </div>
 
  {/* Passwords - Grid for sm and up */}

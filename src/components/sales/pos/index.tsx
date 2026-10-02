@@ -1087,7 +1087,14 @@ export function POS() {
  onClose={() => setIsCameraScannerOpen(false)}
  onScanCode={(code) => {
  setSearchQuery(code);
- handleSearchSubmit();
+ const clean = code.trim().toLowerCase();
+ const match = products.find((p) => p.sku.toLowerCase() === clean || p.scale_code === clean);
+ if (match) {
+ addToCart(match);
+ toast.success(`📱 مسح باركود الكاميرا: «${match.name}»`);
+ } else {
+ toast.info(`تم إدخال الكود: «${code}» للبحث`);
+ }
  }}
  />
 

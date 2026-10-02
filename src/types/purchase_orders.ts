@@ -34,6 +34,7 @@ export interface PurchaseOrderItem {
  product_id: EntityId;
  product_name: string;
  unit_id: EntityId;
+ conversion_factor?: number;
  quantity: number;
  received_quantity: number;
  unit_cost: number;

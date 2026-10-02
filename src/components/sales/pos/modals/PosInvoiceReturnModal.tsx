@@ -135,7 +135,7 @@ export function PosInvoiceReturnModal({
             return {
               itemId: it.id,
               productId: it.product_id,
-              batchId: it.batch_id,
+              batchId: it.batch_id || undefined,
               unitId: it.unit_id,
               conversionFactor: it.conversion_factor || 1,
               unitPrice: netUnitPrice,

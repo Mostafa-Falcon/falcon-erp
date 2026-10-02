@@ -38,6 +38,7 @@ export interface QuotationItem {
  conversion_factor: number;
  quantity: number;
  unit_price: number;
+ unit_cost?: number;
  discount_amount: number;
  tax_rate: number;
  tax_amount: number;
