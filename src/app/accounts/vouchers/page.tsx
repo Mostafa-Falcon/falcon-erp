@@ -424,142 +424,142 @@ function VouchersContent() {
  </Table>
  </div>
 
- {/* Footer Bar */}
- <div className="p-4 bg-slate-50/20 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-2xs font-bold text-slate-400">
- <div>عرض 1 إلى {filteredVouchers.length} من إجمالي {stats.count} سند</div>
- <div className="flex items-center gap-1.5">
- <button className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-white transition-colors cursor-pointer">
- <ChevronRight className="w-3.5 h-3.5"/>
- </button>
- <button className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm">1</button>
- <button className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-white transition-colors cursor-pointer">
- <ChevronLeft className="w-3.5 h-3.5"/>
- </button>
- </div>
- </div>
+      {/* Footer Bar */}
+      <div className="p-4 bg-slate-50/20 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-2xs font-bold text-slate-400">
+        <div>عرض 1 إلى {filteredVouchers.length} من إجمالي {stats.count} سند</div>
+        <div className="flex items-center gap-1.5">
+          <button className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+          <button className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm">1</button>
+          <button className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
- </div>
+    </div>
 
- {/* ==================== CREATE VOUCHER MODAL ==================== */}
- <Dialog open={isVoucherModalOpen} onOpenChange={setIsVoucherModalOpen}>
- <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none rounded-3xl"dir="rtl">
- <div className="p-6 pb-0 flex items-center justify-between">
- <div className="flex items-center gap-3">
- <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner ${
- activeModalType ==='receipt'?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-600'
- }`}>
- {activeModalType ==='receipt'? <Plus className="w-5 h-5"/> : <Minus className="w-5 h-5"/>}
- </div>
- <h3 className="text-base font-black text-slate-900 dark:text-white">
- إضافة {activeModalType ==='receipt'?'سند قبض':'سند صرف'} جديد
- </h3>
- </div>
- <button onClick={() => setIsVoucherModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-slate-200 transition-colors">
- <X className="w-4 h-4"/>
- </button>
- </div>
+    {/* ==================== CREATE VOUCHER MODAL ==================== */}
+    <Dialog open={isVoucherModalOpen} onOpenChange={setIsVoucherModalOpen}>
+      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none rounded-3xl bg-surface dark:bg-slate-950" dir="rtl">
+        <div className="p-6 pb-0 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner ${
+              activeModalType === 'receipt' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400'
+            }`}>
+              {activeModalType === 'receipt' ? <Plus className="w-5 h-5" /> : <Minus className="w-5 h-5" />}
+            </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">
+              إضافة {activeModalType === 'receipt' ? 'سند قبض' : 'سند صرف'} جديد
+            </h3>
+          </div>
+          <button onClick={() => setIsVoucherModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
- <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5">
 
- {/* Entity / Contact */}
- <div className="space-y-1.5">
- <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">
- اسم {activeModalType ==='receipt'?'العميل':'المورد'} / الجهة
- </Label>
- <Select value={vContactId ||'none'} onValueChange={(val) => setVContactId(val ==='none'?'': val)}>
- <SelectTrigger className="h-11 rounded-xl bg-slate-50/50 border-slate-200 text-xs font-bold">
- <SelectValue placeholder="بدون جهة (نقدي)"/>
- </SelectTrigger>
- <SelectContent className="rounded-xl shadow-xl max-h-72">
- <SelectItem value="none">
- <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400"/> بدون جهة (نقدي)</div>
- </SelectItem>
- {contacts.map((c) => (
- <SelectItem key={c.id} value={c.id}>
- {c.name}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
+          {/* Entity / Contact */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+              اسم {activeModalType === 'receipt' ? 'العميل' : 'المورد'} / الجهة
+            </Label>
+            <Select value={vContactId || 'none'} onValueChange={(val) => setVContactId(val === 'none' ? '' : val)}>
+              <SelectTrigger className="h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                <SelectValue placeholder="بدون جهة (نقدي)" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl shadow-xl max-h-72">
+                <SelectItem value="none">
+                  <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400" /> بدون جهة (نقدي)</div>
+                </SelectItem>
+                {contacts.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
- {/* Amount & Transaction Type */}
- <div className="grid grid-cols-2 gap-4">
- <div className="space-y-1.5">
- <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">نوع العملية</Label>
- <Select value={vTransactionType} onValueChange={setVTransactionType}>
- <SelectTrigger className="h-11 rounded-xl bg-slate-50/50 border-slate-200 text-xs font-bold">
- <SelectValue />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="partial">سداد جزء</SelectItem>
- <SelectItem value="full">سداد كلي</SelectItem>
- <SelectItem value="advance">دفعة مقدمة</SelectItem>
- </SelectContent>
- </Select>
- </div>
- <div className="space-y-1.5">
- <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">المبلغ (ج.م)</Label>
- <div className="relative">
- <Input
- type="number"
- value={vAmount}
- onChange={(e) => setVAmount(e.target.value)}
- placeholder="0.00"
- className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl text-sm font-black text-left font-mono"
- />
- </div>
- </div>
- </div>
+          {/* Amount & Transaction Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">نوع العملية</Label>
+              <Select value={vTransactionType} onValueChange={setVTransactionType}>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="partial">سداد جزء</SelectItem>
+                  <SelectItem value="full">سداد كلي</SelectItem>
+                  <SelectItem value="advance">دفعة مقدمة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">المبلغ (ج.م)</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={vAmount}
+                  onChange={(e) => setVAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900 rounded-xl text-sm font-black text-left font-mono text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
 
- {/* Payment Method */}
- <div className="space-y-1.5">
- <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">طريقة الدفع</Label>
- <Select defaultValue="cash">
- <SelectTrigger className="h-11 rounded-xl bg-slate-50/50 border-slate-200 text-xs font-bold">
- <SelectValue />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="cash">نقداً (كاش)</SelectItem>
- <SelectItem value="card">بطاقة (شبكة)</SelectItem>
- <SelectItem value="bank">تحويل بنكي</SelectItem>
- </SelectContent>
- </Select>
- </div>
+          {/* Payment Method */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">طريقة الدفع</Label>
+            <Select defaultValue="cash">
+              <SelectTrigger className="h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">نقداً (كاش)</SelectItem>
+                <SelectItem value="card">بطاقة (شبكة)</SelectItem>
+                <SelectItem value="bank">تحويل بنكي</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
- {/* Notes */}
- <div className="space-y-1.5">
- <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">البيان / الملاحظات</Label>
- <textarea
- value={vDescription}
- onChange={(e) => setVDescription(e.target.value)}
- placeholder="سبب الصرف أو استلام المبلغ..."
- className="w-full min-h-[80px] p-3 rounded-xl bg-slate-50/50 border border-slate-200 text-xs font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
- />
- </div>
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold text-slate-600 dark:text-slate-400">البيان / الملاحظات</Label>
+            <textarea
+              value={vDescription}
+              onChange={(e) => setVDescription(e.target.value)}
+              placeholder="سبب الصرف أو استلام المبلغ..."
+              className="w-full min-h-[80px] p-3 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+            />
+          </div>
 
- {/* Actions */}
- <div className="flex items-center gap-3 pt-2">
- <Button
- onClick={handleCreateVoucher}
- disabled={isBusy}
- className={`flex-1 h-12 text-white font-black text-sm rounded-2xl shadow-lg transition-all active:scale-95 ${
- activeModalType ==='receipt'?'bg-[#10b981] hover:bg-emerald-600 shadow-emerald-500/20':'bg-[#ef4444] hover:bg-red-600 shadow-red-500/20'
- }`}
- >
- {isBusy ?'جاري الحفظ...':'حفظ السند'}
- </Button>
- <Button
- onClick={() => setIsVoucherModalOpen(false)}
- variant="outline"
- className="flex-1 h-12 border-slate-200 text-slate-500 font-black text-sm rounded-2xl hover:bg-slate-50"
- >
- إلغاء
- </Button>
- </div>
- </div>
- </DialogContent>
- </Dialog>
+          {/* Actions */}
+          <div className="flex items-center gap-3 pt-2">
+            <Button
+              onClick={handleCreateVoucher}
+              disabled={isBusy}
+              className={`flex-1 h-12 text-white font-black text-sm rounded-2xl shadow-lg transition-all active:scale-95 ${
+                activeModalType === 'receipt' ? 'bg-[#10b981] hover:bg-emerald-600 shadow-emerald-500/20' : 'bg-[#ef4444] hover:bg-red-600 shadow-red-500/20'
+              }`}
+            >
+              {isBusy ? 'جاري الحفظ...' : 'حفظ السند'}
+            </Button>
+            <Button
+              onClick={() => setIsVoucherModalOpen(false)}
+              variant="outline"
+              className="flex-1 h-12 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-300 font-black text-sm rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              إلغاء
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
  </div>
  </AppShell>

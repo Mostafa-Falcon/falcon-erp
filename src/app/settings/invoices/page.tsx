@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
-import { Input } from'@/components/ui/input';
-import { Button } from'@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { SettingsRepository } from'@/modules/settings/settings_repository';
 import { renderCode128Svg } from'@/lib/code128';
@@ -318,115 +319,121 @@ export default function InvoiceSettingsPage() {
  <div className="space-y-1"><label className="text-2xs font-black text-slate-700 dark:text-slate-300">مقاس ورق الفاتورة</label><div className="w-full h-10 rounded-xl bg-slate-50/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 px-3 flex items-center justify-between text-xs font-black text-slate-900 dark:text-white"><span>{paperSize}</span><ChevronDown className="w-4 h-4 text-slate-400"/></div></div>
  <div className="space-y-1"><label className="text-2xs font-black text-slate-700 dark:text-slate-300">موضع رمز العملة</label><div className="w-full h-10 rounded-xl bg-slate-50/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 px-3 flex items-center justify-between text-xs font-black text-slate-900 dark:text-white"><span>{currencyPosition}</span><ChevronDown className="w-4 h-4 text-slate-400"/></div></div>
  </div>
- <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50 dark:border-slate-800/40">
- <span className="text-xs font-black text-slate-700 dark:text-slate-300">تفعيل حساب الضريبة على الفواتير</span>
- <button type="button"onClick={() => setEnableTaxCalculation(!enableTaxCalculation)} className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${enableTaxCalculation ?'bg-primary':'bg-slate-200 dark:bg-slate-700'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${enableTaxCalculation ?'right-0.5':'right-[22px]'}`} /></button>
- </div>
- </div>
+            <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50 dark:border-slate-800/40">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-300">تفعيل حساب الضريبة على الفواتير</span>
+              <Switch
+                checked={enableTaxCalculation}
+                onCheckedChange={setEnableTaxCalculation}
+              />
+            </div>
+          </div>
 
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
- <div className="flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0">🖨️</div>
- <div><h3 className="text-xs font-black text-slate-900 dark:text-white">طابعة الفواتير الحرارية</h3><p className="text-3xs font-semibold text-slate-400 mt-0.5">اختر الطابعة التي تُطبع عليها فواتير المبيعات والمشتريات</p></div>
- </div>
- <Button onClick={handleChoosePrinter} variant="outline"className="w-full h-11 border-dashed border-pink-300 text-pink-600 bg-pink-50/20 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-2xs cursor-pointer"><Printer className="w-4 h-4"/>اضغط لاختيار طابعة الفواتير</Button>
- <p className="text-3xs font-medium text-slate-400 leading-normal">سيتم كشف الطابعة الحرارية تلقائياً عند الطباعة (فوجيتسو/80/mthermal).</p>
- </div>
+          <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0">🖨️</div>
+              <div><h3 className="text-xs font-black text-slate-900 dark:text-white">طابعة الفواتير الحرارية</h3><p className="text-3xs font-semibold text-slate-400 mt-0.5">اختر الطابعة التي تُطبع عليها فواتير المبيعات والمشتريات</p></div>
+            </div>
+            <Button onClick={handleChoosePrinter} variant="outline" className="w-full h-11 border-dashed border-pink-300 text-pink-600 dark:border-pink-800 dark:text-pink-400 bg-pink-50/20 dark:bg-pink-950/20 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-2xs cursor-pointer"><Printer className="w-4 h-4" />اضغط لاختيار طابعة الفواتير</Button>
+            <p className="text-3xs font-medium text-slate-400 leading-normal">سيتم كشف الطابعة الحرارية تلقائياً عند الطباعة (فوجيتسو/80/mthermal).</p>
+          </div>
 
- {/* Logo Upload Card (Visible ONLY to VIP Silver & Gold) */}
- {perms.canUploadInvoiceLogo && (
- <div className="bg-surface rounded-2xl border border-amber-400/60 dark:border-amber-500/40 p-5 shadow-xs space-y-4">
- <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
- <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 font-black">
- <ImagePlus className="w-4 h-4"/>
- </div>
- <div>
- <h3 className="text-xs font-black text-slate-900 dark:text-white">
- طباعة شعار المنشأة المخصص على الفاتورة (VIP Logo Customizer)
- </h3>
- <p className="text-3xs font-semibold text-slate-400 mt-0.5">
- ميزة حصرية لباقات VIP السيلفر والجولد: رفع شعار منشأتك ليظهر أعلى الإيصالات الحرارية وفواتير A4
- </p>
- </div>
- </div>
+          {/* Logo Upload Card (Visible ONLY to VIP Silver & Gold) */}
+          {perms.canUploadInvoiceLogo && (
+            <div className="bg-surface rounded-2xl border border-amber-400/60 dark:border-amber-500/40 p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 font-black">
+                  <ImagePlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-900 dark:text-white">
+                    طباعة شعار المنشأة المخصص على الفاتورة (VIP Logo Customizer)
+                  </h3>
+                  <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+                    ميزة حصرية لباقات VIP السيلفر والجولد: رفع شعار منشأتك ليظهر أعلى الإيصالات الحرارية وفواتير A4
+                  </p>
+                </div>
+              </div>
 
- <input
- type="file"
- ref={logoInputRef}
- accept="image/*"
- onChange={handleLogoUpload}
- className="hidden"
- />
+              <input
+                type="file"
+                ref={logoInputRef}
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
 
- <div
- onClick={() => logoInputRef.current?.click()}
- className="w-full p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-500 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer transition-all"
- >
- <div className="flex items-center gap-3">
- {invoiceLogoUrl ? (
- /* eslint-disable-next-line @next/next/no-img-element */
- <img src={invoiceLogoUrl} alt="شعار الفاتورة"className="w-14 h-14 object-contain rounded-xl border p-1 bg-white"/>
- ) : (
- <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
- <Upload className="w-6 h-6"/>
- </div>
- )}
- <div>
- <h4 className="text-xs font-black text-slate-900 dark:text-white">
- {invoiceLogoUrl ?'تغيير الشعار المرفوع':'رفع شعار المؤسسة / الصيدلية'}
- </h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5">
- انقر لاختيار الشعار (PNG, JPG بحد أقصى 2 ميجابايت)
- </p>
- </div>
- </div>
+              <div
+                onClick={() => logoInputRef.current?.click()}
+                className="w-full p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-500 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  {invoiceLogoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={invoiceLogoUrl} alt="شعار الفاتورة" className="w-14 h-14 object-contain rounded-xl border p-1 bg-white" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                      {invoiceLogoUrl ? 'تغيير الشعار المرفوع' : 'رفع شعار المؤسسة / الصيدلية'}
+                    </h4>
+                    <p className="text-3xs font-medium text-slate-400 mt-0.5">
+                      انقر لاختيار الشعار (PNG, JPG بحد أقصى 2 ميجابايت)
+                    </p>
+                  </div>
+                </div>
 
- {invoiceLogoUrl && (
- <Button
- type="button"
- variant="ghost"
- size="sm"
- onClick={(e) => {
- e.stopPropagation();
- setInvoiceLogoUrl('');
- }}
- className="h-8 px-2.5 text-xs text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
- >
- حذف الشعار
- </Button>
- )}
- </div>
- </div>
- )}
+                {invoiceLogoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInvoiceLogoUrl('');
+                    }}
+                    className="h-8 px-2.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer"
+                  >
+                    حذف الشعار
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
- <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
- <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center shrink-0"><Type className="w-4 h-4"/></div>
- <div><h3 className="text-xs font-black text-slate-900 dark:text-white">الترويسة والنصوص المخصصة</h3><p className="text-3xs font-semibold text-slate-400 mt-0.5">تخصيص عبارات الترحيب في أعلى الإيصال أو الملاحظات في أسفل الفاتورة</p></div>
- </div>
- <div className="space-y-1.5"><label className="text-2xs font-black text-slate-700 dark:text-slate-300">نص ترويسة الفاتورة</label><div className="relative"><Input value={invoiceHeader} onChange={(e) => setInvoiceHeader(e.target.value)} placeholder="يطبع أعلى الفاتورة"className="h-11 bg-slate-50/60 border-slate-200 rounded-xl px-10 text-xs font-bold"/><Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/></div></div>
- <div className="space-y-1.5"><label className="text-2xs font-black text-slate-700 dark:text-slate-300">ملاحظات أسفل الفاتورة</label><div className="relative"><Input value={invoiceFooter} onChange={(e) => setInvoiceFooter(e.target.value)} placeholder="يطبع أسفل الفاتورة"className="h-11 bg-slate-50/60 border-slate-200 rounded-xl px-10 text-xs font-bold"/><FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/></div></div>
- </div>
+          <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center shrink-0"><Type className="w-4 h-4" /></div>
+              <div><h3 className="text-xs font-black text-slate-900 dark:text-white">الترويسة والنصوص المخصصة</h3><p className="text-3xs font-semibold text-slate-400 mt-0.5">تخصيص عبارات الترحيب في أعلى الإيصال أو الملاحظات في أسفل الفاتورة</p></div>
+            </div>
+            <div className="space-y-1.5"><label className="text-2xs font-black text-slate-700 dark:text-slate-300">نص ترويسة الفاتورة</label><div className="relative"><Input value={invoiceHeader} onChange={(e) => setInvoiceHeader(e.target.value)} placeholder="يطبع أعلى الفاتورة" className="h-11 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl px-10 text-xs font-bold text-slate-900 dark:text-white" /><Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /></div></div>
+            <div className="space-y-1.5"><label className="text-2xs font-black text-slate-700 dark:text-slate-300">ملاحظات أسفل الفاتورة</label><div className="relative"><Input value={invoiceFooter} onChange={(e) => setInvoiceFooter(e.target.value)} placeholder="يطبع أسفل الفاتورة" className="h-11 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl px-10 text-xs font-bold text-slate-900 dark:text-white" /><FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /></div></div>
+          </div>
 
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
- <div className="flex items-center gap-2.5 border-b border-slate-50 pb-2"><div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0"><Eye className="w-4 h-4"/></div><div><h3 className="text-xs font-black">خيارات العرض على الفاتورة</h3></div></div>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5 pt-1">
- {[
- { label:'عرض شعار المنشأة', state: showOrgLogo, setState: setShowOrgLogo },
- { label:'عرض الرقم الضريبي', state: showTaxNumber, setState: setShowTaxNumber },
- { label:'عرض تاريخ انتهاء الصلاحية', state: showExpiryDate, setState: setShowExpiryDate },
- { label:'عرض بيانات العميل', state: showCustomerDetails, setState: setShowCustomerDetails },
- { label:'عرض باركود الفاتورة', state: showInvoiceBarcode, setState: setShowInvoiceBarcode },
- { label:'عرض المبلغ الموفَّر (الخصم)', state: showSavedAmount, setState: setShowSavedAmount },
- { label:'طباعة الفاتورة تلقائياً فور الاعتماد', state: autoPrintOnApproval, setState: setAutoPrintOnApproval },
- ].map((opt, i) => (
- <div key={i} className={`flex items-center justify-between gap-4 py-1 ${i > 1 && i < 4 ?'border-t border-slate-50 pt-3 md:border-none md:pt-1': (i >= 4 ?'border-t border-slate-50 pt-3':'')} ${i === 6 ?'md:col-span-2':''}`}>
- <span className="text-xs font-black text-slate-700">{opt.label}</span>
- <button type="button"onClick={() => opt.setState(!opt.state)} className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${opt.state ?'bg-blue-600':'bg-slate-200'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${opt.state ?'right-0.5':'right-[22px]'}`} /></button>
- </div>
- ))}
- </div>
- </div>
+          <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-2"><div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center shrink-0"><Eye className="w-4 h-4" /></div><div><h3 className="text-xs font-black text-slate-900 dark:text-white">خيارات العرض على الفاتورة</h3></div></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5 pt-1">
+              {[
+                { label: 'عرض شعار المنشأة', state: showOrgLogo, setState: setShowOrgLogo },
+                { label: 'عرض الرقم الضريبي', state: showTaxNumber, setState: setShowTaxNumber },
+                { label: 'عرض تاريخ انتهاء الصلاحية', state: showExpiryDate, setState: setShowExpiryDate },
+                { label: 'عرض بيانات العميل', state: showCustomerDetails, setState: setShowCustomerDetails },
+                { label: 'عرض باركود الفاتورة', state: showInvoiceBarcode, setState: setShowInvoiceBarcode },
+                { label: 'عرض المبلغ الموفَّر (الخصم)', state: showSavedAmount, setState: setShowSavedAmount },
+                { label: 'طباعة الفاتورة تلقائياً فور الاعتماد', state: autoPrintOnApproval, setState: setAutoPrintOnApproval },
+              ].map((opt, i) => (
+                <div key={i} className={`flex items-center justify-between gap-4 py-1 ${i > 1 && i < 4 ? 'border-t border-slate-50 dark:border-slate-800 pt-3 md:border-none md:pt-1' : (i >= 4 ? 'border-t border-slate-50 dark:border-slate-800 pt-3' : '')} ${i === 6 ? 'md:col-span-2' : ''}`}>
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200">{opt.label}</span>
+                  <Switch
+                    checked={opt.state}
+                    onCheckedChange={opt.setState}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
 
  </div>
 

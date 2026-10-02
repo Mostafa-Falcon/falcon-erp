@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
-import { Input } from'@/components/ui/input';
-import { Button } from'@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { SettingsRepository } from'@/modules/settings/settings_repository';
 import { renderCode128Svg } from'@/lib/code128';
@@ -337,23 +338,24 @@ export default function BarcodeSettingsPage() {
  <div><h3 className="text-xs font-black">خيارات العرض والبيانات</h3></div>
  </div>
 
- <div className="space-y-3.5 divide-y divide-slate-100">
- {[
- { label:'إظهر اسم الصنف', state: showItemName, setState: setShowItemName },
- { label:'عرض سعر البيع', state: showSalePrice, setState: setShowSalePrice },
- { label:'عرض تاريخ انتهاء الصلاحية', state: showExpiryDate, setState: setShowExpiryDate },
- { label:'عرض رقم التشغيلة (Batch)', state: showBatchNumber, setState: setShowBatchNumber },
- { label:'عرض اسم الوحدة', state: showUnitName, setState: setShowUnitName },
- { label:'عرض اسم المؤسسة / الشركة', state: showOrgName, setState: setShowOrgName },
- ].map((opt, i) => (
- <div key={i} className="flex items-center justify-between gap-4 py-2">
- <span className="text-xs font-black text-slate-700">{opt.label}</span>
- <button type="button"onClick={() => opt.setState(!opt.state)} className={`w-11 h-6 rounded-full transition-colors relative ${opt.state ?'bg-blue-500':'bg-slate-200'}`}>
- <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${opt.state ?'right-0.5':'right-[22px]'}`} />
- </button>
- </div>
- ))}
- </div>
+        <div className="space-y-3.5 divide-y divide-slate-100 dark:divide-slate-800">
+          {[
+            { label: 'إظهر اسم الصنف', state: showItemName, setState: setShowItemName },
+            { label: 'عرض سعر البيع', state: showSalePrice, setState: setShowSalePrice },
+            { label: 'عرض تاريخ انتهاء الصلاحية', state: showExpiryDate, setState: setShowExpiryDate },
+            { label: 'عرض رقم التشغيلة (Batch)', state: showBatchNumber, setState: setShowBatchNumber },
+            { label: 'عرض اسم الوحدة', state: showUnitName, setState: setShowUnitName },
+            { label: 'عرض اسم المؤسسة / الشركة', state: showOrgName, setState: setShowOrgName },
+          ].map((opt, i) => (
+            <div key={i} className="flex items-center justify-between gap-4 py-2">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-200">{opt.label}</span>
+              <Switch
+                checked={opt.state}
+                onCheckedChange={opt.setState}
+              />
+            </div>
+          ))}
+        </div>
  </div>
 
  </div>

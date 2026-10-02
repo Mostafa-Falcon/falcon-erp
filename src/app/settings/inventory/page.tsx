@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
-import { Input } from'@/components/ui/input';
-import { Button } from'@/components/ui/button';
-import { useSessionStore } from'@/core/state/useSessionStore';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { useSessionStore } from '@/core/state/useSessionStore';
 import { SettingsRepository } from'@/modules/settings/settings_repository';
 import { toast } from'sonner';
 import {
@@ -227,104 +228,77 @@ export default function InventoryPoliciesPage() {
  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
  <TrendingUp className="w-4 h-4"/>
  </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">أتمتة وتوليد تنبيهات الصلاحية الذكية</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- توليد إشعارات تنبيهية للمدير والمستخدمين تلقائياً للسلع والتشغيلات التي تقترب من تاريخ انتهائها.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => setSmartExpiryNotifications(!smartExpiryNotifications)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- smartExpiryNotifications ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- smartExpiryNotifications ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">أتمتة وتوليد تنبيهات الصلاحية الذكية</h4>
+              <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                توليد إشعارات تنبيهية للمدير والمستخدمين تلقائياً للسلع والتشغيلات التي تقترب من تاريخ انتهائها.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={smartExpiryNotifications}
+            onCheckedChange={setSmartExpiryNotifications}
+          />
+        </div>
 
- </div>
+      </div>
 
- {/* Card 2: Cashier & POS Devices Integration */}
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs space-y-4">
- <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
- <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center shrink-0">
- <Printer className="w-4 h-4"/>
- </div>
- <div>
- <h3 className="text-xs font-black text-slate-900 dark:text-white">خيارات الكاشير وأجهزة نقاط البيع POS</h3>
- <p className="text-3xs font-semibold text-slate-400 mt-0.5">
- التحكم في الأتمتة المباشرة أثناء إصدار الفواتير وصرف الأصناف للمشتري
- </p>
- </div>
- </div>
+      {/* Card 2: Cashier & POS Devices Integration */}
+      <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+          <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center shrink-0">
+            <Printer className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-black text-slate-900 dark:text-white">خيارات الكاشير وأجهزة نقاط البيع POS</h3>
+            <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+              التحكم في الأتمتة المباشرة أثناء إصدار الفواتير وصرف الأصناف للمشتري
+            </p>
+          </div>
+        </div>
 
- <div className="space-y-4 divide-y divide-slate-100 dark:divide-slate-800/60">
+        <div className="space-y-4 divide-y divide-slate-100 dark:divide-slate-800/60">
 
- {/* Option 1: Auto Print Invoice */}
- <div className="flex items-center justify-between gap-4 py-2">
- <div className="flex items-start gap-3">
- <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
- <Printer className="w-4 h-4 text-indigo-500"/>
- </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">طباعة الفاتورة تلقائياً فور الاعتماد</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- إرسال أمر الطباعة المباشر إلى الطابعة الحرارية بمجرد تأكيد عملية البيع دون فتح نافذة الطباعة.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => setAutoPrintInvoice(!autoPrintInvoice)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- autoPrintInvoice ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- autoPrintInvoice ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
+          {/* Option 1: Auto Print Invoice */}
+          <div className="flex items-center justify-between gap-4 py-2">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
+                <Printer className="w-4 h-4 text-indigo-500" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">طباعة الفاتورة تلقائياً فور الاعتماد</h4>
+                <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                  إرسال أمر الطباعة المباشر إلى الطابعة الحرارية بمجرد تأكيد عملية البيع دون فتح نافذة الطباعة.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={autoPrintInvoice}
+              onCheckedChange={setAutoPrintInvoice}
+            />
+          </div>
 
- {/* Option 2: Auto Open Cash Drawer */}
- <div className="flex items-center justify-between gap-4 py-2 border-t border-slate-50 dark:border-slate-800/40 pt-4">
- <div className="flex items-start gap-3">
- <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
- <Coins className="w-4 h-4 text-emerald-500"/>
- </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">فتح درج النقدية تلقائياً (Cash Drawer Pulse)</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- إرسال نبضة إلكترونية لفتح درج الكاشير فور إتمام عملية البيع النقدي.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => setAutoOpenCashDrawer(!autoOpenCashDrawer)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- autoOpenCashDrawer ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- autoOpenCashDrawer ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
+          {/* Option 2: Auto Open Cash Drawer */}
+          <div className="flex items-center justify-between gap-4 py-2 border-t border-slate-50 dark:border-slate-800/40 pt-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
+                <Coins className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">فتح درج النقدية تلقائياً (Cash Drawer Pulse)</h4>
+                <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                  إرسال نبضة إلكترونية لفتح درج الكاشير فور إتمام عملية البيع النقدي.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={autoOpenCashDrawer}
+              onCheckedChange={setAutoOpenCashDrawer}
+            />
+          </div>
 
- </div>
- </div>
+        </div>
+      </div>
 
  </div>
 

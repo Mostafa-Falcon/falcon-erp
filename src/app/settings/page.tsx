@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
-import { Input } from'@/components/ui/input';
-import { Button } from'@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { useSyncStore } from'@/core/state/useSyncStore';
 import { SettingsRepository } from'@/modules/settings/settings_repository';
@@ -901,67 +902,49 @@ export default function SettingsPage() {
  </Select>
  </div>
 
- <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
- <div className="space-y-0.5">
- <span className="text-xs font-black text-slate-900 dark:text-white block">تفعيل ضريبة القيمة المضافة (اختيارية)</span>
- <span className="text-3xs text-slate-400 block">
- {enableTax ?'الضريبة مفعلة لعمليات البيع والشراء':'الضريبة معطلة حالياً (0%)'}
- </span>
- </div>
- <button
- type="button"
- onClick={() => setEnableTax(!enableTax)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- enableTax ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- enableTax ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
- </div>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black text-slate-900 dark:text-white block">تفعيل ضريبة القيمة المضافة (اختيارية)</span>
+                <span className="text-3xs text-slate-400 block">
+                  {enableTax ? 'الضريبة مفعلة لعمليات البيع والشراء' : 'الضريبة معطلة حالياً (0%)'}
+                </span>
+              </div>
+              <Switch
+                checked={enableTax}
+                onCheckedChange={setEnableTax}
+              />
+            </div>
+          </div>
 
- {enableTax && (
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-150">
- <div className="space-y-1.5">
- <label className="text-2xs font-black text-slate-700 dark:text-slate-300">نسبة الضريبة الافتراضية (%)</label>
- <div className="relative group">
- <Input
- type="number"
- value={vatRate}
- onChange={(e) => setVatRate(e.target.value)}
- className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 text-xs font-bold"
- />
- <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"/>
- </div>
- </div>
+          {enableTax && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-150">
+              <div className="space-y-1.5">
+                <label className="text-2xs font-black text-slate-700 dark:text-slate-300">نسبة الضريبة الافتراضية (%)</label>
+                <div className="relative group">
+                  <Input
+                    type="number"
+                    value={vatRate}
+                    onChange={(e) => setVatRate(e.target.value)}
+                    className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 text-xs font-bold"
+                  />
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                </div>
+              </div>
 
- <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
- <div className="space-y-0.5">
- <span className="text-xs font-black text-slate-900 dark:text-white block">الأسعار تشمل الضريبة</span>
- <span className="text-3xs text-slate-400 block">
- {isTaxInclusive ?'الأسعار المسجلة بالأصناف شاملة للضريبة':'تضاف الضريبة فوق سعر الصنف'}
- </span>
- </div>
- <button
- type="button"
- onClick={() => setIsTaxInclusive(!isTaxInclusive)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- isTaxInclusive ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- isTaxInclusive ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
- </div>
- )}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-black text-slate-900 dark:text-white block">الأسعار تشمل الضريبة</span>
+                  <span className="text-3xs text-slate-400 block">
+                    {isTaxInclusive ? 'الأسعار المسجلة بالأصناف شاملة للضريبة' : 'تضاف الضريبة فوق سعر الصنف'}
+                  </span>
+                </div>
+                <Switch
+                  checked={isTaxInclusive}
+                  onCheckedChange={setIsTaxInclusive}
+                />
+              </div>
+            </div>
+          )}
  </div>
  </div>
 

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from'react';
-import { AppShell } from'@/components/layout/AppShell';
-import { Button } from'@/components/ui/button';
-import { useSessionStore } from'@/core/state/useSessionStore';
+import React, { useEffect, useState } from 'react';
+import { AppShell } from '@/components/layout/AppShell';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { useSessionStore } from '@/core/state/useSessionStore';
 import { SettingsRepository } from'@/modules/settings/settings_repository';
 import { toast } from'sonner';
 import { db } from'@/core/db/app_database';
@@ -356,166 +357,130 @@ export default function PreferencesSettingsPage() {
  <div className="flex items-center justify-between gap-4 py-2">
  <div className="flex items-start gap-3">
  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
- {enableSounds ? <Bell className="w-4 h-4 text-emerald-600"/> : <VolumeX className="w-4 h-4 text-slate-400"/>}
- </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">تفعيل الأصوات والتنبيهات الصوتية</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- تشغيل أصوات تأكيد مسح الباركود، إضافة الأصناف، واعتماد الفواتير في شاشة الكاشير والمبيعات.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => setEnableSounds(!enableSounds)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- enableSounds ?'bg-emerald-600':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- enableSounds ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
+              {enableSounds ? <Bell className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">تفعيل الأصوات والتنبيهات الصوتية</h4>
+              <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                تشغيل أصوات تأكيد مسح الباركود، إضافة الأصناف، واعتماد الفواتير في شاشة الكاشير والمبيعات.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={enableSounds}
+            onCheckedChange={setEnableSounds}
+          />
+        </div>
 
- {/* Sound Theme Selector (Visible ONLY to VIP Gold) */}
- {isVipGold && enableSounds && (
- <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
- <label className="block text-2xs font-black text-slate-700 dark:text-slate-300">
- اختيار النغمة الصوتية المخصصة (VIP Sound Theme)
- </label>
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- {SOUND_THEMES.map((theme) => {
- const isSelected = soundTheme === theme.id;
- return (
- <div
- key={theme.id}
- onClick={() => setSoundTheme(theme.id)}
- className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
- isSelected
- ?'border-blue-600 bg-blue-50/50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 shadow-2xs font-bold'
- :'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300'
- }`}
- >
- <div className="flex items-center gap-2.5">
- <span className="text-base">{theme.icon}</span>
- <div>
- <h5 className="text-xs font-black">{theme.nameAr}</h5>
- <p className="text-3xs opacity-75 mt-0.5">{theme.description}</p>
- </div>
- </div>
- {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0"/>}
- </div>
- );
- })}
- </div>
- </div>
- )}
- </div>
- </div>
+        {/* Sound Theme Selector (Visible ONLY to VIP Gold) */}
+        {isVipGold && enableSounds && (
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+            <label className="block text-2xs font-black text-slate-700 dark:text-slate-300">
+              اختيار النغمة الصوتية المخصصة (VIP Sound Theme)
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {SOUND_THEMES.map((theme) => {
+                const isSelected = soundTheme === theme.id;
+                return (
+                  <div
+                    key={theme.id}
+                    onClick={() => setSoundTheme(theme.id)}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 shadow-2xs font-bold'
+                        : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">{theme.icon}</span>
+                      <div>
+                        <h5 className="text-xs font-black">{theme.nameAr}</h5>
+                        <p className="text-3xs opacity-75 mt-0.5">{theme.description}</p>
+                      </div>
+                    </div>
+                    {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
 
- {/* ==================== CARD 3: INVENTORY & SALES BEHAVIOR POLICIES ==================== */}
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
- <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
- <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
- <SlidersHorizontal className="w-4 h-4"/>
- </div>
- <div>
- <h3 className="text-xs font-black text-slate-900 dark:text-white">سياسات وسلوك الفواتير والمخزون</h3>
- <p className="text-3xs font-semibold text-slate-400 mt-0.5">
- ضوابط الجودة ومنع بيع الأصناف منتهية الصلاحية والتنبيهات البصرية
- </p>
- </div>
- </div>
+    {/* ==================== CARD 3: INVENTORY & SALES BEHAVIOR POLICIES ==================== */}
+    <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
+      <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
+          <SlidersHorizontal className="w-4 h-4" />
+        </div>
+        <div>
+          <h3 className="text-xs font-black text-slate-900 dark:text-white">سياسات وسلوك الفواتير والمخزون</h3>
+          <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+            ضوابط الجودة ومنع بيع الأصناف منتهية الصلاحية والتنبيهات البصرية
+          </p>
+        </div>
+      </div>
 
- <div className="space-y-3">
- {/* Policy 1: Dark Mode */}
- <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 pb-3">
- <div className="flex items-start gap-3">
- <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
- <Moon className="w-4 h-4 text-purple-500"/>
- </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">الوضع الليلي المريح (Dark Mode)</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- تبديل ألوان الواجهة للنمط الداكن المريح للعين لتقليل الجهد البصري في فترات العمل الطويلة.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => handleToggleDarkMode(!darkMode)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- darkMode ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- darkMode ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
+      <div className="space-y-3">
+        {/* Policy 1: Dark Mode */}
+        <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
+              <Moon className="w-4 h-4 text-purple-500" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">الوضع الليلي المريح (Dark Mode)</h4>
+              <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                تبديل ألوان الواجهة للنمط الداكن المريح للعين لتقليل الجهد البصري في فترات العمل الطويلة.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={darkMode}
+            onCheckedChange={handleToggleDarkMode}
+          />
+        </div>
 
- {/* Policy 2: Allow selling expired items */}
- <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 pb-3">
- <div className="flex items-start gap-3">
- <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
- <CalendarDays className="w-4 h-4 text-amber-500"/>
- </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">السماح ببيع المنتجات منتهية الصلاحية / التالفة</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- عند التعطيل، سيمنع النظام تلقائياً إضافة أي صنف منتهي الصلاحية لسلة البيع حماية للجودة.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => setAllowExpiredSales(!allowExpiredSales)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- allowExpiredSales ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- allowExpiredSales ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
+        {/* Policy 2: Allow selling expired items */}
+        <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
+              <CalendarDays className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">السماح ببيع المنتجات منتهية الصلاحية / التالفة</h4>
+              <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                عند التعطيل، سيمنع النظام تلقائياً إضافة أي صنف منتهي الصلاحية لسلة البيع حماية للجودة.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={allowExpiredSales}
+            onCheckedChange={setAllowExpiredSales}
+          />
+        </div>
 
- {/* Policy 3: Automatic Beep on Barcode Scan */}
- <div className="flex items-center justify-between gap-4 py-2">
- <div className="flex items-start gap-3">
- <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
- <Sparkles className="w-4 h-4 text-emerald-500"/>
- </div>
- <div>
- <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">التأكيد الصوتي التلقائي عند قراءة الباركود</h4>
- <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
- إصدار صفيح صوتي فوري عند التعرف المباشر على باركود الصنف في الكاشير والشاشات.
- </p>
- </div>
- </div>
- <button
- type="button"
- onClick={() => setBeepOnScan(!beepOnScan)}
- className={`w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer ${
- beepOnScan ?'bg-emerald-500':'bg-slate-300 dark:bg-slate-700'
- }`}
- >
- <span
- className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-all ${
- beepOnScan ?'right-0.5':'right-[22px]'
- }`}
- />
- </button>
- </div>
- </div>
- </div>
+        {/* Policy 3: Automatic Beep on Barcode Scan */}
+        <div className="flex items-center justify-between gap-4 py-2">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
+              <Sparkles className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">التأكيد الصوتي التلقائي عند قراءة الباركود</h4>
+              <p className="text-3xs font-medium text-slate-400 mt-0.5 leading-relaxed">
+                إصدار صفيح صوتي فوري عند التعرف المباشر على باركود الصنف في الكاشير والشاشات.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={beepOnScan}
+            onCheckedChange={setBeepOnScan}
+          />
+        </div>
+      </div>
+    </div>
 
  {/* Bottom Actions Bar */}
  <div className="flex items-center justify-end pt-2">
