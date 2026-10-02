@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -6,19 +7,12 @@
 @custom-variant dark (&:where(.dark, .dark *, [data-theme='dark'], [data-theme='dark'] *));
 
 /* ------------------------------------------------------------------------- *
- * Design tokens
- *
- * `@theme inline` (not plain `@theme`) for every token that flips between
- * light and dark: the generated utility references the raw custom property
- * instead of copying its value, so the utilities respond to the cascade.
+ * Design tokens — Modern SaaS Linear / Stripe Style
  * ------------------------------------------------------------------------- */
 @theme inline {
-  /* The single font of the product. Sourced from `next/font/google` via the
-     `--font-cairo` variable set on <html> in app/layout.tsx, so the previous
-     render-blocking Google Fonts `@import` is no longer needed. */
-  --font-sans: var(--font-cairo), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: var(--font-cairo), 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* shadcn semantic palette (raw values live in :root / .dark below) */
+  /* shadcn semantic palette */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -46,38 +40,35 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
 
-  /* --- Product surfaces -------------------------------------------------- *
-   * The three dark-surface hexes that used to be inlined 445 times across
-   * the codebase (#131b2e / #111726 / #111827) are unified here.             */
+  /* Product surfaces */
   --color-app: var(--bg-app);
   --color-surface: var(--bg-surface);
   --color-surface-2: var(--bg-surface-2);
   --color-line: var(--border-color);
 
-  /* --- Typography -------------------------------------------------------- *
-   * A dense UI type scale. The 2xs..5xs steps exist because this product is
-   * a data-dense ERP: 11px is the workhorse secondary size and 10px the
-   * micro-label size. Both were previously hardcoded via arbitrary values
-   * (578x `text-[11px]`, 534x `text-[10px]`), which put them off-scale.     */
-  --text-2xs: 0.6875rem; /* 11px */
+  /* Typography scale */
+  --text-2xs: 0.6875rem;
+  /* 11px */
   --text-2xs--line-height: 1.45;
-  --text-3xs: 0.625rem; /* 10px */
+  --text-3xs: 0.625rem;
+  /* 10px */
   --text-3xs--line-height: 1.45;
-  --text-4xs: 0.5625rem; /* 9px  */
+  --text-4xs: 0.5625rem;
+  /* 9px */
   --text-4xs--line-height: 1.4;
-  --text-5xs: 0.5rem; /* 8px   */
+  --text-5xs: 0.5rem;
+  /* 8px */
   --text-5xs--line-height: 1.4;
 
-  /* --- Layout ------------------------------------------------------------ *
-   * Single source of truth for the shell chrome. Previously `--sidebar-width`
-   * said 260px while the sidebar rendered `w-[280px]` in 9 places.           */
-  --spacing-sidebar: 17.5rem; /* 280px */
-  --spacing-header: 4rem; /*  64px */
-  --container-page: 100rem; /* 1600px — caps table stretch on 4K displays  */
+  /* Layout */
+  --spacing-sidebar: 17.5rem;
+  /* 280px */
+  --spacing-header: 4rem;
+  /* 64px */
+  --container-page: 100rem;
+  /* 1600px */
 
-  /* --- Radii ------------------------------------------------------------- *
-   * Two levels only: `rounded-xl` (12px) for inner controls, `rounded-2xl`
-   * (16px) for surfaces. `rounded-3xl` (24px) was leaking in from two files. */
+  /* Radii */
   --radius-xs: calc(var(--radius) - 6px);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -89,7 +80,7 @@
 }
 
 /* ------------------------------------------------------------------------- *
- * Raw palette — light theme
+ * Raw palette — Light Theme (Modern Crisp Slate & Royal Blue)
  * ------------------------------------------------------------------------- */
 :root {
   --background: #ffffff;
@@ -104,55 +95,57 @@
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  --accent: #f1f5f9;
+  --accent: #f8fafc;
   --accent-foreground: #0f172a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #e2e8f0;
   --ring: #2563eb;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
   /* Product surfaces */
-  --bg-app: #f4f6f9;
+  --bg-app: #f8fafc;
   --bg-surface: #ffffff;
-  --bg-surface-2: #f8fafc;
+  --bg-surface-2: #f1f5f9;
   --border-color: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
 
-  /* Brand + module accents. Promoted from ~450 inlined hex values into
-     semantic tokens so light/dark swapping happens in exactly one place. */
+  /* Brand + module accents */
   --brand: #2563eb;
   --brand-hover: #1d4ed8;
-  --items: #558b2f;
-  --items-hover: #436d25;
+  --items: #10b981;
+  --items-hover: #059669;
   --sales: #d9008f;
   --sales-hover: #c20080;
-  --purchases: #d97706;
-  --purchases-hover: #b45309;
-  --inventory: #0d9488;
-  --inventory-hover: #0f766e;
-  --admin: #4f46e5;
-  --admin-hover: #4338ca;
+  --purchases: #f59e0b;
+  --purchases-hover: #d97706;
+  --inventory: #0ea5e9;
+  --inventory-hover: #0284c7;
+  --admin: #6366f1;
+  --admin-hover: #4f46e5;
 }
 
+/* ------------------------------------------------------------------------- *
+ * Raw palette — Dark Theme (Deep Navy / Charcoal Linear Style)
+ * ------------------------------------------------------------------------- */
 .dark,
 [data-theme='dark'] {
-  --background: #0b0f19;
+  --background: #090d16;
   --foreground: #f8fafc;
-  --card: #131b2e;
+  --card: #0f172a;
   --card-foreground: #f8fafc;
-  --popover: #131b2e;
+  --popover: #0f172a;
   --popover-foreground: #f8fafc;
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #1a233a;
+  --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
-  --muted: #1a233a;
+  --muted: #1e293b;
   --muted-foreground: #94a3b8;
-  --accent: #1a233a;
+  --accent: #1e293b;
   --accent-foreground: #f8fafc;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
@@ -160,9 +153,9 @@
   --input: #1e293b;
   --ring: #3b82f6;
 
-  --bg-app: #0b0f19;
-  --bg-surface: #131b2e;
-  --bg-surface-2: #1a233a;
+  --bg-app: #090d16;
+  --bg-surface: #0f172a;
+  --bg-surface-2: #162032;
   --border-color: #1e293b;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
@@ -170,14 +163,14 @@
 
   --brand: #3b82f6;
   --brand-hover: #60a5fa;
-  --items: #6a9c3d;
-  --items-hover: #558b2f;
+  --items: #10b981;
+  --items-hover: #059669;
   --sales: #e5399f;
   --sales-hover: #d9008f;
   --purchases: #f59e0b;
   --purchases-hover: #d97706;
-  --inventory: #14b8a6;
-  --inventory-hover: #0d9488;
+  --inventory: #0ea5e9;
+  --inventory-hover: #0284c7;
   --admin: #6366f1;
   --admin-hover: #4f46e5;
 }
@@ -189,6 +182,7 @@
 
   html,
   body {
+    font-family: var(--font-cairo), 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     height: 100%;
     max-height: 100%;
     overflow: hidden;
@@ -197,6 +191,7 @@
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
     transition:
       background-color 0.2s ease,
       color 0.2s ease;
@@ -204,30 +199,34 @@
 
   /* Scrollbars */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 9999px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
   }
+
   .dark ::-webkit-scrollbar-thumb,
   [data-theme='dark'] ::-webkit-scrollbar-thumb {
     background: #334155;
   }
+
   .dark ::-webkit-scrollbar-thumb:hover,
   [data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
     background: #475569;
   }
 
-  /* Hide number-input spinners across all fields (the Input primitive also
-     handles this locally, but inline-styled number cells bypass it). */
+  /* Hide number-input spinners across all fields */
   input[type='number']::-webkit-outer-spin-button,
   input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none !important;
@@ -262,4 +261,23 @@
     -webkit-text-fill-color: var(--text-primary) !important;
     caret-color: var(--text-primary) !important;
   }
+}
+
+/* Modern Utilities for Linear / Stripe look */
+.card-modern {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-modern:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .card-modern:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.3);
 }
