@@ -148,15 +148,14 @@ export function PosHeader({
  </button>
  </div>
  ) : (
- <button
- onClick={onOpenShiftModal}
- className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white text-2xs sm:text-xs font-bold px-2 sm:px-2.5 py-1 rounded-lg shadow-xs transition-colors cursor-pointer animate-pulse"
- title="فتح وردية كاشير جديدة"
- >
- <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
- <span>وردية</span>
- </button>
- )}
+          <div
+            className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/60 rounded-lg px-2.5 py-1 text-2xs text-amber-700 dark:text-amber-400 font-bold"
+            title="الوردية مغلقة حالياً — يرجى فتح الوردية من النموذج أدناه"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>الوردية مغلقة</span>
+          </div>
+        )}
 
  {/* Theme Toggle */}
  <button
