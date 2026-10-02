@@ -48,6 +48,9 @@ import {
  Receipt,
  Info,
  ChevronLeft,
+ ShoppingBag,
+ CheckCircle2,
+ Clock,
  ChevronRight,
  ChevronsLeft,
  ChevronsRight,
@@ -190,8 +193,16 @@ function InvoicesContent() {
  }, [invoices, datePeriod, search, customers, users]);
 
  // Financial summary
- const totalSales = useMemo(() => {
- return filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+ const { totalSales, paidSales, remainingSales } = useMemo(() => {
+ let total = 0;
+ let paid = 0;
+ let remaining = 0;
+ for (const inv of filteredInvoices) {
+ total += inv.total || 0;
+ paid += inv.paid_amount || 0;
+ remaining += inv.remaining_amount || 0;
+ }
+ return { totalSales: total, paidSales: paid, remainingSales: remaining };
  }, [filteredInvoices]);
 
  // Pagination
@@ -243,53 +254,68 @@ function InvoicesContent() {
  </div>
  </div>
 
- {/* Summary KPI Block */}
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+ {/* Summary KPI Stat Cards Grid */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
  <div className="space-y-1">
- <h2 className="text-base font-black text-slate-900 dark:text-white">
- {isArchiveMode ?'المبيعات المحذوفة والملغاة':'كل المبيعات'}
- </h2>
- <p className="text-xs font-semibold text-slate-400">
- {isArchiveMode
- ?'استعراض سجل الفواتير التي تم حذفها وإلغاؤها واسترجاع كمياتها للمخزن.'
- :'استعراض وإدارة جميع فواتير المبيعات الصادرة من هذا الفرع مع تتبع حالتها.'}
- </p>
- </div>
-
- <div className="flex flex-wrap items-center gap-3">
- {/* إجمالي المبيعات */}
- <div className="min-w-[170px] bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/60 rounded-2xl p-3.5 flex items-center justify-between gap-3">
- <div className="w-10 h-10 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
- <DollarSign className="w-5 h-5"/>
- </div>
- <div className="text-left space-y-0.5">
- <span className="text-2xs font-bold text-slate-500 dark:text-slate-400 block">
- إجمالي المبيعات
- </span>
- <span className="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono block">
- {formatNumber(totalSales)} <span className="text-xs font-bold">ج.م</span>
- </span>
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي الفواتير الصادرة</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{filteredInvoices.length}</span>
+ <span className="text-3xs font-bold text-slate-400">فاتورة</span>
  </div>
  </div>
-
- {/* إجمالي الفواتير */}
- <div className="min-w-[170px] bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-900/60 rounded-2xl p-3.5 flex items-center justify-between gap-3">
- <div className="w-10 h-10 rounded-xl bg-blue-100/80 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
- <Receipt className="w-5 h-5"/>
- </div>
- <div className="text-left space-y-0.5">
- <span className="text-2xs font-bold text-slate-500 dark:text-slate-400 block">
- إجمالي الفواتير
- </span>
- <span className="text-base font-black text-blue-600 dark:text-blue-400 font-mono block">
- {filteredInvoices.length} <span className="text-xs font-bold">فاتورة</span>
- </span>
- </div>
- </div>
+ <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
+ <Receipt className="w-6 h-6"/>
  </div>
  </CardContent>
  </Card>
+
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي قيمة المبيعات</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-pink-600 dark:text-pink-400 font-mono">{formatNumber(totalSales)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center border border-pink-500/20 shrink-0 shadow-xs">
+ <ShoppingBag className="w-6 h-6"/>
+ </div>
+ </CardContent>
+ </Card>
+
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المحصل نقداً / تحويل</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(paidSales)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
+ <CheckCircle2 className="w-6 h-6"/>
+ </div>
+ </CardContent>
+ </Card>
+
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المتبقي على العملاء (آجل)</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{formatNumber(remainingSales)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0 shadow-xs">
+ <Clock className="w-6 h-6"/>
+ </div>
+ </CardContent>
+ </Card>
+ </div>
 
  {/* Filter Bar */}
  <div className="flex flex-wrap items-center gap-3 justify-start">

@@ -36,7 +36,7 @@ import { useSessionStore } from'@/core/state/useSessionStore';
 import { PurchasesRepository } from'@/modules/purchases/purchases_repository';
 import { formatNumber, formatDateTime } from'@/lib/format';
 import { toast } from'sonner';
-import { Pencil, Ban, Eye, RotateCcw, Plus, Receipt } from'lucide-react';
+import { Pencil, Ban, Eye, RotateCcw, Plus, Receipt, ShoppingBag, CheckCircle2, Clock } from 'lucide-react';
 import type { Contact, Product, PurchaseInvoice, PurchaseInvoiceItem, Treasury, Unit, Warehouse } from'@/types';
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -187,33 +187,68 @@ function InvoicesContent() {
  return (
  <AppShell title="فواتير المشتريات"subtitle="سجل فواتير الشراء والتوريد ومتابعة الأرصدة والمستحقات">
  <div className="space-y-4 select-none"dir="rtl">
- {/* KPI Cards */}
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">عدد الفواتير</div>
- <div className="mt-1 text-xl font-black text-slate-900 dark:text-white font-mono">{kpis.count}</div>
- </CardContent>
- </Card>
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">إجمالي المشتريات</div>
- <div className="mt-1 text-xl font-black text-[#558b2f] font-mono">{formatNumber(kpis.total)} ج.م</div>
- </CardContent>
- </Card>
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">المسدد للموردين</div>
- <div className="mt-1 text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(kpis.paid)} ج.م</div>
- </CardContent>
- </Card>
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">المتبقي (آجل)</div>
- <div className="mt-1 text-xl font-black text-amber-600 dark:text-amber-400 font-mono">{formatNumber(kpis.remaining)} ج.م</div>
- </CardContent>
- </Card>
- </div>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+            <CardContent className="p-5 flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي الفواتير</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{kpis.count}</span>
+                  <span className="text-3xs font-bold text-slate-400">فاتورة</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
+                <Receipt className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+            <CardContent className="p-5 flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي قيمة المشتريات</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{formatNumber(kpis.total)}</span>
+                  <span className="text-3xs font-bold text-slate-400">ج.م</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0 shadow-xs">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+            <CardContent className="p-5 flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المسدد للموردين</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(kpis.paid)}</span>
+                  <span className="text-3xs font-bold text-slate-400">ج.م</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+            <CardContent className="p-5 flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">المتبقي (ذمم آجلة)</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{formatNumber(kpis.remaining)}</span>
+                  <span className="text-3xs font-bold text-slate-400">ج.م</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0 shadow-xs">
+                <Clock className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
  {/* Toolbar & Filters */}
  <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface overflow-hidden">
