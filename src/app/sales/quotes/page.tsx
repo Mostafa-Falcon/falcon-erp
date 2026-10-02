@@ -2,6 +2,9 @@
 
 import React, { useEffect, useMemo, useState, Suspense } from'react';
 import Link from'next/link';
+import { useRouter } from 'next/navigation';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
 import { Badge } from'@/components/ui/badge';
@@ -47,6 +50,7 @@ import type { Quotation, QuotationItem, QuotationStatus } from'@/types';
 import { toast } from'sonner';
 
 function QuotesContent() {
+  const router = useRouter();
  const { currentUser } = useSessionStore();
  const orgId = currentUser?.org_id ||'';
 
@@ -242,7 +246,7 @@ function QuotesContent() {
  <CardContent className="p-4 flex items-center justify-between">
  <div>
  <p className="text-xs font-bold text-slate-500">القيمة الإجمالية</p>
- <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{formatNumber(stats.totalValue)} د.ع</p>
+ <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{formatNumber(stats.totalValue)} ج.م</p>
  </div>
  <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600">
  <DollarSign className="w-5 h-5"/>
@@ -324,7 +328,7 @@ function QuotesContent() {
  {q.valid_until ? new Date(q.valid_until).toLocaleDateString('ar-EG') :'غير محدد'}
  </TableCell>
  <TableCell className="font-black text-slate-900 dark:text-white">
- {formatNumber(q.total)} د.ع
+ {formatNumber(q.total)} ج.م
  </TableCell>
  <TableCell className="text-center">
  {getStatusBadge(q.status)}
@@ -414,9 +418,9 @@ function QuotesContent() {
  <TableRow key={item.id}>
  <TableCell className="font-bold">{item.product_name}</TableCell>
  <TableCell className="text-center font-bold">{item.quantity}</TableCell>
- <TableCell>{formatNumber(item.unit_price)} د.ع</TableCell>
- <TableCell>{formatNumber(item.discount_amount)} د.ع</TableCell>
- <TableCell className="font-black">{formatNumber(item.total)} د.ع</TableCell>
+ <TableCell>{formatNumber(item.unit_price)} ج.م</TableCell>
+ <TableCell>{formatNumber(item.discount_amount)} ج.م</TableCell>
+ <TableCell className="font-black">{formatNumber(item.total)} ج.م</TableCell>
  </TableRow>
  ))}
  </TableBody>

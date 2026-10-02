@@ -2,11 +2,14 @@
 
 import React, { useEffect, useMemo, useState, Suspense } from'react';
 import Link from'next/link';
+import { useRouter } from 'next/navigation';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
 import { Badge } from'@/components/ui/badge';
 import { Input } from'@/components/ui/input';
-import { Card, CardContent } from'@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
  Table,
  TableBody,
@@ -46,6 +49,7 @@ import type { PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus } from'@/typ
 import { toast } from'sonner';
 
 function PurchaseOrdersContent() {
+ const router = useRouter();
  const { currentUser } = useSessionStore();
  const orgId = currentUser?.org_id ||'';
 
@@ -184,106 +188,74 @@ function PurchaseOrdersContent() {
  subtitle="متابعة أوامر الشراء الموجهة للموردين وحالة التوريد والاستلام"
  actions={
  <Link href="/purchases/orders/new">
- <Button className="h-11 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer">
+ <Button className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer">
  <Plus className="w-4 h-4"/>
  <span>إنشاء أمر شراء جديد</span>
  </Button>
  </Link>
  }
  >
- <div className="space-y-6 text-right"dir="rtl">
- {/* KPI Cards */}
+ <div className="space-y-5 text-right select-none" dir="rtl">
+ {/* KPI Cards — Unified Design System */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي الأوامر</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{stats.totalCount}</span>
- <span className="text-3xs font-bold text-slate-400">أمر شراء</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
- <ShoppingCart className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">أوامر قيد التوريد</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{stats.pendingCount}</span>
- <span className="text-3xs font-bold text-slate-400">قيد التكليف</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0 shadow-xs">
- <Clock className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">الأوامر المستلمة بالكامل</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{stats.receivedCount}</span>
- <span className="text-3xs font-bold text-slate-400">مكتمل</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
- <CheckCircle2 className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
-
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
- <CardContent className="p-5 flex items-center justify-between gap-3">
- <div className="space-y-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">القيمة الإجمالية للأوامر</span>
- <div className="flex items-baseline gap-1.5">
- <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-mono">{formatNumber(stats.totalValue)}</span>
- <span className="text-3xs font-bold text-slate-400">ج.م</span>
- </div>
- </div>
- <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 shrink-0 shadow-xs">
- <DollarSign className="w-6 h-6"/>
- </div>
- </CardContent>
- </Card>
+ <KpiCard
+ label="إجمالي الأوامر"
+ value={stats.totalCount}
+ unit="أمر شراء"
+ variant="blue"
+ icon={<ShoppingCart className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="أوامر قيد التوريد"
+ value={stats.pendingCount}
+ unit="قيد التوريد"
+ variant="amber"
+ icon={<Clock className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="الأوامر المستلمة بالكامل"
+ value={stats.receivedCount}
+ unit="مكتمل"
+ variant="emerald"
+ icon={<CheckCircle2 className="w-5 h-5"/>}
+ />
+ <KpiCard
+ label="القيمة الإجمالية للأوامر"
+ value={formatNumber(stats.totalValue)}
+ unit="ج.م"
+ variant="indigo"
+ icon={<DollarSign className="w-5 h-5"/>}
+ />
  </div>
 
- {/* Filter Bar */}
- <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface">
- <CardContent className="p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
- <div className="relative flex-1 w-full">
- <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"/>
+ {/* Toolbar & Filter Bar */}
+ <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
+ <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+ <div className="relative flex-1 max-w-sm">
+ <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
  <Input
  placeholder="البحث برقم أمر الشراء أو اسم المورد..."
  value={search}
  onChange={(e) => setSearch(e.target.value)}
- className="pr-10 h-11 text-xs font-semibold rounded-xl border-slate-200 dark:border-slate-800"
+ className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
  />
  </div>
-
- <div className="flex items-center gap-3 w-full md:w-auto">
- <Select value={statusFilter} onValueChange={setStatusFilter}>
- <SelectTrigger className="w-full md:w-[200px] h-11 text-xs font-bold rounded-xl border-slate-200 dark:border-slate-800">
- <SelectValue placeholder="حالة أمر الشراء"/>
+ <div className="w-48">
+ <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as any)}>
+ <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
+ <SelectValue placeholder="كافة الحالات"/>
  </SelectTrigger>
- <SelectContent>
- <SelectItem value="all">كل الحالات</SelectItem>
+ <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+ <SelectItem value="all">كافة الحالات</SelectItem>
  <SelectItem value="sent">قيد التوريد</SelectItem>
- <SelectItem value="received">تم الاستلام</SelectItem>
  <SelectItem value="partially_received">استلام جزئي</SelectItem>
+ <SelectItem value="received">تم الاستلام</SelectItem>
  <SelectItem value="cancelled">ملغي</SelectItem>
  </SelectContent>
  </Select>
  </div>
- </CardContent>
- </Card>
+ </div>
+ </div>
 
  {/* Table */}
  <Card className="bg-surface border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -328,7 +300,7 @@ function PurchaseOrdersContent() {
  {po.expected_delivery_date ? new Date(po.expected_delivery_date).toLocaleDateString('ar-EG') :'غير محدد'}
  </TableCell>
  <TableCell className="font-black text-slate-900 dark:text-white">
- {formatNumber(po.total)} د.ع
+ {formatNumber(po.total)} ج.م
  </TableCell>
  <TableCell className="text-center">
  {getStatusBadge(po.status)}

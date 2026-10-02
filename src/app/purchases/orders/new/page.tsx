@@ -180,34 +180,29 @@ function NewPOContent() {
  };
 
  return (
- <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
- {/* Top Action Bar */}
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-3">
+ <AppShell
+ title="إنشاء أمر شراء جديد"
+ subtitle="تجهيز وإرسال طلبات التوريد للموردين ومتابعة مواعيد التسليم المتوقعة"
+ actions={
+ <div className="flex items-center gap-2">
  <Link href="/purchases/orders">
- <Button variant="ghost"size="icon"className="rounded-xl">
- <ArrowRight className="w-5 h-5"/>
+ <Button variant="outline" className="h-10 px-4 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+ <ArrowRight className="w-4 h-4"/>
+ <span>الرجوع للأوامر</span>
  </Button>
  </Link>
- <div>
- <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
- <ShoppingCart className="w-6 h-6 text-primary"/>
- إنشاء أمر شراء جديد (Purchase Order)
- </h1>
- <p className="text-xs text-slate-500">تجهيز وإرسال طلبات التوريد للموردين</p>
- </div>
- </div>
-
  <Button
  onClick={handleSubmit}
  disabled={isSubmitting || lineItems.length === 0}
- className="bg-primary hover:bg-blue-700 text-white font-bold gap-2"
+ className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
  >
  <Save className="w-4 h-4"/>
- حفظ أمر الشراء
+ <span>حفظ أمر الشراء</span>
  </Button>
  </div>
-
+ }
+ >
+ <div className="space-y-6 select-none" dir="rtl">
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
  {/* Left Side */}
  <div className="lg:col-span-2 space-y-6">
@@ -295,7 +290,7 @@ function NewPOContent() {
  <span>{p.name}</span>
  <span className="text-3xs text-slate-400 block">{p.sku}</span>
  </div>
- <span className="text-primary">{formatNumber(p.purchase_price || 0)} د.ع</span>
+ <span className="text-primary">{formatNumber(p.purchase_price || 0)} ج.م</span>
  </div>
  ))
  )}
@@ -351,7 +346,7 @@ function NewPOContent() {
  />
  </TableCell>
  <TableCell className="font-black text-xs">
- {formatNumber(lineTotal)} د.ع
+ {formatNumber(lineTotal)} ج.م
  </TableCell>
  <TableCell className="text-center">
  <Button
@@ -383,17 +378,17 @@ function NewPOContent() {
  <div className="space-y-2 text-xs font-bold">
  <div className="flex justify-between text-slate-600 dark:text-slate-400">
  <span>المجموع الفرعي:</span>
- <span>{formatNumber(subtotal)} د.ع</span>
+ <span>{formatNumber(subtotal)} ج.م</span>
  </div>
 
  <div className="flex justify-between text-slate-600 dark:text-slate-400">
  <span>إجمالي الضريبة:</span>
- <span>{formatNumber(totalTax)} د.ع</span>
+ <span>{formatNumber(totalTax)} ج.م</span>
  </div>
 
  <div className="border-t pt-3 flex justify-between text-base font-black text-primary">
  <span>الإجمالي المتوقع:</span>
- <span>{formatNumber(finalTotal)} د.ع</span>
+ <span>{formatNumber(finalTotal)} ج.م</span>
  </div>
  </div>
 
@@ -423,15 +418,14 @@ function NewPOContent() {
  </div>
  </div>
  </div>
+ </AppShell>
  );
 }
 
 export default function NewPOPage() {
  return (
- <AppShell>
- <Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}>
+ <Suspense fallback={<div className="p-8 text-center text-xs font-bold text-slate-400">جاري التحميل...</div>}>
  <NewPOContent />
  </Suspense>
- </AppShell>
  );
 }

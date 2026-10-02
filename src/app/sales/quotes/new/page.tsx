@@ -270,7 +270,7 @@ function NewQuoteContent() {
  <span>{p.name}</span>
  <span className="text-3xs text-slate-400 block">{p.sku}</span>
  </div>
- <span className="text-primary">{formatNumber(p.sale_price || 0)} د.ع</span>
+ <span className="text-primary">{formatNumber(p.sale_price || 0)} ج.م</span>
  </div>
  ))
  )}
@@ -337,7 +337,7 @@ function NewQuoteContent() {
  />
  </TableCell>
  <TableCell className="font-black text-xs">
- {formatNumber(lineTotal)} د.ع
+ {formatNumber(lineTotal)} ج.م
  </TableCell>
  <TableCell className="text-center">
  <Button
@@ -369,7 +369,7 @@ function NewQuoteContent() {
  <div className="space-y-2 text-xs font-bold">
  <div className="flex justify-between text-slate-600 dark:text-slate-400">
  <span>المجموع الفرعي:</span>
- <span>{formatNumber(subtotal)} د.ع</span>
+ <span>{formatNumber(subtotal)} ج.م</span>
  </div>
 
  <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
@@ -384,12 +384,12 @@ function NewQuoteContent() {
 
  <div className="flex justify-between text-slate-600 dark:text-slate-400">
  <span>الضريبة التقريبية:</span>
- <span>{formatNumber(totalTax)} د.ع</span>
+ <span>{formatNumber(totalTax)} ج.م</span>
  </div>
 
  <div className="border-t pt-3 flex justify-between text-base font-black text-primary">
  <span>الإجمالي النهائي:</span>
- <span>{formatNumber(finalTotal)} د.ع</span>
+ <span>{formatNumber(finalTotal)} ج.م</span>
  </div>
  </div>
 
