@@ -33,7 +33,7 @@ import {
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { PurchasesRepository } from'@/modules/purchases/purchases_repository';
 import { formatNumber, formatDateTime } from'@/lib/format';
-import { Plus, RotateCcw, Search, Eye } from'lucide-react';
+import { Plus, RotateCcw, Search, Eye, DollarSign, Wallet, FileText, CheckCircle2 } from 'lucide-react';
 import type { Contact, InventoryTransaction, Product, PurchaseReturn, Treasury, Unit, Warehouse } from'@/types';
 import { toast } from'sonner';
 
@@ -114,52 +114,119 @@ function ReturnsContent() {
  });
  }, [returns, search, supplierFilter, suppliers]);
 
- const totals = useMemo(() => {
- return filtered.reduce((acc, r) => acc + (r.total || 0), 0);
+ const { totals, cashReturns, creditReturns } = useMemo(() => {
+ let tot = 0;
+ let cash = 0;
+ let credit = 0;
+ for (const r of filtered) {
+ tot += r.total || 0;
+ if (r.refund_type ==='treasury') cash += r.total || 0;
+ else credit += r.total || 0;
+ }
+ return { totals: tot, cashReturns: cash, creditReturns: credit };
  }, [filtered]);
 
  const viewReturn = viewId ? returns.find((x) => x.id === viewId) : null;
  const viewItems = viewId ? itemsByReturn[viewId] || [] : [];
 
  return (
- <AppShell title="مرتجعات المشتريات"subtitle="سجل البضائع المرتجعة للموردين واسترداد المستحقات المالية">
- <div className="space-y-4 select-none"dir="rtl">
+ <AppShell
+ title="مرتجعات المشتريات"
+ subtitle="سجل البضائع المرتجعة للموردين واسترداد المستحقات المالية"
+ actions={
+ <Button
+ onClick={() => router.push('/purchases/returns/new')}
+ className="h-11 px-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-xs font-black flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
+ >
+ <Plus className="w-4 h-4"/>
+ <span>مرتجع شراء جديد</span>
+ </Button>
+ }
+ >
+ <div className="space-y-6 select-none"dir="rtl">
  {/* KPI Cards */}
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">إجمالي عمليات الإرجاع</div>
- <div className="mt-1 text-2xl font-black text-slate-900 dark:text-white font-mono">{filtered.length}</div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي عمليات المرتجع</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{filtered.length}</span>
+ <span className="text-3xs font-bold text-slate-400">عملية</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0 shadow-xs">
+ <RotateCcw className="w-6 h-6"/>
+ </div>
  </CardContent>
  </Card>
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-slate-400">إجمالي قيمة المرتجعات</div>
- <div className="mt-1 text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{formatNumber(totals)} ج.م</div>
+
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">إجمالي قيمة المرتجعات</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{formatNumber(totals)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0 shadow-xs">
+ <DollarSign className="w-6 h-6"/>
+ </div>
+ </CardContent>
+ </Card>
+
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">استرداد نقدي للخزينة</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{formatNumber(cashReturns)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0 shadow-xs">
+ <Wallet className="w-6 h-6"/>
+ </div>
+ </CardContent>
+ </Card>
+
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">خصم من حسابات الموردين</span>
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono">{formatNumber(creditReturns)}</span>
+ <span className="text-3xs font-bold text-slate-400">ج.م</span>
+ </div>
+ </div>
+ <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-xs">
+ <FileText className="w-6 h-6"/>
+ </div>
  </CardContent>
  </Card>
  </div>
 
  {/* Toolbar & Filter */}
- <Card className="rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs bg-surface overflow-hidden">
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface overflow-hidden">
  <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
  <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
- <div className="relative w-64">
+ <div className="relative flex-1 max-w-xs">
+ <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"/>
  <Input
  type="text"
  value={search}
  onChange={(e) => setSearch(e.target.value)}
  placeholder="بحث بالرقم أو المورد..."
- className="h-10 text-xs font-semibold rounded-xl pr-9"
+ className="h-11 text-xs font-semibold rounded-xl pr-10 border-slate-200 dark:border-slate-800"
  />
- <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
  </div>
  <div className="w-56">
  <Select value={supplierFilter} onValueChange={setSupplierFilter}>
- <SelectTrigger className="h-10 text-xs font-bold rounded-xl">
+ <SelectTrigger className="h-11 text-xs font-bold rounded-xl border-slate-200 dark:border-slate-800">
  <SelectValue placeholder="كل الموردين"/>
  </SelectTrigger>
- <SelectContent className="max-h-60">
+ <SelectContent className="max-h-60 rounded-xl">
  <SelectItem value="all">كل الموردين</SelectItem>
  {suppliers.map((c) => (
  <SelectItem key={c.id} value={c.id}>
@@ -170,14 +237,6 @@ function ReturnsContent() {
  </Select>
  </div>
  </div>
-
- <Button
- onClick={() => router.push('/purchases/returns/new')}
- className="h-10 px-4 bg-[#558b2f] hover:bg-[#436d25] text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xs cursor-pointer"
- >
- <Plus className="w-4 h-4"/>
- <span>مرتجع جديد</span>
- </Button>
  </div>
 
  {isLoading ? (

@@ -8,7 +8,7 @@ import { Icons } from'@/components/ui/Icons';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { TreasuryRepository } from'@/modules/treasury/treasury_repository';
 import { formatNumber, formatDateTime } from'@/lib/format';
-import { RotateCcw } from'lucide-react';
+import { RotateCcw, DollarSign, Receipt, FolderTree, TrendingUp, Plus, Search } from 'lucide-react';
 import { toast } from'sonner';
 import {
  Select,
@@ -231,33 +231,69 @@ function ExpensesContent() {
  }, [totals.byCat]);
 
  return (
- <AppShell title="المصروفات التشغيلية"subtitle="تسجيل مصروفات التشغيل (إيجار، كهرباء، رواتب، نقل...) مع خصمها تلقائياً من الخزينة">
- <div className="space-y-4">
+ <AppShell
+ title="المصروفات التشغيلية"
+ subtitle="تسجيل مصروفات التشغيل (إيجار، كهرباء، رواتب، نقل...) مع خصمها تلقائياً من الخزينة"
+ actions={
+ <Button
+ onClick={() => setShowCreate((v) => !v)}
+ className="h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
+ >
+ {showCreate ? <Icons.X className="w-4 h-4"/> : <Plus className="w-4 h-4"/>}
+ <span>{showCreate ?'إغلاق النماذج':'تسجيل مصروف جديد'}</span>
+ </Button>
+ }
+ >
+ <div className="space-y-6 text-right"dir="rtl">
  {/* KPIs */}
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- <Kpi label="إجمالي المصروفات"value={formatNumber(totals.total)} accent="#ef4444"/>
- <Kpi label="عدد العمليات"value={String(totals.count)} accent="#64748b"/>
- <Kpi label="أعلى فئة"value={topCategory ? categoryName(topCategory.id) :'—'} accent="#d97706"/>
- <Kpi label="أعلى فئة مبلغاً"value={formatNumber(topCategory?.amount || 0)} accent="#4338ca"/>
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+ <Kpi
+ label="إجمالي المصروفات"
+ value={`${formatNumber(totals.total)} ج.م`}
+ textColor="text-rose-600 dark:text-rose-400"
+ accentBg="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+ icon={<DollarSign className="w-6 h-6"/>}
+ />
+ <Kpi
+ label="عدد العمليات"
+ value={`${totals.count} عملية`}
+ textColor="text-slate-900 dark:text-white"
+ accentBg="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+ icon={<Receipt className="w-6 h-6"/>}
+ />
+ <Kpi
+ label="أعلى فئة مصروفات"
+ value={topCategory ? categoryName(topCategory.id) :'—'}
+ textColor="text-amber-600 dark:text-amber-400"
+ accentBg="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+ icon={<FolderTree className="w-6 h-6"/>}
+ />
+ <Kpi
+ label="قيمة أعلى فئة"
+ value={`${formatNumber(topCategory?.amount || 0)} ج.م`}
+ textColor="text-indigo-600 dark:text-indigo-400"
+ accentBg="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20"
+ icon={<TrendingUp className="w-6 h-6"/>}
+ />
  </div>
 
  {/* Toolbar & Main Content Card */}
- <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface overflow-hidden">
  <CardContent className="p-4 space-y-4">
- <div className="flex flex-wrap items-center gap-2">
- <div className="relative w-56">
+ <div className="flex flex-wrap items-center gap-3">
+ <div className="relative flex-1 max-w-xs">
  <Input
  type="text"
  value={search}
  onChange={(e) => setSearch(e.target.value)}
  placeholder="بحث بالبيان أو رقم الإيصال..."
- className="h-10 bg-slate-50 dark:bg-slate-900 text-xs pr-9"
+ className="h-11 bg-slate-50 dark:bg-slate-900 text-xs font-semibold rounded-xl pr-10 border-slate-200 dark:border-slate-800"
  icon={<Icons.Search />}
  />
  </div>
- <div className="w-44">
+ <div className="w-48">
  <Select value={categoryFilter ||'all'} onValueChange={setCategoryFilter}>
- <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
+ <SelectTrigger className="w-full h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
  <SelectValue placeholder="كل الفئات"/>
  </SelectTrigger>
  <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
@@ -271,9 +307,9 @@ function ExpensesContent() {
  </Select>
  </div>
 
- <div className="w-44">
+ <div className="w-48">
  <Select value={treasuryFilter ||'all'} onValueChange={setTreasuryFilter}>
- <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
+ <SelectTrigger className="w-full h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
  <SelectValue placeholder="كل الخزائن"/>
  </SelectTrigger>
  <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
@@ -290,7 +326,7 @@ function ExpensesContent() {
  <Button
  variant={showReversed ?'secondary':'outline'}
  onClick={() => setShowReversed((v) => !v)}
- className={`h-10 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
+ className={`h-11 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
  showReversed ?'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300':''
  }`}
  >
@@ -299,7 +335,7 @@ function ExpensesContent() {
  <Button
  variant="outline"
  onClick={() => setShowCategories((v) => !v)}
- className="h-10 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5"
+ className="h-11 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 border-slate-200 dark:border-slate-800"
  >
  <Icons.Filter /> الفئات
  </Button>
@@ -561,13 +597,28 @@ function ExpensesContent() {
  );
 }
 
-function Kpi({ label, value, accent }: { label: string; value: string; accent: string }) {
+function Kpi({
+ label,
+ value,
+ icon,
+ accentBg,
+ textColor,
+}: {
+ label: string;
+ value: string;
+ icon: React.ReactNode;
+ accentBg: string;
+ textColor: string;
+}) {
  return (
- <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm">
- <CardContent className="p-4">
- <div className="text-3xs font-black text-muted-foreground">{label}</div>
- <div className="mt-1 text-lg font-black"style={{ color: accent }}>
- {value}
+ <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-surface hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
+ <CardContent className="p-5 flex items-center justify-between gap-3">
+ <div className="space-y-1">
+ <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block tracking-tight">{label}</span>
+ <span className={`text-2xl font-black font-mono block ${textColor}`}>{value}</span>
+ </div>
+ <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${accentBg}`}>
+ {icon}
  </div>
  </CardContent>
  </Card>
