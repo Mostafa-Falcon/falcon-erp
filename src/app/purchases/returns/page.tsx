@@ -120,7 +120,7 @@ function ReturnsContent() {
  let credit = 0;
  for (const r of filtered) {
  tot += r.total || 0;
- if (r.refund_type ==='treasury') cash += r.total || 0;
+ if (r.refund_type ==='treasury'|| r.treasury_id) cash += r.total || 0;
  else credit += r.total || 0;
  }
  return { totals: tot, cashReturns: cash, creditReturns: credit };

@@ -67,6 +67,7 @@ export interface PurchaseReturn {
  refunded_amount: number;
  discount_amount?: number;
  tax_amount?: number;
+ refund_type?:'treasury'|'credit';
  treasury_id?: EntityId | null;
  reason?: string;
  created_by: EntityId;
