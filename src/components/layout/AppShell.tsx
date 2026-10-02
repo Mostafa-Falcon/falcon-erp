@@ -23,6 +23,7 @@ interface AppShellProps {
  actions?: React.ReactNode;
  children: React.ReactNode;
  hideHeaderBanner?: boolean;
+ defaultSidebarCollapsed?: boolean;
 }
 
 const emptySubscribe = () => () => {};
@@ -58,6 +59,7 @@ export const AppShell: React.FC<AppShellProps> = ({
  actions,
  children,
  hideHeaderBanner = false,
+ defaultSidebarCollapsed = false,
 }) => {
  const router = useRouter();
  const { currentUser } = useSessionStore();
@@ -74,17 +76,20 @@ export const AppShell: React.FC<AppShellProps> = ({
  getThemeSnapshot,
  getThemeServerSnapshot
  );
- const [sidebarOpen, setSidebarOpen] = useState(true);
+ const [sidebarOpen, setSidebarOpen] = useState(!defaultSidebarCollapsed);
 
- // Single source of truth for the layout breakpoint: match the CSS`lg`
- // variant instead of hardcoding 1024 in three separate places.
  const isDesktop = useIsDesktop();
- const hasAutoSetSidebar = React.useRef(false);
+
  useEffect(() => {
- if (hasAutoSetSidebar.current) return;
- hasAutoSetSidebar.current = true;
- setSidebarOpen(isDesktop);
- }, [isDesktop]);
+ if (typeof window !== 'undefined') {
+ const isDesktopWidth = window.innerWidth >= 1024;
+ if (defaultSidebarCollapsed) {
+ setSidebarOpen(false);
+ } else if (isDesktopWidth) {
+ setSidebarOpen(true);
+ }
+ }
+ }, [defaultSidebarCollapsed, isDesktop]);
 
  useEffect(() => {
  if (isDark) {

@@ -33,7 +33,7 @@ export default function PosPage() {
  }
 
  return (
- <AppShell hideHeaderBanner title="نقطة البيع الكاشير (POS)">
+ <AppShell hideHeaderBanner defaultSidebarCollapsed={true} title="نقطة البيع الكاشير (POS)">
  <POS />
  </AppShell>
  );
