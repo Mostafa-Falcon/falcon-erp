@@ -1,5 +1,7 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import React, { useEffect, useMemo, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -141,15 +143,39 @@ export default function SalesReportPage() {
  >
  <div className="space-y-6 text-right"dir="rtl">
 
- {/* ==================== SUMMARY CARDS ==================== */}
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
- <StatCard label="إجمالي المبيعات"value={stats.totalSales} icon={<ShoppingCart className="w-6 h-6"/>} color="blue"/>
- <StatCard label="التحصيل النقدي"value={stats.cashCollection} icon={<Wallet className="w-6 h-6"/>} color="emerald"/>
- <StatCard label="المبيعات الآجلة"value={stats.creditSales} icon={<CreditCard className="w-6 h-6"/>} color="amber"/>
- <StatCard label="عدد الفواتير"value={stats.invoiceCount} icon={<Receipt className="w-6 h-6"/>} color="sky"isNumber />
- </div>
+ {/* ==================== SUMMARY CARDS — Linear Style ==================== */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="إجمالي المبيعات"
+            value={formatNumber(stats.totalSales)}
+            unit="ج.م"
+            variant="blue"
+            icon={<ShoppingCart className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="التحصيل النقدي"
+            value={formatNumber(stats.cashCollection)}
+            unit="ج.م"
+            variant="emerald"
+            icon={<Wallet className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="المبيعات الآجلة"
+            value={formatNumber(stats.creditSales)}
+            unit="ج.م"
+            variant="amber"
+            icon={<CreditCard className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="عدد الفواتير"
+            value={stats.invoiceCount}
+            unit="فاتورة"
+            variant="indigo"
+            icon={<Receipt className="w-5 h-5" />}
+          />
+        </div>
 
- {/* ==================== FILTERS & TOOLBAR ==================== */}
+        {/* ==================== FILTERS & TOOLBAR ==================== */}
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
 
  {/* Quick Filters Row */}
@@ -299,7 +325,7 @@ export default function SalesReportPage() {
  <div>عرض 1 إلى {filteredInvoices.length} من إجمالي {invoices.length} فاتورة</div>
  <div className="flex items-center gap-1.5">
  <button className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-white transition-colors cursor-pointer">«</button>
- <button className="w-8 h-8 rounded-lg bg-pink-600 text-white flex items-center justify-center shadow-sm">1</button>
+ <button className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm">1</button>
  <button className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-white transition-colors cursor-pointer">»</button>
  </div>
  </div>
@@ -308,30 +334,5 @@ export default function SalesReportPage() {
 
  </div>
  </AppShell>
- );
-}
-
-function StatCard({ label, value, icon, color, isNumber = false }: { label: string, value: number, icon: React.ReactNode, color:'blue'|'emerald'|'amber'|'sky', isNumber?: boolean }) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100',
- amber:'bg-amber-50 text-amber-600 border-amber-100',
- sky:'bg-sky-50 text-sky-600 border-sky-100'
- };
-
- return (
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 flex items-center justify-between shadow-xs">
- <div className="flex items-center gap-4">
- <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${colors[color]}`}>
- {icon}
- </div>
- <div>
- <span className="text-xs font-bold text-slate-400 block mb-1">{label}</span>
- <span className={`text-xl font-black ${colors[color].split('')[1]}`}>
- {isNumber ? value : formatNumber(value)} {!isNumber && <span className="text-3xs font-bold mr-0.5">ج.م</span>}
- </span>
- </div>
- </div>
- </div>
  );
 }

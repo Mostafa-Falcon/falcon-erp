@@ -1,5 +1,6 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
 import React, { useEffect, useState, useMemo } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -211,40 +212,39 @@ export default function PayrollPage() {
  >
  <div className="flex flex-col gap-6"dir="rtl">
 
- {/* 📊 KPI Grid: Professional Unified Height */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <StatCard
- label="إجمالي مستحقات الشهر"
- value={stats.total}
- icon={<Banknote className="w-5 h-5 text-blue-600"/>}
- color="blue"
- subLabel="مجموع الرواتب الصافية"
- />
- <StatCard
- label="إجمالي المبالغ المصروفة"
- value={stats.paid}
- icon={<CheckCircle2 className="w-5 h-5 text-emerald-600"/>}
- color="emerald"
- subLabel="تم تسليمها للموظفين"
- />
- <StatCard
- label="المتبقي بانتظار الصرف"
- value={stats.pending}
- icon={<Clock className="w-5 h-5 text-amber-600"/>}
- color="amber"
- subLabel="مستحقات لم تصرف بعد"
- />
- <StatCard
- label="إجمالي القوى العاملة"
- value={stats.count}
- icon={<Receipt className="w-5 h-5 text-indigo-600"/>}
- color="indigo"
- isNumber
- subLabel="موظف مسجل في المسير"
- />
- </div>
+ {/* 📊 KPI Grid: Modern SaaS Linear Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="إجمالي مستحقات الشهر"
+            value={formatNumber(stats.total as number)}
+            unit="ج.م"
+            variant="blue"
+            icon={<Banknote className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي المبالغ المصروفة"
+            value={formatNumber(stats.paid as number)}
+            unit="ج.م"
+            variant="emerald"
+            icon={<CheckCircle2 className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="المتبقي بانتظار الصرف"
+            value={formatNumber(stats.pending as number)}
+            unit="ج.م"
+            variant="amber"
+            icon={<Clock className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي القوى العاملة"
+            value={stats.count}
+            unit="موظف"
+            variant="indigo"
+            icon={<Receipt className="w-5 h-5" />}
+          />
+        </div>
 
- {/* 🛠️ Modern Toolbar & Table Area */}
+        {/* 🛠️ Modern Toolbar & Table Area */}
  <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs">
  <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-5 bg-surface">
  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1 max-w-4xl">
@@ -579,57 +579,6 @@ export default function PayrollPage() {
 
  </div>
  </AppShell>
- );
-}
-
-function StatCard({
- label,
- value,
- icon,
- color,
- isNumber = false,
- subLabel
-}: {
- label: string,
- value: string | number,
- icon: React.ReactNode,
- color:'emerald'|'amber'|'red'|'blue'|'indigo',
- isNumber?: boolean,
- subLabel?: string
-}) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- red:'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20 dark:border-red-900/50',
- indigo:'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/50'
- };
-
- return (
- <Card className="hover:border-blue-200 dark:hover:border-blue-900/50 transition-all group shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 rounded-[1.25rem]">
- <CardContent className="p-5">
- <div className="flex items-center gap-4">
- <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform ${colors[color]}`}>
- {icon}
- </div>
- <div className="flex flex-col min-w-0">
- <span className="text-3xs font-black text-slate-400 uppercase tracking-wider truncate mb-1">{label}</span>
- <div className="flex items-baseline gap-1.5 overflow-hidden">
- <span className={cn("text-2xl font-black font-mono leading-none truncate", colors[color].split('')[1])}>
- {isNumber ? value : formatNumber(value as number)}
- </span>
- {!isNumber && <span className="text-3xs font-bold text-slate-400">ج.م</span>}
- </div>
- </div>
- </div>
- {subLabel && (
- <div className="mt-4 pt-3 border-t border-slate-50 dark:border-slate-800 flex items-center gap-2 text-3xs font-bold text-slate-400/80">
- <div className="w-1 h-1 rounded-full bg-slate-300"/>
- {subLabel}
- </div>
- )}
- </CardContent>
- </Card>
  );
 }
 

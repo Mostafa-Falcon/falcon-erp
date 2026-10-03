@@ -46,8 +46,8 @@ export interface PageHeaderProps {
 }
 
 /**
- * The page title card.
- * Elevated with modern Linear/Stripe aesthetics, subtle backdrop blur, and crisp borders.
+ * The page title section.
+ * Modern, seamless SaaS hero section without bulky nested card boxes.
  */
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
@@ -61,9 +61,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <div
       className={cn(
-        'relative flex flex-col justify-between gap-4 sm:flex-row sm:items-center',
-        'rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-surface/90 backdrop-blur-md',
-        'p-5 sm:p-6 shadow-2xs transition-all',
+        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 pt-1 transition-all',
         className
       )}
     >
@@ -83,7 +81,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
       </div>
       {actions && (
-        <div className="shrink-0 flex items-center gap-2 self-start sm:self-center">
+        <div className="shrink-0 flex items-center gap-2.5 self-start sm:self-center">
           {actions}
         </div>
       )}

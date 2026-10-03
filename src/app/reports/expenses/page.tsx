@@ -1,5 +1,7 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import React, { useEffect, useMemo, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -166,46 +168,32 @@ export default function ExpensesReportPage() {
  }
  >
  <div className="space-y-4">
- {/* KPI Cards */}
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
- <div className="bg-surface p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
- <div>
- <span className="text-xs font-bold text-slate-500">عدد سندات المصروفات</span>
- <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-0.5">
- {stats.count}
- </div>
- </div>
- <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
- <Receipt className="w-5 h-5"/>
- </div>
- </div>
+ {/* KPI Cards — Linear / Stripe Style */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KpiCard
+          label="عدد سندات المصروفات"
+          value={stats.count}
+          unit="سند"
+          variant="indigo"
+          icon={<Receipt className="w-5 h-5" />}
+        />
+        <KpiCard
+          label="إجمالي قيمة المصروفات"
+          value={formatNumber(stats.totalAmount)}
+          unit="ج.م"
+          variant="rose"
+          icon={<CreditCard className="w-5 h-5" />}
+        />
+        <KpiCard
+          label="عدد الفئات والبنود"
+          value={categories.length}
+          unit="فئة"
+          variant="blue"
+          icon={<Layers className="w-5 h-5" />}
+        />
+      </div>
 
- <div className="bg-surface p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
- <div>
- <span className="text-xs font-bold text-slate-500">إجمالي قيمة المصروفات</span>
- <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono mt-0.5">
- {formatNumber(stats.totalAmount)} <span className="text-xs font-bold">ج.م</span>
- </div>
- </div>
- <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
- <CreditCard className="w-5 h-5"/>
- </div>
- </div>
-
- <div className="bg-surface p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
- <div>
- <span className="text-xs font-bold text-slate-500">عدد الفئات والبنود</span>
- <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5">
- {categories.length}
- </div>
- </div>
- <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
- <Layers className="w-5 h-5"/>
- </div>
- </div>
- </div>
-
- {/* Toolbar Filters */}
+      {/* Toolbar Filters */}
  <div className="bg-surface p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
  <div className="relative w-full md:w-80">
  <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"/>
@@ -286,12 +274,16 @@ export default function ExpensesReportPage() {
  </td>
  </tr>
  ) : filteredExpenses.length === 0 ? (
- <tr>
- <td colSpan={6} className="py-12 text-center text-slate-400">
- لا توجد مصروفات تطابق شروط الفلترة
- </td>
- </tr>
- ) : (
+                <tr>
+                  <td colSpan={6} className="py-12">
+                    <EmptyState
+                      icon={<Receipt className="w-8 h-8 text-slate-400" />}
+                      title="لا توجد مصروفات مسجلة"
+                      description="لم يتم العثور على أي سندات مصروفات مطابقة للبحث أو الفلترة المحددة."
+                    />
+                  </td>
+                </tr>
+              ) : (
  filteredExpenses.map((exp) => (
  <tr key={exp.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
  <td className="py-3.5 px-4 font-mono font-black text-slate-900 dark:text-white">

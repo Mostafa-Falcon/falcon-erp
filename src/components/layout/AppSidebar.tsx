@@ -207,13 +207,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
             label: 'المبيعات',
             icon: <Icons.Sales />,
             subItems: [
-                { label: domain.posTitle, href: '/sales/pos' },
-                { label: 'فواتير المبيعات', href: '/sales/invoices' },
+                { label: domain.posTitle, href: '/sales/pos', icon: <Store className="w-4 h-4" /> },
+                { label: 'فواتير المبيعات', href: '/sales/invoices', icon: <Receipt className="w-4 h-4" /> },
                 { label: 'إدارة المبيعات بالتقسيط', href: '/sales/installments', icon: <CreditCard className="w-4 h-4 text-indigo-500" /> },
                 { label: 'عروض الأسعار', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
                 { label: 'مراجعة الروشتات', href: '/sales/prescriptions', icon: <FileCheck className="w-4 h-4" /> },
-                { label: 'مرتجعات المبيعات', href: '/sales/returns' },
-                { label: 'ورديات الكاشير', href: '/sales/shifts' },
+                { label: 'مرتجعات المبيعات', href: '/sales/returns', icon: <RotateCcw className="w-4 h-4" /> },
+                { label: 'ورديات الكاشير', href: '/sales/shifts', icon: <History className="w-4 h-4" /> },
             ],
         },
         {
@@ -261,12 +261,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
             label: 'إدارة الحسابات',
             icon: <Icons.Accounts />,
             subItems: [
-                { label: 'شجرة الحسابات', href: '/accounts/chart' },
-                { label: 'قيود اليومية', href: '/accounts/journal' },
+                { label: 'شجرة الحسابات', href: '/accounts/chart', icon: <FolderTree className="w-4 h-4" /> },
+                { label: 'قيود اليومية', href: '/accounts/journal', icon: <Receipt className="w-4 h-4" /> },
                 { label: 'دفتر الأستاذ', href: '/accounts/ledger', icon: <BookOpen className="w-4 h-4" /> },
-                { label: 'الخزائن والبنوك', href: '/accounts/treasuries' },
-                { label: 'سندات القبض والصرف', href: '/accounts/vouchers' },
-                { label: 'المصروفات', href: '/accounts/expenses' },
+                { label: 'الخزائن والبنوك', href: '/accounts/treasuries', icon: <Landmark className="w-4 h-4" /> },
+                { label: 'سندات القبض والصرف', href: '/accounts/vouchers', icon: <CreditCard className="w-4 h-4" /> },
+                { label: 'المصروفات', href: '/accounts/expenses', icon: <Wallet className="w-4 h-4" /> },
             ],
         },
         {
@@ -274,16 +274,16 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
             label: 'التقارير',
             icon: <Icons.Reports />,
             subItems: [
-                { label: 'تقارير المبيعات', href: '/reports/sales' },
-                { label: 'تقارير الأرباح', href: '/reports/profits' },
+                { label: 'تقارير المبيعات', href: '/reports/sales', icon: <BarChart3 className="w-4 h-4" /> },
+                { label: 'تقارير الأرباح', href: '/reports/profits', icon: <PieChart className="w-4 h-4" /> },
                 { label: 'ميزان المراجعة', href: '/reports/trial', icon: <Scale className="w-4 h-4" /> },
                 { label: 'الميزانية العمومية', href: '/reports/balance-sheet', icon: <Landmark className="w-4 h-4" /> },
                 { label: 'قائمة الدخل', href: '/reports/income', icon: <TrendingUp className="w-4 h-4" /> },
                 { label: 'التدفقات النقدية', href: '/reports/cash-flow', icon: <BadgeDollarSign className="w-4 h-4" /> },
                 { label: 'أعمار الديون (AR/AP)', href: '/reports/aging', icon: <History className="w-4 h-4" /> },
-                { label: 'حركة المخزون', href: '/reports/inventory' },
-                { label: 'الانتهاء (الصلاحية)', href: '/reports/expiry' },
-                { label: 'تقييم المخزون', href: '/reports/valuation' },
+                { label: 'حركة المخزون', href: '/reports/inventory', icon: <ArrowLeftRight className="w-4 h-4" /> },
+                { label: 'الانتهاء (الصلاحية)', href: '/reports/expiry', icon: <Bell className="w-4 h-4" /> },
+                { label: 'تقييم المخزون', href: '/reports/valuation', icon: <BadgeDollarSign className="w-4 h-4" /> },
             ],
         },
         {
@@ -375,7 +375,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                 <div className="p-4 space-y-4">
                     <div className="flex items-center justify-between gap-3 px-1">
                         <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shrink-0 transform -rotate-3 hover:rotate-0 transition-transform">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                     <rect x="5" y="3" width="14" height="18" rx="2" />
                                     <line x1="9" y1="8" x2="15" y2="8" />
@@ -425,7 +425,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="بحث سريع... (F4)"
+                            placeholder="بحث سريع في القوائم..."
                             className="h-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl pr-9 pl-3 text-xs font-bold"
                         />
                     </div>
@@ -448,7 +448,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                                             className={cn(
                                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-black transition-all",
                                                 isActive
-                                                    ? "bg-blue-50 dark:bg-blue-950/40 text-primary dark:text-[#60a5fa] border-r-4 border-primary shadow-sm"
+                                                    ? "bg-blue-50/80 dark:bg-blue-950/40 text-primary dark:text-blue-400 font-extrabold shadow-2xs relative overflow-hidden before:absolute before:right-0 before:top-2 before:bottom-2 before:w-1 before:rounded-l-full before:bg-primary"
                                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900"
                                             )}
                                         >
@@ -494,7 +494,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                                                         className={cn(
                                                             "flex items-center justify-between py-2 px-3 rounded-lg text-2xs font-black transition-all group",
                                                             isSubActive
-                                                                ? "bg-blue-50 dark:bg-blue-950/30 text-primary dark:text-[#60a5fa] shadow-inner"
+                                                                ? "bg-primary/10 text-primary dark:text-blue-400 font-extrabold shadow-2xs rounded-xl"
                                                                 : "text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
                                                         )}
                                                     >

@@ -1,5 +1,6 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
 import React, { useEffect, useState, useMemo } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -299,32 +300,32 @@ export default function AttendancePage() {
  >
  <div className="space-y-6 text-right"dir="rtl">
 
- {/* KPI Section */}
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
- <StatCard
- label="المتواجدون حالياً"
- value={stats.present}
- unit="موظف"
- icon={<CheckCircle2 className="w-6 h-6"/>}
- color="emerald"
- />
- <StatCard
- label="حالات الغياب"
- value={stats.absent}
- unit="حالة"
- icon={<UserX className="w-6 h-6"/>}
- color="red"
- />
- <StatCard
- label="حالات التأخير"
- value={stats.late}
- unit="حالة"
- icon={<Clock className="w-6 h-6"/>}
- color="amber"
- />
- </div>
+ {/* KPI Section — Linear Style */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <KpiCard
+            label="المتواجدون حالياً"
+            value={stats.present}
+            unit="موظف"
+            icon={<CheckCircle2 className="w-5 h-5" />}
+            variant="emerald"
+          />
+          <KpiCard
+            label="حالات الغياب"
+            value={stats.absent}
+            unit="حالة"
+            icon={<UserX className="w-5 h-5" />}
+            variant="rose"
+          />
+          <KpiCard
+            label="حالات التأخير"
+            value={stats.late}
+            unit="حالة"
+            icon={<Clock className="w-5 h-5" />}
+            variant="amber"
+          />
+        </div>
 
- {/* Table/Toolbar Container */}
+        {/* Table/Toolbar Container */}
  <div className="bg-surface rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
 
  {/* Toolbar */}
@@ -494,44 +495,20 @@ export default function AttendancePage() {
  );
 }
 
-function StatCard({ label, value, unit, icon, color }: { label: string, value: number, unit?: string, icon: React.ReactNode, color:'emerald'|'amber'|'red'|'blue'}) {
- const colors = {
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- red:'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20 dark:border-red-900/50',
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/50'
- };
+function StatusBadge({ status }: { status: any }) {
+  const config: Record<string, { label: string; class: string }> = {
+    present: { label: 'منضبط', class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    late: { label: 'تأخير', class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    absent: { label: 'غائب', class: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    excused: { label: 'بإذن', class: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    leave: { label: 'إجازة', class: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400' },
+  };
 
- return (
- <div className="bg-surface rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 flex items-center justify-between shadow-xs group hover:border-slate-300 dark:hover:border-slate-700 transition-all">
- <div className="flex items-center gap-4">
- <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform ${colors[color]}`}>
- {icon}
- </div>
- <div>
- <span className="text-xs font-black text-slate-400 block mb-1">{label}</span>
- <div className={cn("text-2xl font-black flex items-baseline gap-1.5", colors[color].split('')[1])}>
- {value}
- {unit && <span className="text-3xs font-bold text-slate-400">{unit}</span>}
- </div>
- </div>
- </div>
- </div>
- );
-}
+  const item = config[status] || { label: status, class: 'bg-slate-100 text-slate-700' };
 
-function StatusBadge({ status }: { status: EmployeeAttendance['status'] }) {
- const config = {
- present: { label:'منضبط', class:'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'},
- late: { label:'تأخير', class:'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'},
- absent: { label:'غائب', class:'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'},
- excused: { label:'بإذن', class:'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'},
- leave: { label:'إجازة', class:'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400'},
- };
-
- return (
- <span className={cn("px-3 py-1.5 rounded-full text-3xs font-black shadow-xs border border-white/20", config[status].class)}>
- {config[status].label}
- </span>
- );
+  return (
+    <span className={cn("px-3 py-1.5 rounded-full text-3xs font-black shadow-xs border border-white/20", item.class)}>
+      {item.label}
+    </span>
+  );
 }

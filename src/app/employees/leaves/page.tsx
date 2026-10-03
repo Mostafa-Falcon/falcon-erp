@@ -1,5 +1,6 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
 import React, { useEffect, useState, useMemo } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -195,40 +196,39 @@ export default function LeavesPage() {
  >
  <div className="flex flex-col gap-6 pb-12"dir="rtl">
 
- {/* 📊 KPI Dashboard Section */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <StatCard
- label="طلبات قيد المراجعة"
- value={stats.pending}
- icon={<Clock className="w-5 h-5 text-amber-600"/>}
- color="amber"
- description="تنتظر قرار الإدارة"
- />
- <StatCard
- label="موظفون في إجازة"
- value={stats.todayOnLeave}
- icon={<Palmtree className="w-5 h-5 text-blue-600"/>}
- color="blue"
- description="إجمالي المتغيبين اليوم"
- />
- <StatCard
- label="إجازات معتمدة"
- value={stats.approved}
- icon={<CheckCircle className="w-5 h-5 text-emerald-600"/>}
- color="emerald"
- description="تمت الموافقة عليها هذا الشهر"
- />
- <StatCard
- label="إجمالي الطلبات"
- value={stats.total}
- icon={<FileText className="w-5 h-5 text-indigo-600"/>}
- color="indigo"
- isNumber
- description="كافة الطلبات المسجلة"
- />
- </div>
+ {/* 📊 KPI Dashboard Section — Linear Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="طلبات قيد المراجعة"
+            value={stats.pending}
+            unit="طلب"
+            variant="amber"
+            icon={<Clock className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="موظفون في إجازة"
+            value={stats.todayOnLeave}
+            unit="موظف"
+            variant="blue"
+            icon={<Palmtree className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجازات معتمدة"
+            value={stats.approved}
+            unit="إجازة"
+            variant="emerald"
+            icon={<CheckCircle className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي الطلبات"
+            value={stats.total}
+            unit="طلب"
+            variant="indigo"
+            icon={<FileText className="w-5 h-5" />}
+          />
+        </div>
 
- {/* 🛠️ Comprehensive Management Toolbar */}
+        {/* 🛠️ Comprehensive Management Toolbar */}
  <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
  <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-surface">
  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1">
@@ -548,55 +548,5 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
  {item.icon}
  {item.label}
  </Badge>
- );
-}
-
-function StatCard({
- label,
- value,
- icon,
- color,
- isNumber = false,
- description
-}: {
- label: string,
- value: string | number,
- icon: React.ReactNode,
- color:'emerald'|'amber'|'red'|'blue'|'indigo',
- isNumber?: boolean,
- description?: string
-}) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- red:'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20 dark:border-red-900/50',
- indigo:'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/50'
- };
-
- return (
- <Card className="hover:border-slate-300 dark:hover:border-slate-700 transition-all group shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 rounded-2xl bg-surface">
- <CardContent className="p-5">
- <div className="flex items-center justify-between">
- <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform ${colors[color]}`}>
- {icon}
- </div>
- <div className="text-right">
- <span className="text-3xs font-black text-slate-400 block mb-0.5 uppercase tracking-wider">{label}</span>
- <div className="flex items-baseline justify-end gap-1">
- <span className={cn("text-2xl font-black font-mono leading-none", colors[color].split('')[1])}>
- {isNumber ? value : formatNumber(value as number)}
- </span>
- {!isNumber && <span className="text-3xs font-bold text-slate-400">ج.م</span>}
- </div>
- </div>
- </div>
- {description && (
- <p className="mt-4 text-3xs font-bold text-slate-400 border-t border-slate-50 dark:border-slate-800 pt-3 flex items-center gap-1.5">
- <Activity className="w-3 h-3 opacity-40"/> {description}
- </p>
- )}
- </CardContent>
- </Card>
  );
 }

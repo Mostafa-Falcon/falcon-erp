@@ -1,5 +1,6 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
 import React, { useEffect, useMemo, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -179,13 +180,37 @@ export default function EmployeeDocumentsPage() {
  >
  <div className="flex flex-col gap-6 pb-12"dir="rtl">
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <StatCard label="إجمالي المستندات"value={stats.total} color="blue"icon={<FolderOpen className="w-5 h-5"/>} />
- <StatCard label="موظفون لديهم ملف"value={stats.employeesWithDocs} color="indigo"icon={<FileBadge className="w-5 h-5"/>} />
- <StatCard label="عقود العمل"value={stats.contracts} color="emerald"icon={<FileText className="w-5 h-5"/>} />
- <StatCard label="ملفات مرفقة"value={stats.withFiles} color="amber"icon={<IdCard className="w-5 h-5"/>} />
- </div>
+          <KpiCard
+            label="إجمالي المستندات"
+            value={stats.total}
+            unit="ملف"
+            variant="blue"
+            icon={<FolderOpen className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="موظفون لديهم ملف"
+            value={stats.employeesWithDocs}
+            unit="موظف"
+            variant="indigo"
+            icon={<FileBadge className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="عقود العمل"
+            value={stats.contracts}
+            unit="عقد"
+            variant="emerald"
+            icon={<FileText className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="ملفات مرفقة"
+            value={stats.withFiles}
+            unit="مرفق"
+            variant="amber"
+            icon={<IdCard className="w-5 h-5" />}
+          />
+        </div>
 
- <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
  <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-surface">
  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1">
  <div className="relative group flex-1 md:max-w-xs">
@@ -425,40 +450,5 @@ export default function EmployeeDocumentsPage() {
  </Card>
  </div>
  </AppShell>
- );
-}
-
-function StatCard({
- label,
- value,
- icon,
- color,
-}: {
- label: string;
- value: number;
- icon: React.ReactNode;
- color:'emerald'|'amber'|'blue'|'indigo';
-}) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- indigo:'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/50',
- };
-
- return (
- <Card className="hover:border-slate-300 dark:hover:border-slate-700 transition-all group shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 rounded-2xl bg-surface">
- <CardContent className="p-5">
- <div className="flex items-center justify-between">
- <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform', colors[color])}>
- {icon}
- </div>
- <div className="text-right">
- <span className="text-3xs font-black text-slate-400 block mb-0.5 uppercase tracking-wider">{label}</span>
- <span className={cn('text-2xl font-black font-mono leading-none', colors[color].split('')[1])}>{value}</span>
- </div>
- </div>
- </CardContent>
- </Card>
  );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
 import React, { useEffect, useState, useMemo } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -130,40 +131,39 @@ export default function ActivityLogPage() {
  >
  <div className="flex flex-col gap-6 pb-12"dir="rtl">
 
- {/* 📊 KPI Dashboard: Modern Style */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <StatCard
- label="حركات اليوم"
- value={stats.today}
- icon={<Activity className="w-5 h-5 text-blue-600"/>}
- color="blue"
- description="عمليات تم تنفيذها منذ الصباح"
- />
- <StatCard
- label="عمليات حساسة"
- value={stats.sensitive}
- icon={<ShieldCheck className="w-5 h-5 text-red-600"/>}
- color="red"
- description="تعديلات، حذوفات، وحركات مالية"
- />
- <StatCard
- label="مسؤولين نشطين"
- value={stats.users}
- icon={<UserCheck className="w-5 h-5 text-indigo-600"/>}
- color="indigo"
- isNumber
- description="عدد الموظفين الذين أجروا عمليات"
- />
- <StatCard
- label="إجمالي الأرشيف"
- value={logs.length}
- icon={<History className="w-5 h-5 text-emerald-600"/>}
- color="emerald"
- description="كافة السجلات المتاحة بالذاكرة"
- />
- </div>
+ {/* 📊 KPI Dashboard — Linear Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="حركات اليوم"
+            value={stats.today}
+            unit="عملية"
+            variant="blue"
+            icon={<Activity className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="عمليات حساسة"
+            value={stats.sensitive}
+            unit="عملية"
+            variant="rose"
+            icon={<ShieldCheck className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="مسؤولين نشطين"
+            value={stats.users}
+            unit="مستخدم"
+            variant="indigo"
+            icon={<UserCheck className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي الأرشيف"
+            value={logs.length}
+            unit="سجل"
+            variant="emerald"
+            icon={<History className="w-5 h-5" />}
+          />
+        </div>
 
- {/* 🔍 Dynamic Filter Bar */}
+        {/* 🔍 Dynamic Filter Bar */}
  <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
  <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-5 bg-surface">
  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1">
@@ -406,87 +406,51 @@ function DetailBox({ label, value, icon }: { label: string, value: string, icon:
  );
 }
 
-function StatCard({ label, value, icon, color, isNumber = false, description }: { label: string, value: string | number, icon: React.ReactNode, color:'emerald'|'amber'|'red'|'blue'|'indigo', isNumber?: boolean, description?: string }) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- red:'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20 dark:border-red-900/50',
- indigo:'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/50'
- };
-
- return (
- <Card className="hover:border-slate-300 dark:hover:border-slate-700 transition-all group shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 rounded-2xl bg-surface">
- <CardContent className="p-5">
- <div className="flex items-center justify-between">
- <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform ${colors[color]}`}>
- {icon}
- </div>
- <div className="text-right">
- <span className="text-3xs font-black text-slate-400 block mb-0.5 uppercase tracking-wider">{label}</span>
- <div className="flex items-baseline justify-end gap-1">
- <span className={cn("text-2xl font-black font-mono leading-none", colors[color].split('')[1])}>
- {isNumber ? value : value}
- </span>
- {!isNumber && <span className="text-3xs font-bold text-slate-400">ج.م</span>}
- </div>
- </div>
- </div>
- {description && (
- <p className="mt-4 text-3xs font-bold text-slate-400 border-t border-slate-50 dark:border-slate-800 pt-3 flex items-center gap-1.5">
- <Activity className="w-3 h-3 opacity-40"/> {description}
- </p>
- )}
- </CardContent>
- </Card>
- );
-}
-
 function formatTimeAgo(dateStr: string) {
- const now = new Date();
- const past = new Date(dateStr);
- const diffMs = now.getTime() - past.getTime();
- const diffMin = Math.floor(diffMs / 60000);
- if (diffMin < 1) return'الآن';
- if (diffMin < 60) return`${diffMin} دقيقة`;
- const diffHrs = Math.floor(diffMin / 60);
- if (diffHrs < 24) return`${diffHrs} ساعة`;
- return`${Math.floor(diffHrs / 24)} يوم`;
+  const now = new Date();
+  const past = new Date(dateStr);
+  const diffMs = now.getTime() - past.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'الآن';
+  if (diffMin < 60) return `${diffMin} دقيقة`;
+  const diffHrs = Math.floor(diffMin / 60);
+  if (diffHrs < 24) return `${diffHrs} ساعة`;
+  return `${Math.floor(diffHrs / 24)} يوم`;
 }
 
-function getActionIcon(action: string, className ="w-3.5 h-3.5") {
- if (action.includes('إضافة')) return <Plus className={cn(className,"text-emerald-500")} />;
- if (action.includes('تعديل')) return <Edit2 className={cn(className,"text-blue-500")} />;
- if (action.includes('حذف')) return <Trash2 className={cn(className,"text-red-500")} />;
- if (action.includes('دخول')) return <LogIn className={cn(className,"text-indigo-500")} />;
- return <Zap className={cn(className,"text-slate-400")} />;
+function getActionIcon(action: string, className = "w-3.5 h-3.5") {
+  if (action.includes('إضافة')) return <Plus className={cn(className, "text-emerald-500")} />;
+  if (action.includes('تعديل')) return <Edit2 className={cn(className, "text-blue-500")} />;
+  if (action.includes('حذف')) return <Trash2 className={cn(className, "text-red-500")} />;
+  if (action.includes('دخول')) return <LogIn className={cn(className, "text-indigo-500")} />;
+  return <Zap className={cn(className, "text-slate-400")} />;
 }
 
 function getEntityLabel(type: string) {
- const labels: Record<string, string> = {
- inventory:'المخزون',
- finance:'الحسابات',
- sales:'المبيعات',
- auth:'الأمان',
- employees:'الموظفين',
- settings:'الإعدادات'
- };
- return labels[type] ||'النظام';
+  const labels: Record<string, string> = {
+    inventory: 'المخزون',
+    finance: 'الحسابات',
+    sales: 'المبيعات',
+    auth: 'الأمان',
+    employees: 'الموظفين',
+    settings: 'الإعدادات'
+  };
+  return labels[type] || 'النظام';
 }
 
 function getEntityStyles(type: string) {
- const styles: Record<string, string> = {
- inventory:'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400',
- finance:'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400',
- sales:'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400',
- auth:'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400',
- employees:'bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400',
- settings:'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
- };
- return styles[type] || styles.settings;
+  const styles: Record<string, string> = {
+    inventory: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400',
+    finance: 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400',
+    sales: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400',
+    auth: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400',
+    employees: 'bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400',
+    settings: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+  };
+  return styles[type] || styles.settings;
 }
 
-function isSensitive(log: ActivityLog) {
- if (!log) return false;
- return log.action.includes('حذف') || log.action.includes('تعديل') || log.entity_type ==='finance';
+function isSensitive(log: any) {
+  if (!log) return false;
+  return log.action.includes('حذف') || log.action.includes('تعديل') || log.entity_type === 'finance';
 }

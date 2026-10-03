@@ -1,5 +1,7 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
+import { Users, UserCheck, Store, ShieldCheck, Plus } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Input } from'@/components/ui/input';
@@ -203,15 +205,39 @@ function EmployeesContent() {
  return (
  <AppShell title="الموظفين والمستخدمين والصلاحيات"subtitle="إدارة طاقم العمل والكاشيرات والصلاحيات الخاصة بالمنشأة">
  <div className="space-y-4">
- {/* KPIs */}
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- <Kpi label="إجمالي الموظفين"value={String(stats.total)} accent="#2563eb"/>
- <Kpi label="موظفون نشطون"value={String(stats.active)} accent="#558b2f"/>
- <Kpi label="الكاشيرات (POS)"value={String(stats.cashiers)} accent="#0d9488"/>
- <Kpi label="مدراء ومحاسبون"value={String(stats.managers)} accent="#d97706"/>
- </div>
+ {/* KPIs — Modern SaaS Linear Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="إجمالي الموظفين"
+            value={stats.total}
+            unit="موظف"
+            variant="blue"
+            icon={<Users className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="موظفون نشطون"
+            value={stats.active}
+            unit="موظف"
+            variant="emerald"
+            icon={<UserCheck className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="الكاشيرات (POS)"
+            value={stats.cashiers}
+            unit="كاشير"
+            variant="indigo"
+            icon={<Store className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="مدراء ومحاسبون"
+            value={stats.managers}
+            unit="مستخدم"
+            variant="amber"
+            icon={<ShieldCheck className="w-5 h-5" />}
+          />
+        </div>
 
- {/* Filters */}
+        {/* Filters */}
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 space-y-3">
  <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto flex-1 max-w-xl">
@@ -265,7 +291,7 @@ function EmployeesContent() {
  ))}
  </div>
  {perms.canManageEmployees ? (
- <Button onClick={openAddModal} className="h-10 px-4 bg-[#558b2f] hover:bg-[#436d25] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+ <Button onClick={openAddModal} className="h-10 px-4 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer">
  <Icons.Plus /> إضافة موظف جديد
  </Button>
  ) : (
@@ -515,7 +541,7 @@ function ModalFooter({
  <Button type="button"variant="outline"onClick={onCancel} className="h-10 px-4 text-xs font-bold">
  إلغاء
  </Button>
- <Button onClick={onSave} disabled={isSaving} className="h-10 px-6 bg-[#558b2f] hover:bg-[#436d25] text-white text-xs font-bold rounded-xl shadow-xs">
+ <Button onClick={onSave} disabled={isSaving} className="h-10 px-6 bg-primary hover:bg-primary/90 text-white text-xs font-bold rounded-xl shadow-xs">
  {isSaving ?'جارِ الحفظ...': saveLabel}
  </Button>
  </div>

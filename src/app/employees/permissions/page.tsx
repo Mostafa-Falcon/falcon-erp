@@ -381,39 +381,3 @@ export default function PermissionsPage() {
  </AppShell>
  );
 }
-
-function StatCard({ label, value, icon, color, isNumber = false, description }: { label: string, value: string | number, icon: React.ReactNode, color:'emerald'|'amber'|'red'|'blue'|'indigo', isNumber?: boolean, description?: string }) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- red:'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20 dark:border-red-900/50',
- indigo:'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/50'
- };
-
- return (
- <Card className="hover:border-blue-200 dark:hover:border-blue-900/50 transition-all group shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 rounded-2xl bg-surface">
- <CardContent className="p-5">
- <div className="flex items-center justify-between">
- <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform ${colors[color]}`}>
- {icon}
- </div>
- <div className="text-right">
- <span className="text-3xs font-black text-slate-400 block mb-0.5 uppercase tracking-wider">{label}</span>
- <div className="flex items-baseline justify-end gap-1">
- <span className={cn("text-2xl font-black font-mono leading-none", colors[color].split('')[1])}>
- {isNumber ? value : value}
- </span>
- {!isNumber && <span className="text-3xs font-bold text-slate-400">ج.م</span>}
- </div>
- </div>
- </div>
- {description && (
- <p className="mt-4 text-3xs font-bold text-slate-400 border-t border-slate-50 dark:border-slate-800 pt-3 flex items-center gap-1.5">
- <Activity className="w-3 h-3 opacity-40"/> {description}
- </p>
- )}
- </CardContent>
- </Card>
- );
-}

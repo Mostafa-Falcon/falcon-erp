@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import React, { useEffect, useMemo, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -300,12 +301,16 @@ export default function PurchasesReportPage() {
  </td>
  </tr>
  ) : filteredInvoices.length === 0 ? (
- <tr>
- <td colSpan={7} className="py-12 text-center text-slate-400">
- لا توجد فواتير مشتريات تطابق شروط الفلترة
- </td>
- </tr>
- ) : (
+                <tr>
+                  <td colSpan={7} className="py-12">
+                    <EmptyState
+                      icon={<ShoppingCart className="w-8 h-8 text-slate-400" />}
+                      title="لا توجد فواتير مشتريات"
+                      description="لم يتم العثور على فواتير تطابق شروط الفلترة المحددة."
+                    />
+                  </td>
+                </tr>
+              ) : (
  filteredInvoices.map((inv) => {
  const remaining = Math.max(0, (inv.total || 0) - (inv.paid_amount || 0));
  return (

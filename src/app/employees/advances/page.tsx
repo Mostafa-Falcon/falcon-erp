@@ -1,5 +1,6 @@
 'use client';
 
+import { KpiCard } from '@/components/ui/kpi-card';
 import React, { useEffect, useMemo, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -240,13 +241,37 @@ export default function AdvancesPage() {
  >
  <div className="flex flex-col gap-6 pb-12"dir="rtl">
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <StatCard label="بانتظار الاعتماد"value={stats.pendingCount} color="amber"icon={<Clock className="w-5 h-5"/>} description="طلبات لم يتم البت فيها"/>
- <StatCard label="معتمدة للصرف"value={stats.approvedCount} color="blue"icon={<CheckCircle2 className="w-5 h-5"/>} description="جاهزة للصرف أو الخصم"/>
- <StatCard label="إجمالي المعتمد"value={stats.pendingTotal} color="indigo"icon={<HandCoins className="w-5 h-5"/>} description="قيمة الالتزامات القائمة"/>
- <StatCard label="إجمالي المصروف"value={stats.paidTotal} color="emerald"icon={<Banknote className="w-5 h-5"/>} description="ما تم صرفه فعلياً"/>
- </div>
+          <KpiCard
+            label="بانتظار الاعتماد"
+            value={stats.pendingCount}
+            unit="طلب"
+            variant="amber"
+            icon={<Clock className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="معتمدة للصرف"
+            value={stats.approvedCount}
+            unit="سلفة"
+            variant="blue"
+            icon={<CheckCircle2 className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي المعتمد"
+            value={formatNumber(stats.pendingTotal)}
+            unit="ج.م"
+            variant="indigo"
+            icon={<HandCoins className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي المصروف"
+            value={formatNumber(stats.paidTotal)}
+            unit="ج.م"
+            variant="emerald"
+            icon={<Banknote className="w-5 h-5" />}
+          />
+        </div>
 
- <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <Card className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
  <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-surface">
  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-1">
  <div className="relative group flex-1 md:max-w-xs">
@@ -560,45 +585,5 @@ function StatusBadge({ status }: { status: EmployeeAdvanceStatus }) {
  {item.icon}
  {item.label}
  </Badge>
- );
-}
-
-function StatCard({
- label,
- value,
- icon,
- color,
- description,
-}: {
- label: string;
- value: number;
- icon: React.ReactNode;
- color:'emerald'|'amber'|'blue'|'indigo';
- description?: string;
-}) {
- const colors = {
- blue:'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50',
- emerald:'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/50',
- amber:'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50',
- indigo:'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/50',
- };
-
- return (
- <Card className="hover:border-slate-300 dark:hover:border-slate-700 transition-all group shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 rounded-2xl bg-surface">
- <CardContent className="p-5">
- <div className="flex items-center justify-between">
- <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform', colors[color])}>
- {icon}
- </div>
- <div className="text-right">
- <span className="text-3xs font-black text-slate-400 block mb-0.5 uppercase tracking-wider">{label}</span>
- <span className={cn('text-2xl font-black font-mono leading-none', colors[color].split('')[1])}>{formatNumber(value)}</span>
- </div>
- </div>
- {description && (
- <p className="mt-4 text-3xs font-bold text-slate-400 border-t border-slate-50 dark:border-slate-800 pt-3">{description}</p>
- )}
- </CardContent>
- </Card>
  );
 }

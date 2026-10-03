@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from'react';
 import { Suspense } from'react';
 import { useRouter, useSearchParams } from'next/navigation';
 import { AppShell } from'@/components/layout/AppShell';
+import { KpiCard } from'@/components/ui/kpi-card';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
 import {
@@ -315,79 +316,74 @@ function DirectoryContent({ kind }: { kind: DirectoryKind }) {
  >
  <div className="space-y-5 text-right"dir="rtl">
 
- {/* 1. KPIs Cards Section */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- {kind ==='both'? (
- <>
- <StatCard
- label="إجمالي الحسابات"
- value={contacts.length}
- icon={<Handshake className="w-5 h-5 text-blue-600 dark:text-blue-400"/>}
- color="blue"
- subLabel="حساب مورد وعميل مسجل"
- isNumber
- />
- <StatCard
- label="إجمالي مديونية الموردين"
- value={totals.creditSum}
- icon={<ArrowUpRight className="w-5 h-5 text-rose-600 dark:text-rose-400"/>}
- color="rose"
- subLabel="مستحق سداده للجهات"
- />
- <StatCard
- label="إجمالي مستحقات العملاء"
- value={totals.debitSum}
- icon={<ArrowDownLeft className="w-5 h-5 text-emerald-600 dark:text-emerald-400"/>}
- color="emerald"
- subLabel="مستحق تحصيله من الجهات"
- />
- <StatCard
- label="الحسابات النشطة"
- value={totals.activeCount}
- icon={<UserCheck className="w-5 h-5 text-amber-600 dark:text-amber-400"/>}
- color="amber"
- subLabel={`من إجمالي ${contacts.length} حساب`}
- isNumber
- />
- </>
- ) : (
- <>
- <StatCard
- label={meta.countLabel}
- value={contacts.length}
- icon={<Users className="w-5 h-5 text-blue-600 dark:text-blue-400"/>}
- color="blue"
- subLabel="إجمالي السجلات بالدليل"
- isNumber
- />
- <StatCard
- label="جهات نشطة للتعامل"
- value={totals.activeCount}
- icon={<UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400"/>}
- color="emerald"
- subLabel={`من إجمالي ${contacts.length} جهة`}
- isNumber
- />
- <StatCard
- label={kind ==='customer'?'مستحقات العملاء (لنا)':'مستحقات الموردين (علينا)'}
- value={kind ==='customer'? totals.debitSum : totals.creditSum}
- icon={<Wallet className="w-5 h-5 text-indigo-600 dark:text-indigo-400"/>}
- color="indigo"
- subLabel="إجمالي الرصيد المالي القائم"
- />
- <StatCard
- label={kind ==='customer'?'عملاء مدينون':'موردون دائنون'}
- value={totals.debitCount}
- icon={<Scale className="w-5 h-5 text-rose-600 dark:text-rose-400"/>}
- color="rose"
- subLabel="حسابات ذات أرصدة غير صفرية"
- isNumber
- />
- </>
- )}
- </div>
+ {/* 1. KPIs Cards Section — Modern SaaS Linear Style */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {kind === 'both' ? (
+                    <>
+                      <KpiCard
+                        label="إجمالي الحسابات"
+                        value={contacts.length}
+                        unit="حساب"
+                        variant="blue"
+                        icon={<Handshake className="w-5 h-5" />}
+                      />
+                      <KpiCard
+                        label="إجمالي مديونية الموردين"
+                        value={formatNumber(totals.creditSum)}
+                        unit="ج.م"
+                        variant="rose"
+                        icon={<ArrowUpRight className="w-5 h-5" />}
+                      />
+                      <KpiCard
+                        label="إجمالي مستحقات العملاء"
+                        value={formatNumber(totals.debitSum)}
+                        unit="ج.م"
+                        variant="emerald"
+                        icon={<ArrowDownLeft className="w-5 h-5" />}
+                      />
+                      <KpiCard
+                        label="الحسابات النشطة"
+                        value={totals.activeCount}
+                        unit="حساب"
+                        variant="amber"
+                        icon={<UserCheck className="w-5 h-5" />}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <KpiCard
+                        label={meta.countLabel}
+                        value={contacts.length}
+                        unit="سجل"
+                        variant="blue"
+                        icon={<Users className="w-5 h-5" />}
+                      />
+                      <KpiCard
+                        label="جهات نشطة للتعامل"
+                        value={totals.activeCount}
+                        unit="جهة"
+                        variant="emerald"
+                        icon={<UserCheck className="w-5 h-5" />}
+                      />
+                      <KpiCard
+                        label={kind === 'customer' ? 'مستحقات العملاء (لنا)' : 'مستحقات الموردين (علينا)'}
+                        value={formatNumber(kind === 'customer' ? totals.debitSum : totals.creditSum)}
+                        unit="ج.م"
+                        variant="indigo"
+                        icon={<Wallet className="w-5 h-5" />}
+                      />
+                      <KpiCard
+                        label={kind === 'customer' ? 'عملاء مدينون' : 'موردون دائنون'}
+                        value={totals.debitCount}
+                        unit="حساب"
+                        variant="rose"
+                        icon={<Scale className="w-5 h-5" />}
+                      />
+                    </>
+                  )}
+                </div>
 
- {/* 2. Main Unified Content Card (Toolbar + Table + Pagination) */}
+                {/* 2. Main Unified Content Card (Toolbar + Table + Pagination) */}
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
 
  {/* Unified Toolbar */}
@@ -1002,83 +998,5 @@ function DirectoryContent({ kind }: { kind: DirectoryKind }) {
  </DialogContent>
  </Dialog>
  </AppShell>
- );
-}
-
-function StatCard({
- label,
- value,
- icon,
- color,
- subLabel,
- isNumber = false,
-}: {
- label: string;
- value: number;
- icon: React.ReactNode;
- color:'blue'|'emerald'|'amber'|'rose'|'indigo';
- subLabel?: string;
- isNumber?: boolean;
-}) {
- const colorStyles = {
- blue: {
- bg:'bg-blue-50/80 dark:bg-blue-950/30',
- border:'border-blue-100 dark:border-blue-900/40',
- text:'text-blue-600 dark:text-blue-400',
- bar:'bg-blue-500',
- },
- emerald: {
- bg:'bg-emerald-50/80 dark:bg-emerald-950/30',
- border:'border-emerald-100 dark:border-emerald-900/40',
- text:'text-emerald-600 dark:text-emerald-400',
- bar:'bg-emerald-500',
- },
- amber: {
- bg:'bg-amber-50/80 dark:bg-amber-950/30',
- border:'border-amber-100 dark:border-amber-900/40',
- text:'text-amber-600 dark:text-amber-400',
- bar:'bg-amber-500',
- },
- rose: {
- bg:'bg-rose-50/80 dark:bg-rose-950/30',
- border:'border-rose-100 dark:border-rose-900/40',
- text:'text-rose-600 dark:text-rose-400',
- bar:'bg-rose-500',
- },
- indigo: {
- bg:'bg-indigo-50/80 dark:bg-indigo-950/30',
- border:'border-indigo-100 dark:border-indigo-900/40',
- text:'text-indigo-600 dark:text-indigo-400',
- bar:'bg-indigo-500',
- },
- };
-
- const currentStyle = colorStyles[color];
-
- return (
- <div className="relative overflow-hidden bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200">
- <div className={cn("absolute top-0 right-0 left-0 h-1", currentStyle.bar)} />
- 
- <div className="flex items-start justify-between gap-3">
- <div className="flex-1">
- <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">{label}</span>
- <div className="flex items-baseline gap-1.5">
- <span className={cn("text-2xl font-black tracking-tight", currentStyle.text)}>
- {isNumber ? value : formatNumber(value)}
- </span>
- {!isNumber && <span className="text-xs font-bold text-slate-400">ج.م</span>}
- </div>
- {subLabel && (
- <span className="text-3xs font-semibold text-slate-400 dark:text-slate-500 block mt-1.5">
- {subLabel}
- </span>
- )}
- </div>
-
- <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border shadow-xs", currentStyle.bg, currentStyle.border)}>
- {icon}
- </div>
- </div>
- </div>
  );
 }
