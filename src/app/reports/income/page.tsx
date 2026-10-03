@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
+import { KpiCard } from'@/components/ui/kpi-card';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
 import { useSessionStore } from'@/core/state/useSessionStore';
@@ -46,7 +47,7 @@ export default function IncomeStatementPage() {
  title="قائمة الدخل"
  subtitle="نتيجة أعمال الفترة من الإيرادات والمصروفات الصافية حسب القيود المرحّلة."
  actions={
- <Button onClick={loadData} className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs gap-2 shadow-sm transition-all active:scale-95">
+ <Button onClick={loadData} className="h-10 px-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-xs gap-2 shadow-sm transition-all active:scale-95">
  <RefreshCw className={`w-4 h-4 ${isLoading ?'animate-spin':''}`} /> تحديث
  </Button>
  }
@@ -67,12 +68,35 @@ export default function IncomeStatementPage() {
  </div>
 
  {data && (
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
- <Card label="إجمالي الإيرادات"value={totalRevenue} icon={<TrendingUp className="w-5 h-5"/>} color="emerald"/>
- <Card label="إجمالي المصروفات"value={totalExpense} icon={<TrendingDown className="w-5 h-5"/>} color="red"/>
- <Card label="مجمل الربح"value={data.grossProfit} icon={<Minus className="w-5 h-5"/>} color="blue"/>
- <Card label="صافي الربح"value={data.netIncome} icon={<TrendingUp className="w-5 h-5"/>} color={data.netIncome >= 0 ?'emerald':'red'} />
- </div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="إجمالي الإيرادات"
+            value={formatNumber(totalRevenue)}
+            unit="ج.م"
+            variant="emerald"
+            icon={<TrendingUp className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي المصروفات"
+            value={formatNumber(totalExpense)}
+            unit="ج.م"
+            variant="rose"
+            icon={<TrendingDown className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="مجمل الربح (النشاط)"
+            value={formatNumber(data.grossProfit)}
+            unit="ج.م"
+            variant="blue"
+            icon={<Minus className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="صافي أرباح الفترة"
+            value={formatNumber(data.netIncome)}
+            unit="ج.م"
+            variant={data.netIncome >= 0 ? 'emerald' : 'rose'}
+            icon={<TrendingUp className="w-5 h-5" />}
+          /></div>
  )}
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -122,21 +146,4 @@ function Row({ label, value }: { label: string; value: number }) {
 
 function Empty() {
  return <div className="py-6 text-center text-2xs font-bold text-slate-400">لا توجد حركات</div>;
-}
-
-function Card({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color:'emerald'|'red'|'blue'}) {
- const colors = {
- emerald:'bg-emerald-50 text-emerald-600',
- red:'bg-red-50 text-red-600',
- blue:'bg-blue-50 text-blue-600',
- };
- return (
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 flex items-center gap-4 shadow-xs">
- <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${colors[color]}`}>{icon}</div>
- <div>
- <span className="text-2xs font-bold text-slate-400 block mb-1">{label}</span>
- <span className={`text-lg font-black font-mono ${colors[color].split('')[1]}`}>{formatNumber(value)}</span>
- </div>
- </div>
- );
 }

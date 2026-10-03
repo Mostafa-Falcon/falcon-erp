@@ -2,12 +2,13 @@
 
 import React, { useCallback, useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
+import { KpiCard } from'@/components/ui/kpi-card';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { formatNumber } from'@/lib/format';
 import { toast } from'sonner';
-import { RefreshCw, Printer } from'lucide-react';
+import { RefreshCw, Printer, Landmark, Scale, TrendingUp } from'lucide-react';
 import { getBalanceSheet, type BalanceSheetNode } from'@/modules/accounting/accounting_reports';
 
 interface SectionProps {
@@ -50,7 +51,7 @@ export default function BalanceSheetPage() {
  title="الميزانية العمومية"
  subtitle="المركز المالي للمنشأة (الأصول مقابل الخصوم وحقوق الملكية) حسب القيود المرحّلة."
  actions={
- <Button onClick={loadData} className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs gap-2 shadow-sm transition-all active:scale-95">
+ <Button onClick={loadData} className="h-10 px-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-xs gap-2 shadow-sm transition-all active:scale-95">
  <RefreshCw className={`w-4 h-4 ${isLoading ?'animate-spin':''}`} /> تحديث
  </Button>
  }
@@ -84,11 +85,28 @@ export default function BalanceSheetPage() {
  )}
 
  {data && (
- <div className="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
- <Summary label="إجمالي الأصول"value={data.assetsTotal} color="text-blue-600"/>
- <Summary label="إجمالي الخصوم وحقوق الملكية"value={totalLiabilitiesEquity} color="text-amber-600"/>
- <Summary label="صافي الربح"value={data.netIncome} color={data.netIncome >= 0 ?'text-emerald-600':'text-red-600'} />
- </div>
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard
+            label="إجمالي الأصول"
+            value={formatNumber(data.assetsTotal)}
+            unit="ج.م"
+            variant="blue"
+            icon={<Landmark className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="إجمالي الخصوم وحقوق الملكية"
+            value={formatNumber(totalLiabilitiesEquity)}
+            unit="ج.م"
+            variant="amber"
+            icon={<Scale className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="صافي ربح الفترة"
+            value={formatNumber(data.netIncome)}
+            unit="ج.م"
+            variant={data.netIncome >= 0 ? 'emerald' : 'rose'}
+            icon={<TrendingUp className="w-5 h-5" />}
+          /></div>
  )}
 
  <div className="flex justify-end">
@@ -131,15 +149,6 @@ function NodeRow({ node, level }: { node: BalanceSheetNode; level: number }) {
  {node.children.map((child) => (
  <NodeRow key={child.account.id} node={child} level={level + 1} />
  ))}
- </div>
- );
-}
-
-function Summary({ label, value, color }: { label: string; value: number; color: string }) {
- return (
- <div className="flex flex-col gap-1">
- <span className="text-2xs font-black text-slate-400">{label}</span>
- <span className={`text-lg font-black font-mono ${color}`}>{formatNumber(value)}</span>
  </div>
  );
 }
