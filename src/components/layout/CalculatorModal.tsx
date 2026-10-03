@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Calculator, X, Delete, Equal, Keyboard } from 'lucide-react';
 
 interface CalculatorModalProps {
@@ -9,12 +10,17 @@ interface CalculatorModalProps {
 }
 
 export const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClose }) => {
+    const [mounted, setMounted] = useState(false);
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
     const [prevVal, setPrevVal] = useState<number | null>(null);
     const [operation, setOperation] = useState<string | null>(null);
     const [resetNext, setResetNext] = useState(false);
     const [activeKey, setActiveKey] = useState<string | null>(null);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const triggerVisualKey = (key: string) => {
         setActiveKey(key);
@@ -233,10 +239,10 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClos
         };
     }, [isOpen, display, equation, handleNumber, handleDot, handleOp, handlePercent, handleEqual, handleClear, handleBackspace, onClose]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs select-none animate-in fade-in-50 duration-150">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs select-none animate-in fade-in-50 duration-150">
             {/* Click outside to close */}
             <div className="fixed inset-0" onClick={onClose} />
 
@@ -462,6 +468,7 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClos
                     <span dir="ltr">Numpad / Keys Ready</span>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

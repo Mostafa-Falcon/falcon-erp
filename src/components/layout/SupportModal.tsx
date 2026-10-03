@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Headphones,
     X,
@@ -27,9 +28,14 @@ interface SupportContact {
 }
 
 export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
+    const [mounted, setMounted] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
 
     const contacts: SupportContact[] = [
         {
@@ -63,10 +69,13 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
         }, 2000);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs select-none animate-in fade-in-50 duration-150">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs select-none animate-in fade-in-50 duration-150">
+            {/* Click outside backdrop */}
+            <div className="fixed inset-0" onClick={onClose} />
+
             <div
-                className="w-full max-w-[460px] bg-surface rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden flex flex-col"
+                className="relative z-10 w-full max-w-[460px] bg-surface rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden flex flex-col"
                 dir="rtl"
             >
                 {/* Header */}
@@ -208,6 +217,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
