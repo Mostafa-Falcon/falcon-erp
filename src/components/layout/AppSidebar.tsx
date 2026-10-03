@@ -303,23 +303,40 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
 
     const perms = getSubscriptionPermissions(orgSubscription);
 
-    // Filter top-level modules and sub-items based on subscription permissions
+    // Filter top-level modules and sub-items based on subscription permissions and business domain
     const allowedNavItems = navItems.filter((item) => {
-        // 1. Module'employees'(HR / الموظفين والمستخدمين) requires perms.canManageEmployees
+        // 1. Module 'employees' (HR / الموظفين والمستخدمين) requires perms.canManageEmployees
         if (item.id === 'employees' && !perms.canManageEmployees) {
             return false;
         }
-        // 2. Module'purchases'(المشتريات) requires perms.canExecutePurchases
+        // 2. Module 'purchases' (المشتريات) requires perms.canExecutePurchases
         if (item.id === 'purchases' && !perms.canExecutePurchases) {
             return false;
         }
+        // 3. Module 'mobile' (الموبايل والصيانة) is specialized for electronics/mobile shops
+        if (item.id === 'mobile') {
+            const isMobileDomain = orgActivity === 'electronics' || orgActivity === 'mobile';
+            if (!isMobileDomain) return false;
+        }
         return true;
     }).map((item) => {
-        // Hide'الفروع والمناطق'under Settings if perms.canManageBranches is false
+        // Hide 'الفروع والمناطق' under Settings if perms.canManageBranches is false
         if (item.id === 'settings' && !perms.canManageBranches && item.subItems) {
             return {
                 ...item,
                 subItems: item.subItems.filter((sub) => sub.href !== '/settings/branches'),
+            };
+        }
+        // Filter domain-specific sub-items (e.g. Prescriptions only for Pharmacy)
+        if (item.id === 'sales' && item.subItems) {
+            return {
+                ...item,
+                subItems: item.subItems.filter((sub) => {
+                    if (sub.href === '/sales/prescriptions') {
+                        return orgActivity === 'pharmacy';
+                    }
+                    return true;
+                }),
             };
         }
         return item;
