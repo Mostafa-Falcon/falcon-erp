@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +42,10 @@ import { AccountingRepository } from '@/modules/accounting/accounting_repository
 import { getAccountStatement, type LedgerRow } from '@/modules/accounting/accounting_reports';
 import type { Account } from '@/types';
 
-export default function GeneralLedgerPage() {
+function LedgerContent() {
+  const searchParams = useSearchParams();
+  const urlAccountId = searchParams.get('account') || searchParams.get('id');
+
   const { currentUser } = useSessionStore();
   const orgId = currentUser?.org_id || '';
 
@@ -62,14 +66,16 @@ export default function GeneralLedgerPage() {
         const list = await AccountingRepository.listLeafAccounts(orgId);
         const sorted = list.sort((a, b) => a.code.localeCompare(b.code));
         setAccounts(sorted);
-        // Default to the first cash or bank account if available
-        if (!accountId && sorted.length > 0) {
+        // Pre-select account from URL if valid, or default
+        if (urlAccountId && sorted.some((a) => a.id === urlAccountId)) {
+          setAccountId(urlAccountId);
+        } else if (!accountId && sorted.length > 0) {
           const cashAcc = sorted.find((a) => a.code.startsWith('101') || a.type === 'asset') || sorted[0];
           setAccountId(cashAcc.id);
         }
       })
       .catch((err) => console.error('Ledger accounts error:', err));
-  }, [orgId, accountId]);
+  }, [orgId, accountId, urlAccountId]);
 
   const loadData = useCallback(async () => {
     if (!orgId || !accountId) {
@@ -336,5 +342,19 @@ export default function GeneralLedgerPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function GeneralLedgerPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-xs font-bold text-slate-400">
+          جاري تحميل كشف الحساب...
+        </div>
+      }
+    >
+      <LedgerContent />
+    </Suspense>
   );
 }
