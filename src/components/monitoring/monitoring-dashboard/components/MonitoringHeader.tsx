@@ -1,12 +1,13 @@
 import React from'react';
 import { Calendar, RefreshCw } from'lucide-react';
 import {
- Select,
- SelectContent,
- SelectItem,
- SelectTrigger,
- SelectValue,
-} from'@/components/ui/select';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface MonitoringHeaderProps {
  dateRange: string;
@@ -51,32 +52,12 @@ export const MonitoringHeader: React.FC<MonitoringHeaderProps> = ({
 
  {/* Calendar Picker Button */}
  <div className="relative">
- <button
- onClick={() => {
- const el = document.getElementById('monitoring-date-input') as HTMLInputElement;
- if (el) el.showPicker ? el.showPicker() : el.focus();
- }}
- className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-surface text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
- >
- <Calendar className="w-3.5 h-3.5 text-slate-400"/>
- <span>{selectedDate ?`تاريخ: ${selectedDate}`:'تحديد يوم معين'}</span>
- </button>
- <input
- id="monitoring-date-input"
- type="date"
+ <DatePicker
  value={selectedDate}
- onChange={(e) => setSelectedDate(e.target.value)}
- className="sr-only"
+ onChange={setSelectedDate}
+ placeholder="تحديد يوم معين..."
+ className="h-9"
  />
- {selectedDate && (
- <button
- onClick={() => setSelectedDate('')}
- className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 text-3xs font-bold flex items-center justify-center cursor-pointer"
- title="إلغاء التحديد"
- >
- ✕
- </button>
- )}
  </div>
 
  {/* Period Dropdown Select */}

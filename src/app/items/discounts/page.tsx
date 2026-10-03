@@ -5,6 +5,7 @@ import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { db } from'@/core/db/app_database';
 import { formatNumber, formatDate } from'@/lib/format';
@@ -313,11 +314,11 @@ function DiscountsContent() {
  <label className="text-xs font-black text-slate-700 dark:text-slate-300 block mb-1">
  تاريخ البدء
  </label>
- <Input
- type="date"
+ <DatePicker
  value={startDate}
- onChange={(e) => setStartDate(e.target.value)}
- className="h-10 text-xs font-bold rounded-lg"
+ onChange={setStartDate}
+ placeholder="تاريخ البدء..."
+ className="w-full"
  />
  </div>
 
@@ -325,11 +326,11 @@ function DiscountsContent() {
  <label className="text-xs font-black text-slate-700 dark:text-slate-300 block mb-1">
  تاريخ الانتهاء
  </label>
- <Input
- type="date"
+ <DatePicker
  value={endDate}
- onChange={(e) => setEndDate(e.target.value)}
- className="h-10 text-xs font-bold rounded-lg"
+ onChange={setEndDate}
+ placeholder="تاريخ الانتهاء..."
+ className="w-full"
  />
  </div>
  </div>

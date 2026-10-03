@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KpiCard } from '@/components/ui/kpi-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -212,28 +213,24 @@ function LedgerContent() {
               <label className="block text-2xs font-black text-slate-500 dark:text-slate-400 mb-1.5 pr-0.5">
                 من تاريخ
               </label>
-              <div className="relative">
-                <Input
-                  type="date"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="h-10 w-40 rounded-xl text-xs font-bold bg-slate-50/70 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800"
-                />
-              </div>
+              <DatePicker
+                value={from}
+                onChange={setFrom}
+                placeholder="من تاريخ..."
+                className="w-36 sm:w-40"
+              />
             </div>
 
             <div>
               <label className="block text-2xs font-black text-slate-500 dark:text-slate-400 mb-1.5 pr-0.5">
                 إلى تاريخ
               </label>
-              <div className="relative">
-                <Input
-                  type="date"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="h-10 w-40 rounded-xl text-xs font-bold bg-slate-50/70 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800"
-                />
-              </div>
+              <DatePicker
+                value={to}
+                onChange={setTo}
+                placeholder="إلى تاريخ..."
+                className="w-36 sm:w-40"
+              />
             </div>
 
             {(from || to) && (

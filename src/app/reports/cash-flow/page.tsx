@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
-import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { Card, CardContent, CardHeader, CardTitle } from'@/components/ui/card';
 import { Badge } from'@/components/ui/badge';
 import { useSessionStore } from'@/core/state/useSessionStore';
@@ -75,21 +75,11 @@ export default function CashFlowReportPage() {
  <CardContent className="p-4 flex flex-wrap items-end gap-3">
  <div className="flex flex-col gap-1">
  <label className="text-xs font-black text-muted-foreground">من تاريخ</label>
- <Input
- type="date"
- value={from}
- onChange={(e) => setFrom(e.target.value)}
- className="h-10 w-44 rounded-xl text-xs font-bold"
- />
+ <DatePicker value={from} onChange={setFrom} placeholder="من تاريخ..." className="w-44" />
  </div>
  <div className="flex flex-col gap-1">
  <label className="text-xs font-black text-muted-foreground">إلى تاريخ</label>
- <Input
- type="date"
- value={to}
- onChange={(e) => setTo(e.target.value)}
- className="h-10 w-44 rounded-xl text-xs font-bold"
- />
+ <DatePicker value={to} onChange={setTo} placeholder="إلى تاريخ..." className="w-44" />
  </div>
  <Button
  variant="outline"

@@ -5,6 +5,7 @@ import { useRouter } from'next/navigation';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { Label } from'@/components/ui/label';
 import { Switch } from'@/components/ui/switch';
 import {
@@ -329,15 +330,12 @@ export default function AddEmployeePage() {
  </div>
  <div className="space-y-2">
  <Label className="text-xs font-black text-slate-700 dark:text-slate-300">تاريخ التعيين</Label>
- <div className="relative group/input">
- <Input
- type="date"
+ <DatePicker
  value={hireDate}
- onChange={e => setHireDate(e.target.value)}
- className="h-12 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 pr-11 text-sm font-bold rounded-xl focus:bg-white dark:focus:bg-slate-900 transition-colors shadow-xs"
+ onChange={setHireDate}
+ placeholder="اختر تاريخ التعيين..."
+ className="h-12 w-full text-sm font-bold rounded-xl shadow-xs"
  />
- <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within/input:text-blue-500 transition-colors"/>
- </div>
  </div>
  <div className="space-y-2">
  <Label className="text-xs font-black text-slate-700 dark:text-slate-300">رصيد الإجازات السنوية (يوم)</Label>

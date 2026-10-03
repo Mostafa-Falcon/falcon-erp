@@ -10,6 +10,7 @@ import {
 } from'@/components/ui/dialog';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { Label } from'@/components/ui/label';
 import { Switch } from'@/components/ui/switch';
 import {
@@ -320,26 +321,26 @@ export const ResetPeriodModal: React.FC<ResetPeriodModalProps> = ({
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
  <div className="space-y-1">
  <span className="text-2xs font-bold text-slate-500 dark:text-slate-400">من تاريخ</span>
- <Input
- type="date"
+ <DatePicker
  value={fromDate}
- onChange={(e) => {
- setFromDate(e.target.value);
+ onChange={(dateStr) => {
+ setFromDate(dateStr);
  setPresetPeriod('custom');
  }}
- className="h-9 bg-white dark:bg-slate-800 text-xs font-bold"
+ placeholder="من تاريخ..."
+ className="h-9 w-full"
  />
  </div>
  <div className="space-y-1">
  <span className="text-2xs font-bold text-slate-500 dark:text-slate-400">إلى تاريخ</span>
- <Input
- type="date"
+ <DatePicker
  value={toDate}
- onChange={(e) => {
- setToDate(e.target.value);
+ onChange={(dateStr) => {
+ setToDate(dateStr);
  setPresetPeriod('custom');
  }}
- className="h-9 bg-white dark:bg-slate-800 text-xs font-bold"
+ placeholder="إلى تاريخ..."
+ className="h-9 w-full"
  />
  </div>
  </div>

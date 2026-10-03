@@ -8,6 +8,7 @@ import { useSessionStore } from '@/core/state/useSessionStore';
 import { formatNumber, formatDateTime } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -627,11 +628,11 @@ export default function InstallmentsPage() {
 
               <div className="space-y-1">
                 <Label className="font-bold">تاريخ استحقاق القسط الأول</Label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="h-10 rounded-xl font-mono text-center font-bold"
+                  onChange={setStartDate}
+                  placeholder="اختر تاريخ الاستحقاق..."
+                  className="w-full"
                 />
               </div>
 

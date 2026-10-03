@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
-import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { formatNumber } from'@/lib/format';
 import { toast } from'sonner';
@@ -59,11 +59,11 @@ export default function TrialBalancePage() {
  <div className="flex flex-wrap items-end gap-3">
  <div className="flex flex-col gap-1">
  <label className="text-2xs font-black text-slate-400">من تاريخ</label>
- <Input type="date"value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold"/>
+ <DatePicker value={from} onChange={setFrom} placeholder="من تاريخ..." className="w-40" />
  </div>
  <div className="flex flex-col gap-1">
  <label className="text-2xs font-black text-slate-400">إلى تاريخ</label>
- <Input type="date"value={to} onChange={(e) => setTo(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold"/>
+ <DatePicker value={to} onChange={setTo} placeholder="إلى تاريخ..." className="w-40" />
  </div>
  <Button variant="outline"onClick={() => { setFrom(''); setTo(''); }} className="h-10 rounded-xl text-xs font-bold">
  مسح الفلتر

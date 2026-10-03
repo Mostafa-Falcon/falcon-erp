@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { KpiCard } from'@/components/ui/kpi-card';
 import { Button } from'@/components/ui/button';
-import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { formatNumber } from'@/lib/format';
 import { toast } from'sonner';
@@ -60,7 +60,7 @@ export default function BalanceSheetPage() {
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 flex flex-wrap items-end justify-between gap-4">
  <div className="flex flex-col gap-1">
  <label className="text-2xs font-black text-slate-400">حتى تاريخ</label>
- <Input type="date"value={asOf} onChange={(e) => setAsOf(e.target.value)} className="h-10 w-40 rounded-xl text-xs font-bold"/>
+ <DatePicker value={asOf} onChange={setAsOf} placeholder="حتى تاريخ..." className="w-40" />
  </div>
  <div className={`px-4 h-10 flex items-center rounded-xl text-xs font-black ${balanced ?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-600'}`}>
  {balanced ?'الميزانية متوازنة':'فرق في الميزانية'}

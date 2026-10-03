@@ -6,6 +6,7 @@ import Link from'next/link';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { Card, CardContent } from'@/components/ui/card';
 import {
  Table,
@@ -229,11 +230,11 @@ function NewQuoteContent() {
  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
  صالح لغاية تاريخ
  </label>
- <Input
- type="date"
+ <DatePicker
  value={validUntil}
- onChange={(e) => setValidUntil(e.target.value)}
- className="h-10 text-xs font-bold"
+ onChange={setValidUntil}
+ placeholder="اختر تاريخ الصلاحية..."
+ className="w-full"
  />
  </div>
  </CardContent>

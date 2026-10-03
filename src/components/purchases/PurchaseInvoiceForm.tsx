@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from'react';
 import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { Button } from'@/components/ui/button';
 import { Icons } from'@/components/ui/Icons';
 import { useSessionStore } from'@/core/state/useSessionStore';
@@ -538,7 +539,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  {p.tracks_expiry && (
  <div className="md:col-span-1">
  <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الانتهاء</span>
- <Input type="date"value={line.expiryDate} onChange={(e) => updateLine(idx, { expiryDate: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs"/>
+ <DatePicker value={line.expiryDate} onChange={(dateStr) => updateLine(idx, { expiryDate: dateStr })} placeholder="تاريخ الصلاحية..." className="h-9 text-xs" />
  </div>
  )}
  </>

@@ -4,6 +4,7 @@ import React, { useState, useMemo } from'react';
 import { Printer, Filter, Calendar } from'lucide-react';
 import { Button } from'@/components/ui/button';
 import { Input } from'@/components/ui/input';
+import { DatePicker } from'@/components/ui/date-picker';
 import { formatNumber } from'@/lib/format';
 import type { ContactTransaction } from'@/types';
 
@@ -56,25 +57,25 @@ export function StatementTab({ transactions, customerName }: StatementTabProps) 
 
  {/* Date Range & Search Filters */}
  <div className="flex flex-wrap items-center gap-3 bg-slate-50/60 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs">
- <div className="flex items-center gap-2">
- <span className="font-bold text-slate-400">من:</span>
- <Input
- type="date"
- value={startDate}
- onChange={(e) => setStartDate(e.target.value)}
- className="h-9 w-36 text-xs rounded-xl bg-surface"
- />
- </div>
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-slate-400">من:</span>
+          <DatePicker
+            value={startDate}
+            onChange={setStartDate}
+            placeholder="من تاريخ..."
+            className="h-9 w-36"
+          />
+        </div>
 
- <div className="flex items-center gap-2">
- <span className="font-bold text-slate-400">إلى:</span>
- <Input
- type="date"
- value={endDate}
- onChange={(e) => setEndDate(e.target.value)}
- className="h-9 w-36 text-xs rounded-xl bg-surface"
- />
- </div>
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-slate-400">إلى:</span>
+          <DatePicker
+            value={endDate}
+            onChange={setEndDate}
+            placeholder="إلى تاريخ..."
+            className="h-9 w-36"
+          />
+        </div>
 
  <div className="flex-1 min-w-[180px]">
  <Input
