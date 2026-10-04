@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { POS } from '@/components/sales/pos';
+import { AccountSuspensionGuard } from '@/components/auth/AccountSuspensionGuard';
 
 export default function PosPage() {
   const router = useRouter();
@@ -31,5 +32,9 @@ export default function PosPage() {
     );
   }
 
-  return <POS />;
+  return (
+    <AccountSuspensionGuard>
+      <POS />
+    </AccountSuspensionGuard>
+  );
 }

@@ -219,17 +219,20 @@ export default function SettingsPage() {
  try {
  setIsSaving(true);
 
- // Save organization details
- await SettingsRepository.updateOrganization(orgId, {
+ // Save organization details - Only allow modifying activity_type in trial tier
+ const orgUpdatePayload: Parameters<typeof SettingsRepository.updateOrganization>[1] = {
  name: nameAr.trim(),
  legal_name: nameEn.trim() || undefined,
- activity_type: activityType,
  phone: phone.trim() || undefined,
  email: email.trim() || undefined,
  address: address.trim() || undefined,
  tax_number: taxNumber.trim() || undefined,
  currency: currency,
- });
+ };
+ if (subscriptionTier === 'trial') {
+ orgUpdatePayload.activity_type = activityType;
+ }
+ await SettingsRepository.updateOrganization(orgId, orgUpdatePayload);
 
  // Save app settings preferences
  await Promise.all([
@@ -475,7 +478,7 @@ export default function SettingsPage() {
  <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
  <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
  <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-primary flex items-center justify-center shrink-0">
- <Building2 className="w-4 h-4"/>
+ <Building2 className="w-4 h-4" />
  </div>
  <div>
  <h3 className="text-xs font-black text-slate-900 dark:text-white">هوية المؤسسة والمنشأة</h3>
@@ -498,13 +501,13 @@ export default function SettingsPage() {
  placeholder="أدخل اسم منشأتك بالعربية"
  className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors"
  />
- <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
  {nameAr && (
  <button
  onClick={() => setNameAr('')}
  className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-full"
  >
- <X className="w-3.5 h-3.5"/>
+ <X className="w-3.5 h-3.5" />
  </button>
  )}
  </div>
@@ -523,36 +526,44 @@ export default function SettingsPage() {
  className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-9 text-xs font-bold text-slate-900 dark:text-white focus:bg-white transition-colors font-mono text-left"
  dir="ltr"
  />
- <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+ <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
  {nameEn && (
  <button
  onClick={() => setNameEn('')}
  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-full"
  >
- <X className="w-3.5 h-3.5"/>
+ <X className="w-3.5 h-3.5" />
  </button>
  )}
  </div>
  </div>
 
- <div className="space-y-1.5 md:col-span-2">
- <div className="flex items-center justify-between">
- <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
- نوع النشاط التجاري
- </label>
- {subscriptionTier !=='trial'&& (
- <span className="text-3xs font-bold text-amber-600 dark:text-amber-400">
- (متاح التعديل فقط أثناء الفترة التجريبية)
+ <div className="space-y-2 md:col-span-2">
+ <div className="flex items-center justify-between flex-wrap gap-2">
+ <label className="text-2xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+ <span>نوع النشاط التجاري</span>
+ {subscriptionTier === 'trial' ? (
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-4xs font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
+ <Sparkles className="w-3 h-3" />
+ <span>حساب تجريبي (متاح التعديل)</span>
+ </span>
+ ) : (
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-4xs font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+ <Lock className="w-3 h-3 text-amber-500" />
+ <span>نشاط مثبت ومفعّل (غير قابل للتعديل)</span>
  </span>
  )}
+ </label>
  </div>
+
+ <div className="relative">
  <Select
  value={activityType}
  onValueChange={setActivityType}
- disabled={subscriptionTier !=='trial'}
+ disabled={subscriptionTier !== 'trial'}
  >
- <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white disabled:opacity-80 disabled:cursor-not-allowed">
- <SelectValue placeholder="اختر نوع النشاط"/>
+ <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white disabled:opacity-75 disabled:cursor-not-allowed">
+ <SelectValue placeholder="اختر نوع النشاط" />
  </SelectTrigger>
  <SelectContent>
  <SelectItem value="mobile_shop">📱 محلات وتجارة الموبايل ورش الصيانة</SelectItem>
@@ -565,12 +576,20 @@ export default function SettingsPage() {
  <SelectItem value="services">☕ خدمات ومطاعم وكافيهات</SelectItem>
  </SelectContent>
  </Select>
+ </div>
 
- {subscriptionTier !=='trial'&& (
- <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-start gap-2 text-2xs font-semibold text-amber-800 dark:text-amber-300 mt-2">
- <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5"/>
+ {subscriptionTier === 'trial' ? (
+ <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/50 flex items-start gap-2.5 text-2xs font-semibold text-blue-800 dark:text-blue-300">
+ <Sparkles className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
  <span>
- تغيير نوع النشاط التجاري متاح فقط أثناء **الفترة التجريبية (7 أيام)**. لحسابات الاشتراكات المفعّلة، يتم تحديد نوع النشاط وفق عقد الترخيص والاشتراك وتفعيله عبر إدارة المنظومة.
+ بصفتك في <strong>الفترة التجريبية</strong>، يمكنك تغيير نوع النشاط وتجربة الواجهات المخصصة لكل مجال بحرية. بمجرد تفعيل الاشتراك الرسمي سيتم تثبيت النشاط المعتمد.
+ </span>
+ </div>
+ ) : (
+ <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-start gap-2.5 text-2xs font-semibold text-amber-900 dark:text-amber-300">
+ <Lock className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+ <span>
+ لا يمكن تغيير نوع النشاط التجاري بعد تفعيل الحساب والاشتراك لضمان تكامل القيود المحاسبية والفواتير. للتعديل أو الترقية، يرجى التواصل مع إدارة المنظومة والدعم الفني عبر الواتساب على رقم <strong>01116603371</strong>.
  </span>
  </div>
  )}
