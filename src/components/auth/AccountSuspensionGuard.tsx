@@ -247,91 +247,95 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
 
     return (
       <div
-        className="fixed inset-0 z-[99999] bg-[#040714] text-white flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-sans select-none"
+        className="fixed inset-0 z-[99999] bg-[#040714] text-white flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-sans select-none min-h-[100dvh]"
         dir="rtl"
       >
         {/* Dynamic Background Glow Orbs */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -right-28 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-1/4 -left-28 w-96 h-96 bg-emerald-500/15 rounded-full blur-[140px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[150px]" />
+          <div className="absolute top-1/4 -right-28 w-80 sm:w-96 h-80 sm:h-96 bg-blue-600/20 rounded-full blur-[100px] sm:blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 -left-28 w-80 sm:w-96 h-80 sm:h-96 bg-emerald-500/15 rounded-full blur-[120px] sm:blur-[140px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-[130px]" />
           {/* Subtle Grid Pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
         </div>
 
         {/* Central Premium Container */}
-        <div className="relative z-10 max-w-lg w-full bg-slate-900/85 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-blue-950/40 text-center space-y-6">
+        <div className="relative z-10 w-full max-w-[440px] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-blue-950/40 text-center space-y-3.5 sm:space-y-4.5 my-auto">
           {/* Header Badge */}
           <div className="flex items-center justify-center">
             {isTrialBarrier ? (
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-inner">
-                <Sparkles className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-3xs sm:text-xs font-black bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-inner">
+                <Sparkles className="w-3 h-3 animate-spin text-emerald-400 shrink-0" />
                 <span>حساب تجريبي • بانتظار التفعيل الرسمي</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black bg-rose-500/15 border border-rose-500/30 text-rose-400 shadow-inner">
-                <ShieldAlert className="w-3.5 h-3.5 animate-pulse text-rose-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-3xs sm:text-xs font-black bg-rose-500/15 border border-rose-500/30 text-rose-400 shadow-inner">
+                <ShieldAlert className="w-3 h-3 animate-pulse text-rose-400 shrink-0" />
                 <span>إشعار إداري • تعليق الحساب مؤقتاً</span>
               </span>
             )}
           </div>
 
           {/* Hero Emblem */}
-          <div className="relative mx-auto w-20 h-20 flex items-center justify-center">
+          <div className="relative mx-auto w-16 h-16 sm:w-18 sm:h-18 flex items-center justify-center">
             <div
-              className={`absolute inset-0 rounded-3xl blur-xl opacity-60 ${
+              className={`absolute inset-0 rounded-2xl blur-lg opacity-60 ${
                 isTrialBarrier ? 'bg-gradient-to-tr from-emerald-500 to-blue-600' : 'bg-gradient-to-tr from-rose-500 to-amber-600'
               }`}
             />
             <div
-              className={`relative w-20 h-20 rounded-3xl border flex items-center justify-center shadow-xl ${
+              className={`relative w-16 h-16 sm:w-18 sm:h-18 rounded-2xl border flex items-center justify-center shadow-lg ${
                 isTrialBarrier
                   ? 'bg-slate-950/90 border-emerald-500/40 text-emerald-400'
                   : 'bg-slate-950/90 border-rose-500/40 text-rose-400'
               }`}
             >
               {isTrialBarrier ? (
-                <KeyRound className="w-9 h-9 stroke-[2.2] animate-bounce" />
+                <KeyRound className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2] animate-bounce" />
               ) : (
-                <ShieldAlert className="w-9 h-9 stroke-[2.2] animate-pulse" />
+                <ShieldAlert className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2] animate-pulse" />
               )}
             </div>
           </div>
 
           {/* Titles & Description */}
-          <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          <div className="space-y-1">
+            <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">
               {isTrialBarrier ? 'حسابك التجريبي بانتظار التفعيل' : 'تم إيقاف هذا الحساب مؤقتاً'}
             </h1>
-            <p className="text-xs sm:text-sm font-medium text-slate-300 leading-relaxed px-2">
+            <p className="text-2xs sm:text-xs font-medium text-slate-300 leading-relaxed px-1">
               {suspensionReason ||
                 (isTrialBarrier
-                  ? 'انتهت فترة التجربة المجانية (7 أيام) أو اشتراك المنشأة. يرجى التواصل معنا عبر الواتساب على رقم 01116603371 لاختيار الاشتراك المناسب وتفعيل حسابك.'
-                  : 'تم تعليق وصول المنشأة بالكامل من قبل إدارة المنظومة. يرجى التواصل مع الدعم الفني للاعتماد.')}
+                  ? 'انتهت فترة التجربة المجانية (7 أيام) أو اشتراك المنشأة. يرجى التواصل معنا عبر الواتساب لتفعيل حسابك.'
+                  : 'تم تعليق وصول المنشأة بالكامل من قبل إدارة المنظومة.')}
             </p>
           </div>
 
-          {/* Details Card (Linear / SaaS Style) */}
-          <div className="p-4 rounded-2xl bg-slate-950/70 border border-white/5 space-y-2.5 text-xs text-right">
-            <div className="flex items-center justify-between text-slate-400 font-medium">
-              <span className="flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-blue-400" />
+          {/* Details Card (Linear / SaaS Style - Responsive 2-Col Grid) */}
+          <div className="grid grid-cols-2 gap-2 p-2.5 sm:p-3 rounded-2xl bg-slate-950/70 border border-white/5 text-right text-xs">
+            <div className="flex flex-col gap-0.5 p-2 rounded-xl bg-white/[0.02]">
+              <span className="text-3xs text-slate-400 font-medium flex items-center gap-1">
+                <Building2 className="w-3 h-3 text-blue-400 shrink-0" />
                 <span>اسم المنشأة</span>
               </span>
-              <span className="font-black text-white truncate max-w-[200px]">{cleanOrgName}</span>
+              <span className="font-black text-white text-xs truncate" title={cleanOrgName}>
+                {cleanOrgName}
+              </span>
             </div>
 
-            <div className="flex items-center justify-between text-slate-400 font-medium">
-              <span className="flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="flex flex-col gap-0.5 p-2 rounded-xl bg-white/[0.02]">
+              <span className="text-3xs text-slate-400 font-medium flex items-center gap-1">
+                <User className="w-3 h-3 text-indigo-400 shrink-0" />
                 <span>صاحب الحساب</span>
               </span>
-              <span className="font-bold text-slate-200">{userName}</span>
+              <span className="font-bold text-slate-200 text-xs truncate">
+                {userName}
+              </span>
             </div>
 
-            <div className="flex items-center justify-between text-slate-400 font-medium">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <div className="col-span-2 flex items-center justify-between p-2 rounded-xl bg-white/[0.02]">
+              <span className="text-3xs text-slate-400 font-medium flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-400 shrink-0" />
                 <span>حالة الترخيص</span>
               </span>
               <span
@@ -347,29 +351,30 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
           </div>
 
           {/* Action CTAs */}
-          <div className="space-y-3 pt-1">
+          <div className="space-y-2 sm:space-y-2.5 pt-0.5">
             {/* Primary WhatsApp Action */}
             <a
               href={`https://wa.me/201116603371?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full h-12 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-all transform active:scale-98 cursor-pointer"
+              className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-all transform active:scale-98 cursor-pointer"
             >
-              <MessageSquare className="w-5 h-5 fill-current" />
-              <span>التواصل الفوري عبر الواتساب للتفعيل (01116603371)</span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+              <MessageSquare className="w-4 h-4 fill-current shrink-0" />
+              <span>تفعيل الحساب عبر الواتساب</span>
+              <span className="font-mono text-2xs bg-black/25 px-1.5 py-0.5 rounded-md shrink-0">01116603371</span>
+              <ExternalLink className="w-3 h-3 opacity-75 shrink-0" />
             </a>
 
-            {/* Quick Actions Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Quick Actions Row: 2 equal columns on mobile & desktop */}
+            <div className="grid grid-cols-2 gap-2">
               {/* Copy Number */}
               <button
                 type="button"
                 onClick={handleCopyNumber}
-                className="h-10 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="h-9 px-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 font-bold text-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
               >
-                {copiedNumber ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-                <span>{copiedNumber ? 'تم نسخ الرقم' : 'نسخ رقم الواتساب'}</span>
+                {copiedNumber ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                <span className="truncate">{copiedNumber ? 'تم النسخ' : 'نسخ الرقم'}</span>
               </button>
 
               {/* Re-validate Status */}
@@ -377,10 +382,10 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
                 type="button"
                 onClick={handleRevalidateNow}
                 disabled={isRevalidating}
-                className="h-10 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 cursor-pointer"
+                className="h-9 px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-2xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRevalidating ? 'animate-spin' : ''}`} />
-                <span>{isRevalidating ? 'جاري الفحص...' : 'فحص حالة التفعيل'}</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${isRevalidating ? 'animate-spin' : ''} shrink-0`} />
+                <span className="truncate">{isRevalidating ? 'جاري الفحص...' : 'فحص التفعيل'}</span>
               </Button>
             </div>
 
@@ -389,17 +394,17 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
               type="button"
               onClick={handleLogout}
               variant="ghost"
-              className="w-full h-10 text-slate-400 hover:text-white hover:bg-white/5 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              className="w-full h-8.5 text-slate-400 hover:text-white hover:bg-white/5 font-semibold text-2xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span>تسجيل الخروج والعودة لشاشة الدخول</span>
             </Button>
           </div>
 
           {/* Footer Branding */}
-          <div className="pt-3 border-t border-white/5 flex items-center justify-center gap-2 text-3xs text-slate-400 font-semibold">
-            <PhoneCall className="w-3 h-3 text-emerald-400" />
-            <span>شركة لوجيسكا للأنظمة السحابية والبرمجيات المتطورة • دعم فني على مدار الساعة</span>
+          <div className="pt-2 border-t border-white/5 flex items-center justify-center gap-1.5 text-4xs sm:text-3xs text-slate-400 font-medium">
+            <PhoneCall className="w-3 h-3 text-emerald-400 shrink-0" />
+            <span>شركة لوجيسكا للأنظمة السحابية والبرمجيات المتطورة</span>
           </div>
         </div>
       </div>
