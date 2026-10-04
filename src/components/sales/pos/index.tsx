@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { RestaurantCafePosView } from './domains/RestaurantCafePosView';
+import { MobilePosView } from './domains/MobilePosView';
+import { PharmacyPosView } from './domains/PharmacyPosView';
+import { getDomainProfile } from '@/core/constants/domain_profiles';
 import { toast } from'sonner';
 import { SalesRepository } from'@/modules/sales/sales_repository';
 import type { SalesInvoice, PurchaseInvoice, Contact, Product } from'@/types';
@@ -75,6 +79,7 @@ export function POS() {
  vatRate,
  isTaxInclusive,
  loadData,
+ organization,
  } = usePosData();
 
  // Dialog & Sidebar States
@@ -169,6 +174,12 @@ export function POS() {
  // Saving / Invoice
  const [isSaving, setIsSaving] = useState(false);
  const [successInvoice, setSuccessInvoice] = useState<SalesInvoice | null>(null);
+ const [previewDomain, setPreviewDomain] = useState<string | null>(null);
+
+ const resolvedDomain = useMemo(() => {
+ if (previewDomain) return previewDomain;
+ return getDomainProfile(organization?.activity_type).id;
+ }, [previewDomain, organization?.activity_type]);
  const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
 
  // Theme
@@ -236,6 +247,10 @@ export function POS() {
  totalDiscount,
  totalTax,
  total,
+ orderType,
+ setOrderType,
+ activeTable,
+ setActiveTable,
  } = usePosCart({
  products,
  unitOptions,
@@ -505,6 +520,45 @@ export function POS() {
  onToggleTheme={toggleTheme}
  />
 
+ {/* Specialized POS Domain Switcher (Active for trial or multi-activity review) */}
+ {activeShift && (
+ <div className="bg-slate-900 border-b border-slate-800 text-white px-3 py-1.5 flex items-center justify-between text-xs overflow-x-auto gap-2">
+ <div className="flex items-center gap-2 shrink-0">
+ <span className="font-black text-amber-400 text-3xs sm:text-xs">
+ واجهة الكاشير المخصصة:
+ </span>
+ <span className="text-slate-400 text-4xs hidden md:inline">
+ (تتغير تلقائياً حسب نشاطك التجاري أو يمكنك التبديل للتجربة)
+ </span>
+ </div>
+ <div className="flex items-center gap-1 shrink-0">
+ {[
+ { id: 'restaurant', label: '🍽️ مطاعم (صالة وبون)' },
+ { id: 'cafe', label: '☕ كافيهات وباريستا' },
+ { id: 'mobile_shop', label: '📱 موبايل وصيانة' },
+ { id: 'pharmacy', label: '💊 صيدلية ومستلزمات' },
+ { id: 'retail', label: '🛒 كاشير سريع وتجزئة' },
+ ].map((d) => (
+ <button
+ key={d.id}
+ type="button"
+ onClick={() => {
+ setPreviewDomain(d.id);
+ toast.info(`تم التبديل إلى: ${d.label}`);
+ }}
+ className={`px-2.5 py-1 rounded-lg text-4xs sm:text-3xs font-black transition-all ${
+ resolvedDomain === d.id
+ ? 'bg-amber-500 text-slate-950 shadow-sm'
+ : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
+ }`}
+ >
+ {d.label}
+ </button>
+ ))}
+ </div>
+ </div>
+ )}
+
  {/* 2. Main POS Flow or Open Shift View */}
  {!activeShift ? (
  <PosOpenShiftView
@@ -516,6 +570,136 @@ export function POS() {
  setActiveShift(shift);
  loadData();
  }}
+ />
+ ) : resolvedDomain === 'restaurant' ? (
+ <RestaurantCafePosView
+ cart={cart}
+ products={products}
+ unitsById={unitsById}
+ unitOptions={unitOptions}
+ batches={batches}
+ availableFor={availableFor}
+ onAddToCart={addToCart}
+ onUpdateQty={updateQty}
+ onSetQty={setLineQty}
+ onRemoveLine={removeLine}
+ onUnitChange={handleUnitChange}
+ onClearCart={clearCart}
+ orderType={orderType}
+ setOrderType={setOrderType}
+ activeTable={activeTable}
+ setActiveTable={setActiveTable}
+ orgId={orgId}
+ branchId={branchId}
+ onCheckout={(type) => executeCheckout(type)}
+ isSaving={isSaving}
+ subtotal={subtotal}
+ totalDiscount={totalDiscount}
+ shippingFee={shippingFee}
+ totalTax={totalTax}
+ total={total}
+ customerMode={customerMode}
+ selectedCustomerId={selectedCustomerId}
+ onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+ onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
+ onOpenSplitModal={() => setIsSplitModalOpen(true)}
+ lastAddedKey={lastAddedKey}
+ activeShift={activeShift}
+ isCafeMode={false}
+ />
+ ) : resolvedDomain === 'cafe' ? (
+ <RestaurantCafePosView
+ cart={cart}
+ products={products}
+ unitsById={unitsById}
+ unitOptions={unitOptions}
+ batches={batches}
+ availableFor={availableFor}
+ onAddToCart={addToCart}
+ onUpdateQty={updateQty}
+ onSetQty={setLineQty}
+ onRemoveLine={removeLine}
+ onUnitChange={handleUnitChange}
+ onClearCart={clearCart}
+ orderType={orderType}
+ setOrderType={setOrderType}
+ activeTable={activeTable}
+ setActiveTable={setActiveTable}
+ orgId={orgId}
+ branchId={branchId}
+ onCheckout={(type) => executeCheckout(type)}
+ isSaving={isSaving}
+ subtotal={subtotal}
+ totalDiscount={totalDiscount}
+ shippingFee={shippingFee}
+ totalTax={totalTax}
+ total={total}
+ customerMode={customerMode}
+ selectedCustomerId={selectedCustomerId}
+ onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+ onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
+ onOpenSplitModal={() => setIsSplitModalOpen(true)}
+ lastAddedKey={lastAddedKey}
+ activeShift={activeShift}
+ isCafeMode={true}
+ />
+ ) : resolvedDomain === 'mobile_shop' ? (
+ <MobilePosView
+ cart={cart}
+ products={products}
+ unitsById={unitsById}
+ unitOptions={unitOptions}
+ availableFor={availableFor}
+ onAddToCart={addToCart}
+ onUpdateQty={updateQty}
+ onSetQty={setLineQty}
+ onRemoveLine={removeLine}
+ onUnitChange={handleUnitChange}
+ onClearCart={clearCart}
+ orgId={orgId}
+ branchId={branchId}
+ onCheckout={(type) => executeCheckout(type)}
+ isSaving={isSaving}
+ subtotal={subtotal}
+ totalDiscount={totalDiscount}
+ shippingFee={shippingFee}
+ totalTax={totalTax}
+ total={total}
+ onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+ onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
+ onOpenSplitModal={() => setIsSplitModalOpen(true)}
+ onOpenDigitalWalletModal={() => setIsDigitalWalletOpen(true)}
+ onOpenMaintenanceModal={() => setIsMaintenancePaymentOpen(true)}
+ activeShift={activeShift}
+ />
+ ) : resolvedDomain === 'pharmacy' ? (
+ <PharmacyPosView
+ cart={cart}
+ products={products}
+ unitsById={unitsById}
+ unitOptions={unitOptions}
+ batches={batches}
+ availableFor={availableFor}
+ onAddToCart={addToCart}
+ onUpdateQty={updateQty}
+ onSetQty={setLineQty}
+ onRemoveLine={removeLine}
+ onUnitChange={handleUnitChange}
+ onSetLineBatch={setLineBatch}
+ onClearCart={clearCart}
+ orgId={orgId}
+ branchId={branchId}
+ onCheckout={(type) => executeCheckout(type)}
+ isSaving={isSaving}
+ subtotal={subtotal}
+ totalDiscount={totalDiscount}
+ shippingFee={shippingFee}
+ totalTax={totalTax}
+ total={total}
+ onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+ onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
+ onOpenSplitModal={() => setIsSplitModalOpen(true)}
+ activeShift={activeShift}
  />
  ) : (
  <>

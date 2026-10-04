@@ -104,24 +104,69 @@ export const DOMAIN_PROFILES: Record<string, DomainProfile> = {
  brandsLabel:'الجهات والمصادر',
  posTitle:'استقبال ونقطة محاسبة المركز (POS)',
  },
- retail: {
- id:'retail',
- nameAr:'تجارة عامة وتجزئة وجملة',
- nameEn:'General Retail',
- icon:'🏢',
- badgeStyle:'bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-500/20 dark:text-indigo-400',
- itemsCategoryLabel:'الأصناف والمنتجات',
- itemsListLabel:'قائمة الأصناف والمنتجات',
- itemsAddLabel:'إضافة صنف جديد',
- substitutesLabel:'بدائل ومثائل الأصناف',
- expiryAlertsLabel:'تنبيهات الصلاحية والانتهاء',
- brandsLabel:'الشركات المصنعة والماركات',
- posTitle:'نقطة البيع الكلاسيكية السريعة (POS)',
- },
+  restaurant: {
+    id: 'restaurant',
+    nameAr: 'المطاعم والمأكولات السريعة',
+    nameEn: 'Restaurants & Food Service',
+    icon: '🍽️',
+    badgeStyle: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400',
+    itemsCategoryLabel: 'أقسام المأكولات والوجبات',
+    itemsListLabel: 'قائمة الطعام والمنيو (Menu)',
+    itemsAddLabel: 'إضافة وجبة / صنف طعام',
+    substitutesLabel: 'الوجبات والبدائل المقترحة',
+    expiryAlertsLabel: 'صلاحيات وتوريد اللحوم والمواد الطازجة',
+    brandsLabel: 'المطابخ وأقسام التحضير',
+    posTitle: 'كاشير المطاعم والصالة (POS)',
+  },
+  cafe: {
+    id: 'cafe',
+    nameAr: 'الكافيهات والمقاهي ومحلات المشروبات',
+    nameEn: 'Cafes & Coffee Shops',
+    icon: '☕',
+    badgeStyle: 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400',
+    itemsCategoryLabel: 'قوائم المشروبات والحلويات',
+    itemsListLabel: 'منيو المشروبات والبار (Barista)',
+    itemsAddLabel: 'إضافة مشروب / صنف جديد',
+    substitutesLabel: 'المشروبات والخيارات البديلة',
+    expiryAlertsLabel: 'صلاحيات البن والحليب والمثلجات',
+    brandsLabel: 'المحامص والشركات الموردة',
+    posTitle: 'كاشير الكافيه والباريستا (POS)',
+  },
+  mobile_shop: {
+    id: 'mobile_shop',
+    nameAr: 'محلات وتجارة الموبايل والصيانة',
+    nameEn: 'Mobile & Device Repair',
+    icon: '📱',
+    badgeStyle: 'bg-sky-500/10 text-sky-600 border-sky-500/20 dark:bg-sky-500/20 dark:text-sky-400',
+    itemsCategoryLabel: 'الأجهزة وقطع الغيار',
+    itemsListLabel: 'دليل الأجهزة والإكسسوارات',
+    itemsAddLabel: 'إضافة جهاز أو قطعة جديدة',
+    substitutesLabel: 'الأجهزة والبدائل المتوافقة',
+    expiryAlertsLabel: 'فترات وسجلات الضمان',
+    brandsLabel: 'الماركات والشركات المصنعة',
+    posTitle: 'كاشير الموبايل والصيانة (POS)',
+  },
+  retail: {
+    id: 'retail',
+    nameAr: 'تجارة عامة وتجزئة وجملة',
+    nameEn: 'General Retail',
+    icon: '🏢',
+    badgeStyle: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-500/20 dark:text-indigo-400',
+    itemsCategoryLabel: 'الأصناف والمنتجات',
+    itemsListLabel: 'قائمة الأصناف والمنتجات',
+    itemsAddLabel: 'إضافة صنف جديد',
+    substitutesLabel: 'بدائل ومثائل الأصناف',
+    expiryAlertsLabel: 'تنبيهات الصلاحية والانتهاء',
+    brandsLabel: 'الشركات المصنعة والماركات',
+    posTitle: 'نقطة البيع الكلاسيكية السريعة (POS)',
+  },
 };
 
 export const getDomainProfile = (activityType?: string | null): DomainProfile => {
- if (!activityType) return DOMAIN_PROFILES.retail;
- const key = activityType.trim().toLowerCase();
- return DOMAIN_PROFILES[key] || DOMAIN_PROFILES.retail;
+  if (!activityType) return DOMAIN_PROFILES.retail;
+  const key = activityType.trim().toLowerCase();
+  if (key === 'restaurant' || key === 'restaurants') return DOMAIN_PROFILES.restaurant;
+  if (key === 'cafe' || key === 'cafes' || key === 'coffee') return DOMAIN_PROFILES.cafe;
+  if (key === 'mobile' || key === 'mobile_shop' || key === 'mobiles') return DOMAIN_PROFILES.mobile_shop;
+  return DOMAIN_PROFILES[key] || DOMAIN_PROFILES.retail;
 };

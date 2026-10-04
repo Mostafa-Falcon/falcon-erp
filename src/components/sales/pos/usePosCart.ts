@@ -3,7 +3,7 @@ import { toast } from'sonner';
 import { ScaleManager, ScaleConfig } from'@/lib/scale_manager';
 import { db } from'@/core/db/app_database';
 import type { Product, ProductBatch, Unit } from'@/types';
-import type { CartLine, HeldSale, UnitOption } from'./types';
+import type { CartLine, CartModifier, HeldSale, UnitOption } from './types';
 
 interface UsePosCartParams {
  products: Product[];
@@ -46,6 +46,8 @@ export function usePosCart({
  const [heldSales, setHeldSales] = useState<HeldSale[]>([]);
  const [activeReturnInvoice, setActiveReturnInvoice] = useState<any | null>(null);
  const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
+ const [orderType, setOrderType] = useState<'dine_in' | 'takeaway' | 'delivery'>('dine_in');
+ const [activeTable, setActiveTable] = useState<string | null>(null);
 
  const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -127,7 +129,15 @@ export function usePosCart({
  qty?: number;
  batchId?: string;
  serialNumber?: string;
- priceTier?:'default'|'old'|'wholesale';
+ priceTier?: 'default' | 'old' | 'wholesale';
+ selectedModifiers?: CartModifier[];
+ kitchenNotes?: string;
+ orderType?: 'dine_in' | 'takeaway' | 'delivery';
+ tableId?: string;
+ tableNumber?: string;
+ deviceCondition?: 'new' | 'like_new' | 'used';
+ deviceImei?: string;
+ warrantyDays?: number;
  }
  ) => {
  if (!activeShift) {
@@ -160,9 +170,17 @@ export function usePosCart({
  }
 
  // Check if line already exists in cart with same product, unit, and batch
- const existingIndex = cart.findIndex(
- (l) => l.productId === product.id && l.unitId === targetUnitId && l.batchId === batchId
+ const hasCustomization = Boolean(
+ options?.selectedModifiers?.length ||
+ options?.kitchenNotes ||
+ options?.serialNumber ||
+ options?.deviceImei
  );
+ const existingIndex = !hasCustomization
+ ? cart.findIndex(
+ (l) => l.productId === product.id && l.unitId === targetUnitId && l.batchId === batchId && !l.selectedModifiers?.length && !l.kitchenNotes
+ )
+ : -1;
 
  if (existingIndex > -1) {
  const updated = [...cart];
@@ -197,6 +215,8 @@ export function usePosCart({
  }
 
  let itemPrice = Number(options?.price ?? opt?.price ?? product.sale_price ?? 0);
+ const modifierSum = (options?.selectedModifiers || []).reduce((sum, m) => sum + (m.price || 0), 0);
+ itemPrice += modifierSum;
  let lineTier:'default'|'old'|'wholesale'= options?.priceTier ||'default';
  if (priceTier ==='wholesale'&& product.wholesale_price) {
  itemPrice = product.wholesale_price * factor;
@@ -237,6 +257,14 @@ export function usePosCart({
  taxRate: resolvedTaxRate,
  priceTier: lineTier,
  serialNumber: options?.serialNumber,
+ selectedModifiers: options?.selectedModifiers,
+ kitchenNotes: options?.kitchenNotes,
+ orderType: options?.orderType || orderType,
+ tableId: options?.tableId || activeTable || undefined,
+ tableNumber: options?.tableNumber,
+ deviceCondition: options?.deviceCondition,
+ deviceImei: options?.deviceImei,
+ warrantyDays: options?.warrantyDays,
  },
  ]);
 
@@ -745,5 +773,9 @@ export function usePosCart({
  totalDiscount,
  totalTax,
  total,
+ orderType,
+ setOrderType,
+ activeTable,
+ setActiveTable,
  };
 }

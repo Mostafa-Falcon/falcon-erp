@@ -132,6 +132,10 @@ export class FalconAppDatabase extends Dexie {
  installment_schedules!: Table<import('@/types').InstallmentSchedule, string>;
  guarantors!: Table<import('@/types').Guarantor, string>;
 
+ // Restaurants & Cafes: Tables & Modifiers
+ restaurant_tables!: Table<import('@/types').RestaurantTable, string>;
+ order_modifiers!: Table<import('@/types').OrderModifier, string>;
+
  sync_queue!: Table<SyncQueueItem, string>;
  activity_logs!: Table<ActivityLog, string>;
 
@@ -278,6 +282,12 @@ export class FalconAppDatabase extends Dexie {
  this.version(15).stores({
  product_serials:'id, org_id, product_id, serial_number, [org_id+serial_number], [org_id+status], imei2, status, condition, purchase_invoice_id, sale_invoice_id, sync_status',
  installment_schedules:'id, plan_id, org_id, [org_id+due_date], [org_id+status], installment_number, due_date, status, sync_status',
+ });
+
+ // Incremental upgrade: adds restaurant_tables and order_modifiers.
+ this.version(16).stores({
+ restaurant_tables: 'id, org_id, branch_id, table_number, section_name, status, sync_status',
+ order_modifiers: 'id, org_id, category, type, is_active, sync_status',
  });
  }
 }

@@ -6,6 +6,7 @@ import { ContactsRepository } from'@/modules/contacts/contacts_repository';
 import { TreasuryRepository } from'@/modules/treasury/treasury_repository';
 import { ScaleManager, ScaleConfig, DEFAULT_SCALE_CONFIG } from'@/lib/scale_manager';
 import type {
+  Organization,
  Warehouse,
  Treasury,
  Contact,
@@ -23,6 +24,7 @@ export function usePosData() {
 
  const [resolvedBranchId, setResolvedBranchId] = useState('');
  const [branchName, setBranchName] = useState('');
+  const [organization, setOrganization] = useState<Organization | null>(null);
  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
  const [warehouseId, setWarehouseId] = useState('');
  const [treasuries, setTreasuries] = useState<Treasury[]>([]);
@@ -58,7 +60,7 @@ export function usePosData() {
  }
  }
 
- const [whs, tres, custs, prods, unts, pUnits, levels, bchs, usrs, currentBranch, appSettings] = await Promise.all([
+ const [whs, tres, custs, prods, unts, pUnits, levels, bchs, usrs, currentBranch, currentOrg, appSettings] = await Promise.all([
  effectiveBranchId
  ? db.warehouses.where('org_id').equals(orgId).and((w) => w.is_active && w.branch_id === effectiveBranchId).toArray()
  : db.warehouses.where('org_id').equals(orgId).and((w) => w.is_active).toArray(),
@@ -74,6 +76,7 @@ export function usePosData() {
  getAuthoritativeProductBatches(orgId),
  db.users.where('org_id').equals(orgId).toArray(),
  effectiveBranchId ? db.branches.get(effectiveBranchId) : Promise.resolve(undefined),
+ db.organizations.get(orgId),
  db.app_settings.where('org_id').equals(orgId).toArray(),
  ]);
 
@@ -189,7 +192,10 @@ export function usePosData() {
  setUnitsById(umap);
  setUnitOptions(opts);
  setUsers(usrs);
- if (currentBranch) {
+ if (currentOrg) {
+        setOrganization(currentOrg);
+      }
+      if (currentBranch) {
  setBranchName(currentBranch.name);
  }
 
@@ -275,5 +281,6 @@ export function usePosData() {
  vatRate,
  isTaxInclusive,
  loadData,
+ organization,
  };
 }

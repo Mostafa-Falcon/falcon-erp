@@ -134,6 +134,30 @@ export function PosCartTable({
  IMEI: {line.serialNumber}
  </span>
  )}
+ {line.deviceCondition && (
+ <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold">
+ {line.deviceCondition === 'new' ? 'جديد' : line.deviceCondition === 'like_new' ? 'كسر زيرو' : 'مستعمل'}
+ </span>
+ )}
+ {line.tableNumber && (
+ <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
+ طاولة: {line.tableNumber}
+ </span>
+ )}
+ {line.selectedModifiers && line.selectedModifiers.length > 0 && (
+ <div className="flex items-center gap-1 flex-wrap">
+ {line.selectedModifiers.map((m) => (
+ <span key={m.id} className="px-1 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-4xs">
+ +{m.name} ({m.price} ج.م)
+ </span>
+ ))}
+ </div>
+ )}
+ {line.kitchenNotes && (
+ <span className="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 font-bold text-4xs">
+ 📝 {line.kitchenNotes}
+ </span>
+ )}
  {line.isReturnLine && (
  <Badge variant="destructive"className="h-4 px-1 text-4xs">
  مرتجع
@@ -374,6 +398,35 @@ export function PosCartTable({
  </div>
  <div className="text-3xs text-slate-400 font-mono mt-0.5 flex items-center gap-2">
  <span>كود: {product?.sku || line.productId}</span>
+ {line.serialNumber && (
+ <span className="px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold">
+ IMEI: {line.serialNumber}
+ </span>
+ )}
+ {line.deviceCondition && (
+ <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold">
+ {line.deviceCondition === 'new' ? 'جديد' : line.deviceCondition === 'like_new' ? 'كسر زيرو' : 'مستعمل'}
+ </span>
+ )}
+ {line.tableNumber && (
+ <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
+ طاولة: {line.tableNumber}
+ </span>
+ )}
+ {line.selectedModifiers && line.selectedModifiers.length > 0 && (
+ <div className="flex items-center gap-1 flex-wrap">
+ {line.selectedModifiers.map((m) => (
+ <span key={m.id} className="px-1 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-4xs">
+ +{m.name} ({m.price} ج.م)
+ </span>
+ ))}
+ </div>
+ )}
+ {line.kitchenNotes && (
+ <span className="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 font-bold text-4xs">
+ 📝 {line.kitchenNotes}
+ </span>
+ )}
  {line.isReturnLine && (
  <Badge variant="destructive"className="h-4 px-1 text-4xs">
  مرتجع
