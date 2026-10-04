@@ -69,6 +69,8 @@ import {
     CreditCard,
     Layers,
     PieChart,
+    GraduationCap,
+    Calculator,
 } from 'lucide-react';
 import type { Branch } from '@/types';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
@@ -106,6 +108,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
     const isTrial = !orgSubscription || orgSubscription === 'trial';
     const isPharmacy = orgActivity === 'pharmacy';
     const isMobile = orgActivity === 'mobile_shop' || orgActivity === 'electronics';
+    const isEducation = orgActivity === 'education';
 
     // Branch switcher state
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -227,6 +230,17 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                 { label: 'مركز أذونات الصيانة', href: '/mobile/maintenance', icon: <Wrench className="w-4 h-4" /> },
                 { label: 'تتبع السيريال والـ IMEI', href: '/mobile/serials', icon: <QrCode className="w-4 h-4" /> },
                 { label: 'المحافظ والشحن كاش', href: '/mobile/wallets', icon: <Wallet className="w-4 h-4" /> },
+            ],
+        }] : []),
+        ...(isTrial || isEducation ? [{
+            id: 'education',
+            label: 'السنتر والتعليم',
+            icon: <GraduationCap className="w-4 h-4 text-emerald-500" />,
+            subItems: [
+                { label: 'شاشة الحضور السريع (QR)', href: '/education/attendance', icon: <QrCode className="w-4 h-4" /> },
+                { label: 'سجل الطلاب والاشتراكات', href: '/education/students', icon: <Users className="w-4 h-4" /> },
+                { label: 'المدرسين والمجموعات', href: '/education/teachers', icon: <UserCheck className="w-4 h-4" /> },
+                { label: 'تصفية حسابات المدرسين', href: '/education/settlements', icon: <Calculator className="w-4 h-4" /> },
             ],
         }] : []),
         {

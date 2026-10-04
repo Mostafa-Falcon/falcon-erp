@@ -40,8 +40,9 @@ import {
 } from'lucide-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from'@/components/ui/select';
-import { ResetPeriodModal } from'@/components/settings/ResetPeriodModal';
-import { SUBSCRIPTION_PROFILES, getSubscriptionProfile, getSubscriptionPermissions } from'@/core/constants/subscription_profiles';
+import { ResetPeriodModal } from '@/components/settings/ResetPeriodModal';
+import { SUBSCRIPTION_PROFILES, getSubscriptionProfile, getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
+import { getDomainProfile } from '@/core/constants/domain_profiles';
 
 import { useRouter } from'next/navigation';
 
@@ -365,14 +366,9 @@ export default function SettingsPage() {
  <div className="space-y-3 text-xs font-bold text-slate-600 dark:text-slate-400">
  <div className="flex items-center justify-between">
  <span className="text-slate-400 font-medium">نوع النشاط</span>
- <span className="text-emerald-700 dark:text-emerald-400 font-black">
- {activityType ==='supermarket'?'سوبرماركت ومواد غذائية':
- activityType ==='clothing'?'ملابس وأحذية وأزياء':
- activityType ==='electronics'?'أجهزة وإلكترونيات':
- activityType ==='hardware'?'حدايد وبويات وقطع غيار':
- activityType ==='pharmacy'?'صيدلية ومستلزمات':
- activityType ==='services'?'خدمات ومطاعم':'تجارة عامة وتجزئة'}
- </span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-black">
+                  {getDomainProfile(activityType).nameAr}
+                </span>
  </div>
  <div className="flex items-center justify-between">
  <span className="text-slate-400 font-medium">الفرع النشط</span>
@@ -573,9 +569,10 @@ export default function SettingsPage() {
  <SelectItem value="retail">🛒 تجارة عامة وتجزئة وجملة</SelectItem>
  <SelectItem value="supermarket">🥬 سوبرماركت وبقالة ومواد غذائية</SelectItem>
  <SelectItem value="clothing">👕 ملابس وأحذية وأزياء</SelectItem>
- <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
- <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
- <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>
+                    <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
+                    <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
+                    <SelectItem value="education">🎓 سناتر الدروس والأنشطة التعليمية والتدريب</SelectItem>
+                    <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>
  </SelectContent>
  </Select>
  </div>

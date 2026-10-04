@@ -487,9 +487,10 @@ export default function RegisterPage() {
  <SelectItem value="retail">🛒 تجارة عامة وتجزئة وجملة</SelectItem>
  <SelectItem value="supermarket">🥬 سوبرماركت وبقالة ومواد غذائية</SelectItem>
  <SelectItem value="clothing">👕 ملابس وأحذية وأزياء</SelectItem>
- <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار</SelectItem>
- <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
- <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>
+                    <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار</SelectItem>
+                    <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
+                    <SelectItem value="education">🎓 سناتر الدروس والأنشطة التعليمية والتدريب</SelectItem>
+                    <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>
  </SelectContent>
  </Select>
  </div>
