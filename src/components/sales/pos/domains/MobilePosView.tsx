@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Smartphone,
   ShieldCheck,
@@ -92,6 +92,64 @@ export function MobilePosView({
   // Mobile responsive view mode
   const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
 
+  // Resizable Invoice / Cart Panel State
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [cartWidth, setCartWidth] = useState<number>(420);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Load saved cart width from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('falcon_pos_mobile_cart_width');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 300 && parsed <= 850) {
+          setCartWidth(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load saved mobile cart width:', e);
+    }
+  }, []);
+
+  // Handle Drag Resizing
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const isRtl = typeof document !== 'undefined' ? (document.documentElement.dir !== 'ltr') : true;
+      const calculatedWidth = isRtl ? (e.clientX - rect.left) : (rect.right - e.clientX);
+      const maxWidth = Math.max(340, Math.min(850, rect.width - 340));
+      const newWidth = Math.min(maxWidth, Math.max(300, Math.round(calculatedWidth)));
+      setCartWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
+  // Persist cart width on resize stop
+  useEffect(() => {
+    if (!isResizing) {
+      localStorage.setItem('falcon_pos_mobile_cart_width', String(cartWidth));
+    }
+  }, [cartWidth, isResizing]);
+
   const [imeiInput, setImeiInput] = useState('');
   const [deviceCondition, setDeviceCondition] = useState<'new' | 'like_new' | 'used'>('new');
   const [warrantyMonths, setWarrantyMonths] = useState<number>(12);
@@ -151,7 +209,11 @@ export function MobilePosView({
   });
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-100/60 dark:bg-[#070b13]">
+    <div
+      ref={containerRef}
+      style={{ '--mobile-cart-width': `${cartWidth}px` } as React.CSSProperties}
+      className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-100/60 dark:bg-[#070b13]"
+    >
       {/* 
         LEFT COLUMN: Mobile IMEI Scanner, Wallets & Accessories Grid
         On mobile: visible only when mobileTab === 'catalog'
@@ -379,12 +441,38 @@ export function MobilePosView({
         )}
       </div>
 
+      {/* Drag Resizer Handle (Desktop >= md) */}
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setIsResizing(true);
+        }}
+        onDoubleClick={() => {
+          setCartWidth(420);
+          toast.info('تمت استعادة العرض الافتراضي لفاتورة الأجهزة (420px)');
+        }}
+        title="اسحب لتكبير أو تصغير عرض فاتورة مبيعات الأجهزة (أو انقر مرتين للاستعادة)"
+        className={`hidden md:flex items-center justify-center w-2 hover:w-2.5 cursor-col-resize select-none transition-all relative z-20 shrink-0 group ${
+          isResizing
+            ? 'bg-sky-500 w-2.5 shadow-md ring-1 ring-sky-400'
+            : 'bg-slate-200/90 hover:bg-sky-400 dark:bg-slate-800 dark:hover:bg-sky-500'
+        }`}
+      >
+        <div
+          className={`w-0.5 rounded-full transition-all ${
+            isResizing
+              ? 'bg-white h-12 shadow'
+              : 'bg-slate-400 dark:bg-slate-600 h-8 group-hover:bg-white group-hover:h-10'
+          }`}
+        />
+      </div>
+
       {/* 
         RIGHT COLUMN: Mobile Cart & Warranty Summary
         On mobile: visible only when mobileTab === 'cart'
       */}
       <div
-        className={`w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-[#0c121e] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800 ${
+        className={`w-full md:w-[var(--mobile-cart-width)] flex flex-col bg-white dark:bg-[#0c121e] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800 shrink-0 ${
           mobileTab === 'cart' ? 'flex flex-1' : 'hidden md:flex'
         }`}
       >
@@ -402,9 +490,17 @@ export function MobilePosView({
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="font-black text-sm text-slate-900 dark:text-white">
-                فاتورة مبيعات الأجهزة والقطع
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-sm text-slate-900 dark:text-white">
+                  فاتورة مبيعات الأجهزة والقطع
+                </span>
+                <span
+                  title="يمكنك سحب الفاصل لتكبير أو تصغير عرض الفاتورة (انقر مرتين للاستعادة)"
+                  className="hidden md:inline-flex items-center text-4xs bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 border border-sky-200/80 dark:border-sky-800/60 px-1.5 py-0.2 rounded-md font-mono font-bold"
+                >
+                  {cartWidth}px
+                </span>
+              </div>
               <span className="text-3xs text-slate-400 font-mono block">
                 {cart.length} أصناف مسجلة
               </span>
