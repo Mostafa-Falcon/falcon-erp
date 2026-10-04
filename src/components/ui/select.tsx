@@ -49,7 +49,7 @@ const SelectScrollUpButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1 text-muted-foreground hover:text-foreground', className)}
+    className={cn('flex cursor-default items-center justify-center py-1.5 bg-popover/95 border-b border-line text-muted-foreground hover:text-foreground transition-colors shrink-0 z-10', className)}
     {...props}
   >
     <ChevronUp className="h-4 w-4" />
@@ -63,7 +63,7 @@ const SelectScrollDownButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1 text-muted-foreground hover:text-foreground', className)}
+    className={cn('flex cursor-default items-center justify-center py-1.5 bg-popover/95 border-t border-line text-muted-foreground hover:text-foreground transition-colors shrink-0 z-10', className)}
     {...props}
   >
     <ChevronDown className="h-4 w-4" />
@@ -79,9 +79,9 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
-      collisionPadding={8}
+      collisionPadding={12}
       className={cn(
-        'z-50 max-h-[min(22rem,var(--radix-select-content-available-height,22rem))] min-w-[var(--radix-select-trigger-width)] w-full overflow-hidden rounded-xl border border-line bg-popover text-popover-foreground shadow-2xl',
+        'z-50 max-h-[min(26rem,var(--radix-select-content-available-height,26rem))] min-w-[var(--radix-select-trigger-width)] w-full overflow-hidden rounded-xl border border-line bg-popover text-popover-foreground shadow-2xl',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
