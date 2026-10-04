@@ -26,6 +26,7 @@ import {
   ChefHat,
   Receipt,
   X,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -102,7 +103,10 @@ export function RestaurantCafePosView({
   activeShift,
   isCafeMode = false,
 }: RestaurantCafePosViewProps) {
-  // 1. Local state for tables & sections
+  // Mobile responsive view mode: 'catalog' shows food/drinks grid, 'cart' shows order details & checkout
+  const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
+
+  // Tables & Sections state
   const [tables, setTables] = useState<RestaurantTable[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>('الكل');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -110,14 +114,13 @@ export function RestaurantCafePosView({
   const [isFloorMapOpen, setIsFloorMapOpen] = useState(false);
   const [isKotModalOpen, setIsKotModalOpen] = useState(false);
 
-  // 2. Modifiers & Customization Modal State
+  // Modifiers & Customization Modal State
   const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
-  const [activeModifiers, setActiveModifiers] = useState<OrderModifier[]>([]);
   const [selectedModifiers, setSelectedModifiers] = useState<CartModifier[]>([]);
   const [kitchenNotes, setKitchenNotes] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
 
-  // 3. Load or initialize tables
+  // Load or initialize default tables
   useEffect(() => {
     async function loadTables() {
       if (!orgId) return;
@@ -126,7 +129,6 @@ export function RestaurantCafePosView({
         if (localTables && localTables.length > 0) {
           setTables(localTables);
         } else {
-          // Provide sensible default tables for modern restaurant/cafe
           const defaultTables: RestaurantTable[] = [
             { id: 't_01', org_id: orgId, table_number: 'T-01', section_name: 'الصالة الداخلية', capacity: 2, status: 'available', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
             { id: 't_02', org_id: orgId, table_number: 'T-02', section_name: 'الصالة الداخلية', capacity: 4, status: 'available', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
@@ -147,7 +149,7 @@ export function RestaurantCafePosView({
     loadTables();
   }, [orgId]);
 
-  // 4. Default modifiers for food/drinks
+  // Modifiers list
   const availableModifiersList: OrderModifier[] = useMemo(() => {
     if (isCafeMode) {
       return [
@@ -169,7 +171,7 @@ export function RestaurantCafePosView({
     ];
   }, [isCafeMode, orgId]);
 
-  // 5. Sections
+  // Sections
   const tableSections = useMemo(() => {
     const set = new Set(tables.map((t) => t.section_name || 'عام'));
     return ['الكل', ...Array.from(set)];
@@ -180,12 +182,7 @@ export function RestaurantCafePosView({
     return tables.filter((t) => (t.section_name || 'عام') === selectedSection);
   }, [tables, selectedSection]);
 
-  // 6. Products Categories & Filtering
-  const categories = useMemo(() => {
-    const cats = new Set(products.map((p) => p.category_id).filter(Boolean));
-    return ['all', ...Array.from(cats)];
-  }, [products]);
-
+  // Products Categories & Filtering
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       if (selectedCategory !== 'all' && p.category_id !== selectedCategory) return false;
@@ -197,7 +194,7 @@ export function RestaurantCafePosView({
     });
   }, [products, selectedCategory, searchItem]);
 
-  // Handlers for customization
+  // Customization
   const openCustomizer = (prod: Product) => {
     setCustomizingProduct(prod);
     setSelectedUnitId(prod.base_unit_id);
@@ -238,24 +235,64 @@ export function RestaurantCafePosView({
   }, [cart, orderType, activeTable, activeShift, products]);
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-900/10">
-      {/* LEFT COLUMN: Food/Drink Items & Menu Grid */}
-      <div className="flex-1 flex flex-col min-w-0 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101b]">
-        {/* Top Control Bar: Order Mode Selector (صالة / سفري / توصيل) */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-900/60">
-          {/* Order Types */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-800 rounded-2xl">
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-100/60 dark:bg-[#070b13]">
+      {/* 
+        LEFT COLUMN: Menu, Items Grid & Floor Map Actions
+        On mobile: visible only when mobileTab === 'catalog'
+      */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101b] ${
+          mobileTab === 'catalog' ? 'flex' : 'hidden md:flex'
+        }`}
+      >
+        {/* Top Control Bar: Responsive Order Modes & Table Selection */}
+        <div className="p-2 sm:p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/60 space-y-2">
+          {/* Mobile Tab Toggle Bar (< md only) */}
+          <div className="md:hidden flex items-center bg-slate-200/90 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300/80 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setMobileTab('catalog')}
+              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mobileTab === 'catalog'
+                  ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>المنيو والأصناف</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('cart')}
+              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mobileTab === 'cart'
+                  ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>الطلب ({cart.length})</span>
+              {total > 0 && (
+                <span className="text-4xs bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded-full font-mono font-black">
+                  {formatNumber(total)}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Row 1: Order Mode Segmented Selector */}
+          <div className="grid grid-cols-3 gap-1 sm:gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-800 rounded-xl">
             <button
               type="button"
               onClick={() => setOrderType('dine_in')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-black text-xs transition-all ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 py-1.5 px-2 rounded-lg font-black text-xs transition-all ${
                 orderType === 'dine_in'
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                  ? 'bg-amber-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-white/40'
               }`}
             >
-              <Utensils className="w-4 h-4" />
-              <span>صالة (طاولات)</span>
+              <Utensils className="w-3.5 h-3.5" />
+              <span>صالة</span>
             </button>
             <button
               type="button"
@@ -263,14 +300,14 @@ export function RestaurantCafePosView({
                 setOrderType('takeaway');
                 setActiveTable(null);
               }}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-black text-xs transition-all ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 py-1.5 px-2 rounded-lg font-black text-xs transition-all ${
                 orderType === 'takeaway'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-white/40'
               }`}
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>سفري (Takeaway)</span>
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>سفري</span>
             </button>
             <button
               type="button"
@@ -278,68 +315,71 @@ export function RestaurantCafePosView({
                 setOrderType('delivery');
                 setActiveTable(null);
               }}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-black text-xs transition-all ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 py-1.5 px-2 rounded-lg font-black text-xs transition-all ${
                 orderType === 'delivery'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-white/40'
               }`}
             >
-              <Truck className="w-4 h-4" />
-              <span>دليفري (توصيل)</span>
+              <Truck className="w-3.5 h-3.5" />
+              <span>دليفري</span>
             </button>
           </div>
 
-          {/* Active Table indicator or Floor Map button */}
-          {orderType === 'dine_in' && (
-            <div className="flex items-center gap-2">
+          {/* Row 2: Table Picker & KOT Buttons */}
+          <div className="flex items-center justify-between gap-2">
+            {orderType === 'dine_in' ? (
               <button
                 type="button"
                 onClick={() => setIsFloorMapOpen(true)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-black border transition-all cursor-pointer ${
                   activeTable
                     ? 'bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-300'
                     : 'bg-rose-500/10 border-rose-500/40 text-rose-700 dark:text-rose-300 animate-pulse'
                 }`}
               >
-                <Users className="w-4 h-4" />
-                <span>{activeTable ? `طاولة: ${activeTable}` : 'حدد طاولة الصالة'}</span>
+                <Users className="w-3.5 h-3.5" />
+                <span>{activeTable ? `طاولة #${activeTable}` : '📍 اختر رقم الطاولة'}</span>
               </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex-1 text-4xs text-slate-400 font-bold px-1">
+                {orderType === 'takeaway' ? 'طلب سفري خارجي بدون طاولة' : 'طلب دليفري وتوصيل منازل'}
+              </div>
+            )}
 
-          {/* KOT Print Quick Action */}
-          <button
-            type="button"
-            onClick={() => {
-              if (cart.length === 0) {
-                toast.warning('السلة فارغة، أضف أصنافاً لبون المطبخ');
-                return;
-              }
-              setIsKotModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 transition-all cursor-pointer"
-          >
-            <ChefHat className="w-4 h-4" />
-            <span className="hidden sm:inline">بون المطبخ (KOT)</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (cart.length === 0) {
+                  toast.warning('السلة فارغة، أضف أصنافاً لبون المطبخ');
+                  return;
+                }
+                setIsKotModalOpen(true);
+              }}
+              className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl text-xs font-black bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 transition-all cursor-pointer"
+            >
+              <ChefHat className="w-3.5 h-3.5" />
+              <span>بون المطبخ</span>
+            </button>
+          </div>
         </div>
 
-        {/* Search & Categories Bar */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row gap-2.5">
-          <div className="relative flex-1">
+        {/* Search Input Bar */}
+        <div className="p-2 sm:p-3 border-b border-slate-200 dark:border-slate-800">
+          <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchItem}
               onChange={(e) => setSearchItem(e.target.value)}
-              placeholder={isCafeMode ? 'ابحث عن مشروب، قهوة، موهيتو، كيك...' : 'ابحث عن وجبة، ساندوتش، طبق، مشروب...'}
-              className="w-full h-9 pr-9 pl-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder={isCafeMode ? 'ابحث عن مشروب، قهوة، موهيتو، كيك...' : 'ابحث عن وجبة، طبق، ساندوتش، مشروب...'}
+              className="w-full h-9 pr-9 pl-8 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             {searchItem && (
               <button
                 type="button"
                 onClick={() => setSearchItem('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -348,110 +388,160 @@ export function RestaurantCafePosView({
         </div>
 
         {/* Visual Food & Beverage Touch Grid */}
-        <div className="flex-1 overflow-y-auto p-3.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {filteredProducts.map((p) => {
-            const avail = availableFor(p.id, p.base_unit_id);
-            const isOutOfStock = p.item_type === 'storable' && avail <= 0;
+        <div className="flex-1 overflow-y-auto p-2.5 sm:p-3.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+          {filteredProducts.length === 0 ? (
+            <div className="col-span-full py-12 flex flex-col items-center justify-center text-center text-slate-400">
+              <span className="text-4xl mb-2">{isCafeMode ? '☕' : '🍽️'}</span>
+              <p className="text-sm font-black text-slate-700 dark:text-slate-200">
+                {searchItem ? `لا توجد نتائج تطابق «${searchItem}»` : 'لا توجد منتجات مسجلة حتى الآن'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                يمكنك إضافة وجبات ومشروبات من إدارة المخزون وقائمة المنتجات للبدء بالبيع الفوري
+              </p>
+            </div>
+          ) : (
+            filteredProducts.map((p) => {
+              const avail = availableFor(p.id, p.base_unit_id);
+              const isOutOfStock = p.item_type === 'storable' && avail <= 0;
 
-            return (
-              <div
-                key={p.id}
-                onClick={() => {
-                  if (isOutOfStock) {
-                    toast.error(`الصنف «${p.name}» غير متوفر حالياً`);
-                    return;
-                  }
-                  // Single touch adds directly, or right-click / customize opens options
-                  onAddToCart(p, {
-                    orderType,
-                    tableNumber: activeTable || undefined,
-                  });
-                }}
-                className={`group relative flex flex-col justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none ${
-                  isOutOfStock
-                    ? 'opacity-50 grayscale border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
-                    : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-0.5'
-                }`}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-1 mb-1.5">
-                    <span className="text-xl">
-                      {isCafeMode ? '☕' : '🍽️'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openCustomizer(p);
-                      }}
-                      title="تخصيص الإضافات والملاحظات"
-                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-amber-950/60 text-slate-600 hover:text-amber-600 flex items-center justify-center transition-colors"
-                    >
-                      <Sliders className="w-3.5 h-3.5" />
-                    </button>
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    if (isOutOfStock) {
+                      toast.error(`الصنف «${p.name}» غير متوفر حالياً`);
+                      return;
+                    }
+                    onAddToCart(p, {
+                      orderType,
+                      tableNumber: activeTable || undefined,
+                    });
+                  }}
+                  className={`group relative flex flex-col justify-between p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer select-none active:scale-97 ${
+                    isOutOfStock
+                      ? 'opacity-50 grayscale border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
+                      : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 hover:border-amber-500 hover:shadow-md'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-1 mb-1">
+                      <span className="text-lg sm:text-xl">
+                        {isCafeMode ? '☕' : '🍽️'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCustomizer(p);
+                        }}
+                        title="تخصيص الإضافات والملاحظات"
+                        className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-amber-950/60 text-slate-600 hover:text-amber-600 flex items-center justify-center transition-colors"
+                      >
+                        <Sliders className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <h4 className="font-black text-xs text-slate-900 dark:text-white leading-tight line-clamp-2">
+                      {p.name}
+                    </h4>
                   </div>
 
-                  <h4 className="font-black text-xs text-slate-900 dark:text-white leading-tight line-clamp-2">
-                    {p.name}
-                  </h4>
-                  <span className="text-4xs text-slate-400 font-mono mt-0.5 block">
-                    {p.sku}
-                  </span>
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 font-mono">
                       {formatNumber(p.sale_price || 0)} <span className="text-4xs">ج.م</span>
                     </span>
+                    <span className="text-4xs text-slate-400 font-bold">
+                      {p.item_type !== 'storable' ? 'جاهز' : `متاح: ${avail}`}
+                    </span>
                   </div>
-                  <span className="text-4xs text-slate-400 font-bold">
-                    {p.item_type !== 'storable' ? 'جاهز' : `متاح: ${avail}`}
-                  </span>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
-      </div>
 
-      {/* RIGHT COLUMN: Active Table / Order Cart Summary & Fast Actions */}
-      <div className="w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-[#0c121e] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800">
-        {/* Ticket Header */}
-        <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/60">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-sm text-slate-900 dark:text-white">
-                {orderType === 'dine_in' ? 'طلب صالة' : orderType === 'takeaway' ? 'طلب سفري' : 'طلب دليفري'}
+        {/* Floating Mobile Sticky Checkout Bar (< md only, shown when cart has items) */}
+        {cart.length > 0 && (
+          <div
+            onClick={() => setMobileTab('cart')}
+            className="md:hidden sticky bottom-2 mx-3 z-30 p-3 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-xl shadow-amber-600/30 flex items-center justify-between cursor-pointer animate-in slide-in-from-bottom duration-200 active:scale-98"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-black text-xs font-mono">
+                {cart.length}
               </span>
-              {activeTable && (
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs font-black">
-                  طاولة #{activeTable}
-                </Badge>
-              )}
+              <div className="flex flex-col text-right">
+                <span className="text-xs font-black">
+                  السلة • {formatNumber(total)} ج.م
+                </span>
+                <span className="text-4xs text-amber-200">
+                  اضغط لمراجعة الطلب والمحاسبة
+                </span>
+              </div>
             </div>
-            <span className="text-3xs text-slate-400 font-mono">
-              {cart.length} أصناف في الفاتورة الحالية
+            <span className="text-xs font-black bg-white text-amber-800 px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1">
+              متابعة الدفع 👈
             </span>
           </div>
+        )}
+      </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onOpenCustomerModal}
-              title="تحديد عميل"
-              className="px-2 py-1 rounded-lg text-3xs font-bold bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-300"
-            >
-              العميل
-            </button>
-            <button
-              type="button"
-              onClick={onClearCart}
-              title="إلغاء الطلب"
-              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+      {/* 
+        RIGHT COLUMN: Cart, Ticket Summary & Checkout Buttons
+        On mobile: visible only when mobileTab === 'cart'
+      */}
+      <div
+        className={`w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-[#0c121e] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800 ${
+          mobileTab === 'cart' ? 'flex flex-1' : 'hidden md:flex'
+        }`}
+      >
+        {/* Ticket Header & Back Button for Mobile */}
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col gap-2">
+          {/* Mobile Back to Catalog Button */}
+          <button
+            type="button"
+            onClick={() => setMobileTab('catalog')}
+            className="md:hidden flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-black text-xs border border-amber-500/30 transition-all cursor-pointer"
+          >
+            <ArrowRight className="w-4 h-4" />
+            <span>العودة للمنيو وإضافة المزيد من الأصناف</span>
+          </button>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-sm text-slate-900 dark:text-white">
+                  {orderType === 'dine_in' ? 'طلب صالة' : orderType === 'takeaway' ? 'طلب سفري' : 'طلب دليفري'}
+                </span>
+                {activeTable && (
+                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs font-black">
+                    طاولة #{activeTable}
+                  </Badge>
+                )}
+              </div>
+              <span className="text-3xs text-slate-400 font-mono">
+                {cart.length} أصناف مسجلة بالطلب
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onOpenCustomerModal}
+                title="تحديد عميل"
+                className="px-2.5 py-1 rounded-lg text-3xs font-bold bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-300"
+              >
+                العميل
+              </button>
+              <button
+                type="button"
+                onClick={onClearCart}
+                title="إلغاء الطلب"
+                className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -461,7 +551,13 @@ export function RestaurantCafePosView({
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
               <Utensils className="w-10 h-10 mb-2 opacity-30 stroke-[1.5]" />
               <p className="text-xs font-bold">لا توجد طلبات مضافة بعد</p>
-              <p className="text-3xs text-slate-500 mt-1">اضغط على الأصناف في القائمة لإضافتها للطلب</p>
+              <button
+                type="button"
+                onClick={() => setMobileTab('catalog')}
+                className="md:hidden mt-3 px-4 py-2 rounded-xl bg-amber-600 text-white font-black text-xs shadow-sm"
+              >
+                فتح القائمة وإضافة أصناف
+              </button>
             </div>
           ) : (
             cart.map((line) => {
@@ -538,7 +634,7 @@ export function RestaurantCafePosView({
         </div>
 
         {/* Totals & Fast Checkout Bar */}
-        <div className="p-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 space-y-2.5">
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 space-y-2">
           <div className="space-y-1 text-xs">
             <div className="flex justify-between text-slate-500 font-bold">
               <span>المجموع الفرعي:</span>
@@ -568,7 +664,7 @@ export function RestaurantCafePosView({
               type="button"
               disabled={cart.length === 0 || isSaving}
               onClick={() => onCheckout('cash')}
-              className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              className="h-10 sm:h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <Banknote className="w-4 h-4" />
               <span>دفع كاش (F10)</span>
@@ -577,7 +673,7 @@ export function RestaurantCafePosView({
               type="button"
               disabled={cart.length === 0 || isSaving}
               onClick={() => onCheckout('card')}
-              className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+              className="h-10 sm:h-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4" />
               <span>بطاقة / فيزا (F7)</span>
@@ -589,7 +685,7 @@ export function RestaurantCafePosView({
               type="button"
               disabled={cart.length === 0}
               onClick={onOpenSplitModal}
-              className="h-8 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-3xs flex items-center justify-center gap-1"
+              className="h-7 sm:h-8 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-3xs flex items-center justify-center gap-1"
             >
               <Split className="w-3.5 h-3.5" />
               <span>تقسيم الحساب</span>
@@ -597,7 +693,7 @@ export function RestaurantCafePosView({
             <button
               type="button"
               onClick={onOpenDiscountsModal}
-              className="h-8 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-3xs flex items-center justify-center gap-1"
+              className="h-7 sm:h-8 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-3xs flex items-center justify-center gap-1"
             >
               <Tag className="w-3.5 h-3.5" />
               <span>خصم / خدمة</span>
@@ -608,22 +704,22 @@ export function RestaurantCafePosView({
 
       {/* FLOOR MAP & TABLES MODAL */}
       <Dialog open={isFloorMapOpen} onOpenChange={setIsFloorMapOpen}>
-        <DialogContent className="max-w-3xl bg-surface border border-slate-200 dark:border-slate-800 rounded-3xl p-6" dir="rtl">
+        <DialogContent className="max-w-3xl bg-surface border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 dark:text-white">
               <Utensils className="w-5 h-5 text-amber-500" />
               <span>مخطط طاولات الصالة وتوزيع الجلوس</span>
             </DialogTitle>
           </DialogHeader>
 
           {/* Section Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-200 dark:border-slate-800 no-scrollbar">
             {tableSections.map((sec) => (
               <button
                 key={sec}
                 type="button"
                 onClick={() => setSelectedSection(sec)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 ${
                   selectedSection === sec
                     ? 'bg-amber-600 text-white'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -635,7 +731,7 @@ export function RestaurantCafePosView({
           </div>
 
           {/* Table Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 py-3 max-h-[60vh] overflow-y-auto">
             {filteredTables.map((tbl) => {
               const isSelected = activeTable === tbl.table_number;
               const isOccupied = tbl.status === 'occupied';
@@ -649,7 +745,7 @@ export function RestaurantCafePosView({
                     setIsFloorMapOpen(false);
                     toast.success(`تم اختيار طاولة #${tbl.table_number} للطلب الحالي`);
                   }}
-                  className={`p-4 rounded-2xl border text-center transition-all cursor-pointer ${
+                  className={`p-3 sm:p-4 rounded-2xl border text-center transition-all cursor-pointer ${
                     isSelected
                       ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40'
                       : isOccupied
@@ -657,7 +753,7 @@ export function RestaurantCafePosView({
                       : 'border-slate-200 dark:border-slate-800 hover:border-emerald-500 hover:bg-emerald-500/5'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1.5">
                     <span className="text-3xs font-bold text-slate-400">
                       {tbl.section_name || 'الصالة'}
                     </span>
@@ -668,17 +764,17 @@ export function RestaurantCafePosView({
                     />
                   </div>
 
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono">
                     {tbl.table_number}
                   </h3>
 
-                  <div className="mt-2 text-3xs text-slate-500 flex items-center justify-center gap-1 font-bold">
+                  <div className="mt-1 text-3xs text-slate-500 flex items-center justify-center gap-1 font-bold">
                     <Users className="w-3 h-3" />
                     <span>{tbl.capacity} مقاعد</span>
                   </div>
 
                   {isOccupied && (
-                    <span className="mt-2 inline-block text-4xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-950 px-2 py-0.5 rounded-full">
+                    <span className="mt-1.5 inline-block text-4xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-950 px-2 py-0.5 rounded-full">
                       مشغولة
                     </span>
                   )}
@@ -691,7 +787,7 @@ export function RestaurantCafePosView({
             <button
               type="button"
               onClick={() => setIsFloorMapOpen(false)}
-              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
             >
               إغلاق
             </button>
@@ -701,7 +797,7 @@ export function RestaurantCafePosView({
 
       {/* ITEM CUSTOMIZER / MODIFIERS MODAL */}
       <Dialog open={Boolean(customizingProduct)} onOpenChange={(open) => !open && setCustomizingProduct(null)}>
-        <DialogContent className="max-w-md bg-surface border border-slate-200 dark:border-slate-800 rounded-3xl p-6" dir="rtl">
+        <DialogContent className="max-w-md bg-surface border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
               <Sliders className="w-4 h-4 text-amber-500" />
@@ -709,7 +805,7 @@ export function RestaurantCafePosView({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-3.5 py-2">
             {/* Unit / Size Selector if available */}
             {customizingProduct && (unitOptions[customizingProduct.id] || []).length > 1 && (
               <div>
@@ -722,7 +818,7 @@ export function RestaurantCafePosView({
                       key={u.unitId}
                       type="button"
                       onClick={() => setSelectedUnitId(u.unitId)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all ${
                         selectedUnitId === u.unitId
                           ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                           : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
@@ -738,9 +834,9 @@ export function RestaurantCafePosView({
             {/* Modifiers List */}
             <div>
               <label className="text-xs font-black text-slate-700 dark:text-slate-300 block mb-1.5">
-                الإضافات والتعديلات المتاحة:
+                الإضافات والتعديلات:
               </label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              <div className="space-y-1.5 max-h-44 overflow-y-auto">
                 {availableModifiersList.map((m) => {
                   const isChecked = selectedModifiers.some((sm) => sm.id === m.id);
                   return (
@@ -753,7 +849,7 @@ export function RestaurantCafePosView({
                           setSelectedModifiers((prev) => [...prev, { id: m.id, name: m.name, price: m.price }]);
                         }
                       }}
-                      className={`p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
                         isChecked
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
                           : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900'
@@ -787,8 +883,8 @@ export function RestaurantCafePosView({
                 type="text"
                 value={kitchenNotes}
                 onChange={(e) => setKitchenNotes(e.target.value)}
-                placeholder="مثال: بدون بصل، سكر خفيف، حار جداً، بدون ثلج..."
-                className="w-full h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="مثال: بدون بصل، سكر خفيف، حار جداً..."
+                className="w-full h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -814,7 +910,7 @@ export function RestaurantCafePosView({
 
       {/* KOT KITCHEN ORDER TICKET MODAL */}
       <Dialog open={isKotModalOpen} onOpenChange={setIsKotModalOpen}>
-        <DialogContent className="max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6" dir="rtl">
+        <DialogContent className="max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
               <ChefHat className="w-5 h-5 text-purple-600" />
@@ -823,7 +919,7 @@ export function RestaurantCafePosView({
           </DialogHeader>
 
           {/* Simulated Thermal Kitchen Ticket Slip */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 font-mono space-y-3">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 font-mono space-y-3">
             <div className="text-center pb-2 border-b border-dashed border-slate-300 dark:border-slate-700">
               <h3 className="font-black text-sm">
                 {isCafeMode ? '☕ بون تحضير الباريستا' : '👨‍🍳 بون تحضير المطبخ (KOT)'}

@@ -521,45 +521,46 @@ export function POS() {
  />
 
  {/* Specialized POS Domain Switcher (Active for trial or multi-activity review) */}
- {activeShift && (
- <div className="bg-slate-900 border-b border-slate-800 text-white px-3 py-1.5 flex items-center justify-between text-xs overflow-x-auto gap-2">
- <div className="flex items-center gap-2 shrink-0">
- <span className="font-black text-amber-400 text-3xs sm:text-xs">
- واجهة الكاشير المخصصة:
- </span>
- <span className="text-slate-400 text-4xs hidden md:inline">
- (تتغير تلقائياً حسب نشاطك التجاري أو يمكنك التبديل للتجربة)
- </span>
- </div>
- <div className="flex items-center gap-1 shrink-0">
- {[
- { id: 'restaurant', label: '🍽️ مطاعم (صالة وبون)' },
- { id: 'cafe', label: '☕ كافيهات وباريستا' },
- { id: 'mobile_shop', label: '📱 موبايل وصيانة' },
- { id: 'pharmacy', label: '💊 صيدلية ومستلزمات' },
- { id: 'retail', label: '🛒 كاشير سريع وتجزئة' },
- ].map((d) => (
- <button
- key={d.id}
- type="button"
- onClick={() => {
- setPreviewDomain(d.id);
- toast.info(`تم التبديل إلى: ${d.label}`);
- }}
- className={`px-2.5 py-1 rounded-lg text-4xs sm:text-3xs font-black transition-all ${
- resolvedDomain === d.id
- ? 'bg-amber-500 text-slate-950 shadow-sm'
- : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
- }`}
- >
- {d.label}
- </button>
- ))}
- </div>
- </div>
- )}
+  {activeShift && (
+    <div className="bg-slate-900 border-b border-slate-800 text-white px-2 sm:px-4 py-1.5 flex items-center justify-between text-xs gap-2">
+      <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+        <span className="font-black text-amber-400 text-xs">
+          واجهة الكاشير المخصصة:
+        </span>
+        <span className="text-slate-400 text-4xs hidden lg:inline">
+          (تتغير تلقائياً حسب نشاطك التجاري أو يمكنك التبديل للتجربة)
+        </span>
+      </div>
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto justify-start sm:justify-end">
+        {[
+          { id: 'restaurant', label: '🍽️ مطاعم', fullLabel: '🍽️ مطاعم (صالة وبون)' },
+          { id: 'cafe', label: '☕ كافيهات', fullLabel: '☕ كافيهات وباريستا' },
+          { id: 'mobile_shop', label: '📱 موبايل', fullLabel: '📱 موبايل وصيانة' },
+          { id: 'pharmacy', label: '💊 صيدلية', fullLabel: '💊 صيدلية ومستلزمات' },
+          { id: 'retail', label: '🛒 تجزئة', fullLabel: '🛒 كاشير سريع وتجزئة' },
+        ].map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => {
+              setPreviewDomain(d.id);
+              toast.info(`تم التبديل إلى: ${d.fullLabel}`);
+            }}
+            className={`px-2.5 py-1 rounded-xl text-3xs font-black transition-all shrink-0 cursor-pointer ${
+              resolvedDomain === d.id
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-1 ring-amber-400'
+                : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
+            }`}
+          >
+            <span className="sm:hidden">{d.label}</span>
+            <span className="hidden sm:inline">{d.fullLabel}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
 
- {/* 2. Main POS Flow or Open Shift View */}
+  {/* 2. Main POS Flow or Open Shift View */}
  {!activeShift ? (
  <PosOpenShiftView
  currentUser={currentUser}

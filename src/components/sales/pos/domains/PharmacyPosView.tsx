@@ -17,6 +17,8 @@ import {
   Sparkles,
   FileSpreadsheet,
   CheckCircle2,
+  ArrowRight,
+  Receipt,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +84,9 @@ export function PharmacyPosView({
   onOpenSplitModal,
   activeShift,
 }: PharmacyPosViewProps) {
+  // Mobile responsive view mode
+  const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [substituteActiveFor, setSubstituteActiveFor] = useState<Product | null>(null);
 
@@ -96,7 +101,7 @@ export function PharmacyPosView({
         const activeIngredientMatch = (p as any).active_ingredient?.toLowerCase().includes(q);
         return nameMatch || skuMatch || activeIngredientMatch;
       })
-      .slice(0, 12);
+      .slice(0, 15);
   }, [products, searchQuery]);
 
   // Find substitutes for active ingredient
@@ -112,32 +117,69 @@ export function PharmacyPosView({
   }, [substituteActiveFor, products]);
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-900/10">
-      {/* LEFT COLUMN: Fast Medicine Search & Expiration Warning Grid */}
-      <div className="flex-1 flex flex-col min-w-0 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101b]">
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-100/60 dark:bg-[#070b13]">
+      {/* 
+        LEFT COLUMN: Medicine Search & Expiry / Substitutes
+        On mobile: visible only when mobileTab === 'catalog'
+      */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101b] ${
+          mobileTab === 'catalog' ? 'flex' : 'hidden md:flex'
+        }`}
+      >
+        {/* Mobile Tab Toggle Bar (< md only) */}
+        <div className="md:hidden p-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
+          <div className="flex items-center bg-slate-200/90 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300/80 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setMobileTab('catalog')}
+              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mobileTab === 'catalog'
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Pill className="w-3.5 h-3.5" />
+              <span>دليل الأدوية والصرف</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('cart')}
+              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mobileTab === 'cart'
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>الروشتة ({cart.length})</span>
+              {total > 0 && (
+                <span className="text-4xs bg-emerald-500 text-slate-950 px-1.5 py-0.2 rounded-full font-mono font-black">
+                  {formatNumber(total)}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Header Widget */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-between">
+        <div className="p-2.5 sm:p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-600">
-              <Pill className="w-5 h-5" />
+            <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-600">
+              <Pill className="w-4 h-4" />
             </span>
-            <div>
-              <h3 className="font-black text-xs text-slate-900 dark:text-white">
-                كاشير ونقطة بيع الصيدلية الذكية (Pharmacy POS)
-              </h3>
-              <span className="text-3xs text-slate-400">
-                فرز تلقائي بنظام FEFO (الأقرب انتهاءً يُباع أولاً) + محرك بدائل المواد الفعالة
-              </span>
-            </div>
+            <span className="font-black text-xs text-slate-900 dark:text-white">
+              كاشير ونقطة بيع الصيدلية (FEFO)
+            </span>
           </div>
 
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-black">
-            💊 صرف الأدوية والمستلزمات
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-3xs font-black">
+            صرف الأدوية
           </Badge>
         </div>
 
         {/* Medicine Search Bar */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="p-2 sm:p-3 border-b border-slate-200 dark:border-slate-800">
           <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -145,14 +187,14 @@ export function PharmacyPosView({
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث بالاسم التجاري، الباركود، أو المادة الفعالة (مثال: باراسيتامول، بانادول)..."
-              className="w-full h-11 pr-10 pl-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="ابحث بالاسم التجاري، الباركود، أو المادة الفعالة..."
+              className="w-full h-10 pr-9 pl-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
         </div>
 
         {/* Search Results / Medicines Grid */}
-        <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2">
           {searchResults.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
               <Pill className="w-10 h-10 mb-2 opacity-30 stroke-[1.5]" />
@@ -172,13 +214,13 @@ export function PharmacyPosView({
               return (
                 <div
                   key={prod.id}
-                  className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-500 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                  className="p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-emerald-500 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl mt-0.5">💊</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-xl mt-0.5">💊</span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                        <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
                           {prod.name}
                         </h4>
                         <span className="text-4xs text-slate-400 font-mono">
@@ -187,23 +229,23 @@ export function PharmacyPosView({
                       </div>
 
                       {(prod as any).active_ingredient && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-3xs text-slate-500 font-bold">
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="text-4xs sm:text-3xs text-slate-500 font-bold">
                             المادة الفعالة: {(prod as any).active_ingredient}
                           </span>
                           <button
                             type="button"
                             onClick={() => setSubstituteActiveFor(prod)}
-                            className="px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-black text-4xs transition-colors"
+                            className="px-1.5 py-0.2 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-black text-4xs transition-colors"
                           >
-                            البدائل والمثائل
+                            البدائل
                           </button>
                         </div>
                       )}
 
                       {/* Expiry Badge */}
                       {hasBatches && nearestBatch?.expiry_date && (
-                        <div className="flex items-center gap-1.5 mt-1.5 text-3xs font-bold">
+                        <div className="flex items-center gap-1.5 mt-1 text-4xs sm:text-3xs font-bold">
                           <Calendar className="w-3 h-3 text-amber-500" />
                           <span>صلاحية:</span>
                           <span
@@ -219,7 +261,7 @@ export function PharmacyPosView({
                           </span>
                           {nearExp && !expired && (
                             <span className="px-1 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-4xs font-black">
-                              أوشك على الانتهاء
+                              أوشك
                             </span>
                           )}
                         </div>
@@ -227,70 +269,116 @@ export function PharmacyPosView({
                     </div>
                   </div>
 
-                  {/* Actions: Quick add by Unit (علبة / شريط) */}
-                  <div className="flex items-center gap-2 self-end sm:self-center">
-                    <div className="text-left font-black text-sm text-emerald-600 dark:text-emerald-400 font-mono ml-2">
+                  {/* Actions: Quick add by Unit */}
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                    <div className="text-right sm:text-left font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-mono">
                       {formatNumber(prod.sale_price || 0)} <span className="text-4xs">ج.م</span>
                       <span className="text-4xs text-slate-400 font-bold block">
                         متاح: {avail}
                       </span>
                     </div>
 
-                    {/* Unit Options buttons (e.g. علبة / شريط) */}
-                    {(unitOptions[prod.id] || []).map((u) => (
-                      <button
-                        key={u.unitId}
-                        type="button"
-                        onClick={() => {
-                          onAddToCart(prod, {
-                            unitId: u.unitId,
-                            factor: u.factor,
-                            price: u.price,
-                          });
-                          setSearchQuery('');
-                        }}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 text-xs font-black text-slate-800 dark:text-slate-200 transition-all cursor-pointer"
-                      >
-                        +{unitsById[u.unitId]?.name || 'وحدة'}
-                      </button>
-                    ))}
+                    <div className="flex items-center gap-1">
+                      {(unitOptions[prod.id] || []).map((u) => (
+                        <button
+                          key={u.unitId}
+                          type="button"
+                          onClick={() => {
+                            onAddToCart(prod, {
+                              unitId: u.unitId,
+                              factor: u.factor,
+                              price: u.price,
+                            });
+                            setSearchQuery('');
+                          }}
+                          className="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 text-xs font-black text-slate-800 dark:text-slate-200 transition-all cursor-pointer"
+                        >
+                          +{unitsById[u.unitId]?.name || 'وحدة'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
             })
           )}
         </div>
-      </div>
 
-      {/* RIGHT COLUMN: Pharmacy Prescription & Dispense Cart */}
-      <div className="w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-[#0c121e] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800">
-        <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/60">
-          <div>
-            <span className="font-black text-sm text-slate-900 dark:text-white">
-              روشتة وصرف الأدوية
-            </span>
-            <span className="text-3xs text-slate-400 font-mono block">
-              {cart.length} مستحضرات في الروشتة الحالية
+        {/* Floating Mobile Sticky Checkout Bar */}
+        {cart.length > 0 && (
+          <div
+            onClick={() => setMobileTab('cart')}
+            className="md:hidden sticky bottom-2 mx-3 z-30 p-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xl shadow-emerald-600/30 flex items-center justify-between cursor-pointer animate-in slide-in-from-bottom duration-200 active:scale-98"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-black text-xs font-mono">
+                {cart.length}
+              </span>
+              <div className="flex flex-col text-right">
+                <span className="text-xs font-black">
+                  الروشتة • {formatNumber(total)} ج.م
+                </span>
+                <span className="text-4xs text-emerald-200">
+                  اضغط لمراجعة الأصناف وإتمام الصرف
+                </span>
+              </div>
+            </div>
+            <span className="text-xs font-black bg-white text-emerald-800 px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1">
+              صرف ودفع 👈
             </span>
           </div>
+        )}
+      </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onOpenCustomerModal}
-              title="تحديد عميل"
-              className="px-2.5 py-1 rounded-lg text-3xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-            >
-              العميل / المريض
-            </button>
-            <button
-              type="button"
-              onClick={onClearCart}
-              title="إلغاء الفاتورة"
-              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+      {/* 
+        RIGHT COLUMN: Pharmacy Prescription & Dispense Cart
+        On mobile: visible only when mobileTab === 'cart'
+      */}
+      <div
+        className={`w-full md:w-[380px] lg:w-[420px] flex flex-col bg-white dark:bg-[#0c121e] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800 ${
+          mobileTab === 'cart' ? 'flex flex-1' : 'hidden md:flex'
+        }`}
+      >
+        {/* Cart Header */}
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col gap-2">
+          {/* Mobile Back Button */}
+          <button
+            type="button"
+            onClick={() => setMobileTab('catalog')}
+            className="md:hidden flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black text-xs border border-emerald-500/30 transition-all cursor-pointer"
+          >
+            <ArrowRight className="w-4 h-4" />
+            <span>العودة لدليل الأدوية وصرف المزيد</span>
+          </button>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-black text-sm text-slate-900 dark:text-white">
+                روشتة وصرف الأدوية
+              </span>
+              <span className="text-3xs text-slate-400 font-mono block">
+                {cart.length} مستحضرات في الروشتة الحالية
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onOpenCustomerModal}
+                title="تحديد عميل"
+                className="px-2.5 py-1 rounded-lg text-3xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+              >
+                العميل / المريض
+              </button>
+              <button
+                type="button"
+                onClick={onClearCart}
+                title="إلغاء الفاتورة"
+                className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -300,7 +388,13 @@ export function PharmacyPosView({
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
               <Pill className="w-10 h-10 mb-2 opacity-30 stroke-[1.5]" />
               <p className="text-xs font-bold">الروشتة فارغة</p>
-              <p className="text-3xs text-slate-500 mt-1">أضف أدوية من البحث أو امسح الباركود</p>
+              <button
+                type="button"
+                onClick={() => setMobileTab('catalog')}
+                className="md:hidden mt-3 px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-sm"
+              >
+                فتح دليل الأدوية
+              </button>
             </div>
           ) : (
             cart.map((line) => {
@@ -361,7 +455,7 @@ export function PharmacyPosView({
         </div>
 
         {/* Totals & Fast Checkout */}
-        <div className="p-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 space-y-2.5">
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 space-y-2">
           <div className="space-y-1 text-xs">
             <div className="flex justify-between text-slate-500 font-bold">
               <span>المجموع:</span>
@@ -384,7 +478,7 @@ export function PharmacyPosView({
               type="button"
               disabled={cart.length === 0 || isSaving}
               onClick={() => onCheckout('cash')}
-              className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              className="h-10 sm:h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <Banknote className="w-4 h-4" />
               <span>صرف نقدي (F10)</span>
@@ -393,7 +487,7 @@ export function PharmacyPosView({
               type="button"
               disabled={cart.length === 0 || isSaving}
               onClick={() => onCheckout('card')}
-              className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+              className="h-10 sm:h-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4" />
               <span>بطاقة / فيزا (F7)</span>
@@ -404,7 +498,7 @@ export function PharmacyPosView({
 
       {/* SUBSTITUTES & GENERICS MODAL */}
       <Dialog open={Boolean(substituteActiveFor)} onOpenChange={(o) => !o && setSubstituteActiveFor(null)}>
-        <DialogContent className="max-w-md bg-surface border border-slate-200 dark:border-slate-800 rounded-3xl p-6" dir="rtl">
+        <DialogContent className="max-w-md bg-surface border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
               <Pill className="w-5 h-5 text-emerald-500" />
