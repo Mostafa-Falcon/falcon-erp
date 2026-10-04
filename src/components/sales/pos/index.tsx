@@ -176,10 +176,20 @@ export function POS() {
  const [successInvoice, setSuccessInvoice] = useState<SalesInvoice | null>(null);
  const [previewDomain, setPreviewDomain] = useState<string | null>(null);
 
+ // Check if account is in trial period or officially activated (standard/pro/vip)
+ const isTrial = Boolean(
+   !organization?.subscription_tier || organization?.subscription_tier === 'trial'
+ );
+
  const resolvedDomain = useMemo(() => {
- if (previewDomain) return previewDomain;
- return getDomainProfile(organization?.activity_type).id;
- }, [previewDomain, organization?.activity_type]);
+   // If the account is activated (non-trial), permanently lock the POS domain to the organization's activity_type
+   if (!isTrial) {
+     return getDomainProfile(organization?.activity_type).id;
+   }
+   // In trial period, allow preview switcher
+   if (previewDomain) return previewDomain;
+   return getDomainProfile(organization?.activity_type).id;
+ }, [isTrial, previewDomain, organization?.activity_type]);
  const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
 
  // Theme
@@ -497,68 +507,88 @@ export function POS() {
  }, [cart, warehouseId, treasuryId, selectedCustomerId, total, totalDiscount, activeShift]);
 
  if (isLoading) {
- return (
- <div className="h-[100dvh] min-h-[100dvh] w-full flex items-center justify-center bg-app">
- <div className="flex flex-col items-center gap-3">
- <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"/>
- <span className="text-xs font-bold text-slate-500">جاري تحميل نقطة البيع (الكاشير)...</span>
- </div>
- </div>
- );
- }
-
- return (
- <div className="h-[100dvh] min-h-[100dvh] w-full bg-app dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col justify-between select-none overflow-x-hidden font-sans">
- {/* 1. Header */}
- <PosHeader
- currentUser={currentUser}
- activeShift={activeShift}
- onOpenShiftModal={() => setIsShiftModalOpen(true)}
- onOpenSupportModal={() => setIsSupportOpen(true)}
- onOpenCalcModal={() => setIsCalcOpen(true)}
- isDark={isDark}
- onToggleTheme={toggleTheme}
- />
-
- {/* Specialized POS Domain Switcher (Active for trial or multi-activity review) */}
-  {activeShift && (
-    <div className="bg-slate-900 border-b border-slate-800 text-white px-2 sm:px-4 py-1.5 flex items-center justify-between text-xs gap-2">
-      <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-        <span className="font-black text-amber-400 text-xs">
-          واجهة الكاشير المخصصة:
-        </span>
-        <span className="text-slate-400 text-4xs hidden lg:inline">
-          (تتغير تلقائياً حسب نشاطك التجاري أو يمكنك التبديل للتجربة)
-        </span>
-      </div>
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto justify-start sm:justify-end">
-        {[
-          { id: 'restaurant', label: '🍽️ مطاعم', fullLabel: '🍽️ مطاعم (صالة وبون)' },
-          { id: 'cafe', label: '☕ كافيهات', fullLabel: '☕ كافيهات وباريستا' },
-          { id: 'mobile_shop', label: '📱 موبايل', fullLabel: '📱 موبايل وصيانة' },
-          { id: 'pharmacy', label: '💊 صيدلية', fullLabel: '💊 صيدلية ومستلزمات' },
-          { id: 'retail', label: '🛒 تجزئة', fullLabel: '🛒 كاشير سريع وتجزئة' },
-        ].map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => {
-              setPreviewDomain(d.id);
-              toast.info(`تم التبديل إلى: ${d.fullLabel}`);
-            }}
-            className={`px-2.5 py-1 rounded-xl text-3xs font-black transition-all shrink-0 cursor-pointer ${
-              resolvedDomain === d.id
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-1 ring-amber-400'
-                : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
-            }`}
-          >
-            <span className="sm:hidden">{d.label}</span>
-            <span className="hidden sm:inline">{d.fullLabel}</span>
-          </button>
-        ))}
+  return (
+    <div className="h-[100dvh] min-h-[100dvh] w-full flex items-center justify-center bg-app">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"/>
+        <span className="text-xs font-bold text-slate-500">جاري تحميل نقطة البيع (الكاشير)...</span>
       </div>
     </div>
-  )}
+  );
+}
+
+return (
+  <div className="h-[100dvh] min-h-[100dvh] w-full bg-app dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col justify-between select-none overflow-x-hidden font-sans">
+    {/* 1. Header */}
+    <PosHeader
+      currentUser={currentUser}
+      activeShift={activeShift}
+      onOpenShiftModal={() => setIsShiftModalOpen(true)}
+      onOpenSupportModal={() => setIsSupportOpen(true)}
+      onOpenCalcModal={() => setIsCalcOpen(true)}
+      isDark={isDark}
+      onToggleTheme={toggleTheme}
+      activityType={organization?.activity_type}
+      isTrial={isTrial}
+    />
+
+    {/* Specialized POS Domain Switcher (Active ONLY during trial mode for testing) */}
+    {activeShift && isTrial && (
+      <div className="bg-slate-900 border-b border-slate-800 text-white px-2 sm:px-4 py-1.5 flex items-center justify-between text-xs gap-2">
+        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+          <span className="font-black text-amber-400 text-xs">
+            واجهة الكاشير (تجريبي):
+          </span>
+          <span className="text-slate-400 text-4xs hidden lg:inline">
+            (يمكنك تجربة واجهات الكاشير خلال الفترة التجريبية — سيتم تثبيت واجهة نشاطك المعتمد عند تفعيل الحساب)
+          </span>
+        </div>
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto justify-start sm:justify-end">
+          {[
+            { id: 'restaurant', label: '🍽️ مطاعم', fullLabel: '🍽️ مطاعم (صالة وبون)' },
+            { id: 'cafe', label: '☕ كافيهات', fullLabel: '☕ كافيهات وباريستا' },
+            { id: 'mobile_shop', label: '📱 موبايل', fullLabel: '📱 موبايل وصيانة' },
+            { id: 'pharmacy', label: '💊 صيدلية', fullLabel: '💊 صيدلية ومستلزمات' },
+            { id: 'retail', label: '🛒 تجزئة', fullLabel: '🛒 كاشير سريع وتجزئة' },
+          ].map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => {
+                setPreviewDomain(d.id);
+                toast.info(`تم التبديل إلى: ${d.fullLabel}`);
+              }}
+              className={`px-2.5 py-1 rounded-xl text-3xs font-black transition-all shrink-0 cursor-pointer ${
+                resolvedDomain === d.id
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-1 ring-amber-400'
+                  : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
+              }`}
+            >
+              <span className="sm:hidden">{d.label}</span>
+              <span className="hidden sm:inline">{d.fullLabel}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Activated Account Domain Fixed Banner (Non-trial, permanent domain lock) */}
+    {activeShift && !isTrial && (
+      <div className="bg-slate-900/95 border-b border-slate-800 text-white px-3 py-1 flex items-center justify-between text-3xs">
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-slate-300">واجهة الكاشير المعتمدة للمنشأة:</span>
+          <span className="font-bold text-amber-400">
+            {getDomainProfile(organization?.activity_type).icon} {getDomainProfile(organization?.activity_type).posTitle}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <span className="text-4xs bg-emerald-950/80 text-emerald-400 border border-emerald-800/70 px-2 py-0.5 rounded-full font-bold">
+            🔒 نشاط معتمد ومثبّت
+          </span>
+        </div>
+      </div>
+    )}
 
   {/* 2. Main POS Flow or Open Shift View */}
  {!activeShift ? (

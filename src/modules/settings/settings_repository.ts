@@ -19,6 +19,11 @@ export class SettingsRepository {
  const org = await db.organizations.get(orgId);
  if (!org) throw new Error('المؤسسة غير موجودة');
 
+ // Security: Prevent updating activity_type once account is activated (non-trial tier)
+ if (updates.activity_type && org.subscription_tier && org.subscription_tier !== 'trial') {
+   delete updates.activity_type;
+ }
+
  const updated: Organization = {
  ...org,
  ...updates,

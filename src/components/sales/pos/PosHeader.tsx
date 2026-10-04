@@ -18,6 +18,7 @@ import { toast } from'sonner';
 import { useNotificationStore } from'@/core/state/useNotificationStore';
 import { NotificationDropdown } from'@/components/layout/NotificationDropdown';
 import type { CashierShift, User as UserType } from'@/types';
+import { getDomainProfile } from '@/core/constants/domain_profiles';
 
 interface PosHeaderProps {
  currentUser: UserType | null;
@@ -27,6 +28,8 @@ interface PosHeaderProps {
  onOpenCalcModal: () => void;
  isDark: boolean;
  onToggleTheme: () => void;
+ activityType?: string;
+ isTrial?: boolean;
 }
 
 export function PosHeader({
@@ -37,6 +40,8 @@ export function PosHeader({
  onOpenCalcModal,
  isDark,
  onToggleTheme,
+ activityType,
+ isTrial,
 }: PosHeaderProps) {
  const router = useRouter();
  const { unreadCount } = useNotificationStore();
@@ -58,6 +63,29 @@ export function PosHeader({
  <span className="inline sm:hidden">الكاشير</span>
  <span className="hidden sm:inline">نقطة البيع (الكاشير)</span>
  </h1>
+
+ {activityType && (
+   <span
+     title={!isTrial ? 'نشاط المنشأة المعتمد والمثبّت رسمياً' : 'الفترة التجريبية — متاح تجربة واجهات الكاشير'}
+     className={`hidden sm:inline-flex items-center gap-1.5 text-2xs font-bold px-2 py-0.5 rounded-lg border ${
+       !isTrial
+         ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/60'
+         : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200/80 dark:border-amber-800/60'
+     }`}
+   >
+     <span>{getDomainProfile(activityType).icon}</span>
+     <span>{getDomainProfile(activityType).nameAr}</span>
+     {!isTrial ? (
+       <span className="text-4xs bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 px-1 py-0.2 rounded font-black">
+         🔒 مثبت
+       </span>
+     ) : (
+       <span className="text-4xs bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1 py-0.2 rounded font-black">
+         تجريبي
+       </span>
+     )}
+   </span>
+ )}
 
  <span className="hidden lg:inline-flex text-2xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 rounded-md px-2.5 py-0.5 mr-2">
  لوجيسكا سيستمز | نظام إدارة الموارد والمبيعات v1

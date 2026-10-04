@@ -193,8 +193,17 @@ export function usePosData() {
  setUnitOptions(opts);
  setUsers(usrs);
  if (currentOrg) {
-        setOrganization(currentOrg);
-      }
+   setOrganization(currentOrg);
+ } else if (orgId) {
+   import('@/core/supabase/supabase_client').then(({ supabase }) => {
+     supabase.from('organizations').select('*').eq('id', orgId).maybeSingle().then((res: { data: unknown }) => {
+       if (res?.data) {
+         setOrganization(res.data as Organization);
+         db.organizations.put(res.data as Organization).catch(console.error);
+       }
+     });
+   }).catch(console.error);
+ }
       if (currentBranch) {
  setBranchName(currentBranch.name);
  }

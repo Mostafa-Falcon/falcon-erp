@@ -567,13 +567,15 @@ export default function SettingsPage() {
  </SelectTrigger>
  <SelectContent>
  <SelectItem value="mobile_shop">📱 محلات وتجارة الموبايل ورش الصيانة</SelectItem>
+ <SelectItem value="restaurant">🍽️ مطاعم ومأكولات سريعة ومطابخ</SelectItem>
+ <SelectItem value="cafe">☕ كافيهات ومقاهي ومشروبات</SelectItem>
  <SelectItem value="electronics">🔌 أجهزة منزلية وإلكترونيات وتكنولوجيا</SelectItem>
  <SelectItem value="retail">🛒 تجارة عامة وتجزئة وجملة</SelectItem>
  <SelectItem value="supermarket">🥬 سوبرماركت وبقالة ومواد غذائية</SelectItem>
  <SelectItem value="clothing">👕 ملابس وأحذية وأزياء</SelectItem>
  <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
  <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
- <SelectItem value="services">☕ خدمات ومطاعم وكافيهات</SelectItem>
+ <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>
  </SelectContent>
  </Select>
  </div>
