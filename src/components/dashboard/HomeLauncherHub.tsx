@@ -59,21 +59,21 @@ export const HomeLauncherHub: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full select-none" dir="rtl">
       {/* Welcome Banner — Modern SaaS Linear Style */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 dark:from-blue-950 dark:via-indigo-950 dark:to-slate-900 border border-blue-500/20 dark:border-blue-800/30 p-6 sm:p-7 text-white shadow-sm flex items-center justify-between">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 dark:from-blue-950 dark:via-indigo-950 dark:to-slate-900 border border-blue-500/20 dark:border-blue-800/30 p-4 sm:p-7 text-white shadow-sm flex items-center justify-between">
         {/* Glow Highlights */}
         <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
         <div className="absolute right-1/4 -top-12 w-48 h-48 rounded-full bg-indigo-400/15 blur-2xl pointer-events-none" />
 
         {/* User & Branch details */}
-        <div className="flex flex-col gap-1.5 z-10">
+        <div className="flex flex-col gap-1 sm:gap-1.5 z-10 min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-lg sm:text-3xl font-black tracking-tight text-white truncate">
               أهلاً بك، {userName}
             </h1>
-            <span className="text-2xl">👋</span>
+            <span className="text-xl sm:text-2xl">👋</span>
           </div>
-          <div className="flex items-center gap-2.5 mt-0.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold text-blue-100 border border-white/20">
+          <div className="flex items-center gap-2 sm:gap-2.5 mt-0.5">
+            <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-xs text-3xs sm:text-xs font-semibold text-blue-100 border border-white/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               الفرع: {branchName}
             </span>
@@ -84,7 +84,7 @@ export const HomeLauncherHub: React.FC = () => {
         </div>
 
         {/* User Initial Circle Avatar */}
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner shrink-0 z-10 font-black text-xl">
+        <div className="w-11 h-11 sm:w-16 sm:h-16 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner shrink-0 z-10 font-black text-base sm:text-xl">
           {userName.charAt(0)}
         </div>
       </div>

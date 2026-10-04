@@ -42,7 +42,7 @@ const DialogContent = React.forwardRef<
  //`inset-0 m-auto`+`max-h`is the v3 centring pattern: unlike
  //`left-[50%] + translate-[-50%]`it also keeps a tall dialog inside
  // the viewport, which matters on short laptop screens.
-'fixed inset-0 z-50 m-auto grid max-h-[calc(100dvh-2rem)] w-full max-w-lg gap-4 overflow-y-auto',
+'fixed inset-0 z-50 m-auto grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] sm:w-full max-w-lg gap-4 overflow-y-auto',
 'rounded-2xl border border-line bg-surface p-5 text-foreground shadow-2xl sm:p-6',
 'data-[state=open]:animate-in data-[state=closed]:animate-out',
 'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

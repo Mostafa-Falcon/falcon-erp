@@ -22,7 +22,7 @@ export default function PosPage() {
 
   if (!isMounted || !currentUser) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-app">
+      <div className="h-[100dvh] min-h-[100dvh] w-full flex items-center justify-center bg-app">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs font-bold text-slate-500">جاري تهيئة نقطة البيع (الكاشير)...</span>

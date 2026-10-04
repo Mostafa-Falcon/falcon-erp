@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils';
  * Modern SaaS Linear / Stripe styling.
  */
 
-/** Gutter values: 16px on mobile, 24px from sm up. Shared by header and content. */
-const GUTTER = 'px-4 sm:px-6';
-const GUTTER_STACK = 'py-4 sm:py-6';
+/** Gutter values: 12px on mobile (saves precious screen estate), 24px from sm up. */
+const GUTTER = 'px-3 sm:px-6';
+const GUTTER_STACK = 'py-3 sm:py-6';
 
 export interface PageContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -26,7 +26,7 @@ export const PageContainer = React.forwardRef<HTMLDivElement, PageContainerProps
       className={cn(
         GUTTER,
         GUTTER_STACK,
-        'mx-auto w-full max-w-(--container-page) space-y-5 min-h-full',
+        'mx-auto w-full max-w-(--container-page) space-y-4 sm:space-y-5 min-h-full',
         className
       )}
       {...props}
@@ -61,14 +61,14 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <div
       className={cn(
-        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 pt-1 transition-all',
+        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-1 sm:pb-2 pt-1 transition-all',
         className
       )}
     >
       <div className="min-w-0 space-y-1">
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
           {title && (
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {title}
             </h2>
           )}
@@ -81,7 +81,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
       </div>
       {actions && (
-        <div className="shrink-0 flex items-center gap-2.5 self-start sm:self-center">
+        <div className="shrink-0 flex items-center gap-2 sm:gap-2.5 self-start sm:self-center flex-wrap w-full sm:w-auto">
           {actions}
         </div>
       )}

@@ -540,30 +540,40 @@ export default function SettingsPage() {
  <label className="text-2xs font-black text-slate-700 dark:text-slate-300">
  نوع النشاط التجاري
  </label>
- {!perms.canChangeActivityType && (
- <span className="text-3xs font-bold text-slate-400">
- (محدد ومعتمد من لوحة تحكم لوجيسكا)
+ {subscriptionTier !=='trial'&& (
+ <span className="text-3xs font-bold text-amber-600 dark:text-amber-400">
+ (متاح التعديل فقط أثناء الفترة التجريبية)
  </span>
  )}
  </div>
  <Select
  value={activityType}
  onValueChange={setActivityType}
- disabled={!perms.canChangeActivityType}
+ disabled={subscriptionTier !=='trial'}
  >
  <SelectTrigger className="h-10 bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white disabled:opacity-80 disabled:cursor-not-allowed">
  <SelectValue placeholder="اختر نوع النشاط"/>
  </SelectTrigger>
  <SelectContent>
- <SelectItem value="retail">تجارة عامة وتجزئة وجملة</SelectItem>
- <SelectItem value="supermarket">سوبرماركت ومواد غذائية</SelectItem>
- <SelectItem value="clothing">ملابس وأحذية وأزياء</SelectItem>
- <SelectItem value="electronics">أجهزة وإلكترونيات وكمبيوتر</SelectItem>
- <SelectItem value="hardware">حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
- <SelectItem value="pharmacy">صيدلية ومستلزمات طبية</SelectItem>
- <SelectItem value="services">خدمات ومطاعم وكافيهات</SelectItem>
+ <SelectItem value="mobile_shop">📱 محلات وتجارة الموبايل ورش الصيانة</SelectItem>
+ <SelectItem value="electronics">🔌 أجهزة منزلية وإلكترونيات وتكنولوجيا</SelectItem>
+ <SelectItem value="retail">🛒 تجارة عامة وتجزئة وجملة</SelectItem>
+ <SelectItem value="supermarket">🥬 سوبرماركت وبقالة ومواد غذائية</SelectItem>
+ <SelectItem value="clothing">👕 ملابس وأحذية وأزياء</SelectItem>
+ <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
+ <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
+ <SelectItem value="services">☕ خدمات ومطاعم وكافيهات</SelectItem>
  </SelectContent>
  </Select>
+
+ {subscriptionTier !=='trial'&& (
+ <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-start gap-2 text-2xs font-semibold text-amber-800 dark:text-amber-300 mt-2">
+ <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5"/>
+ <span>
+ تغيير نوع النشاط التجاري متاح فقط أثناء **الفترة التجريبية (7 أيام)**. لحسابات الاشتراكات المفعّلة، يتم تحديد نوع النشاط وفق عقد الترخيص والاشتراك وتفعيله عبر إدارة المنظومة.
+ </span>
+ </div>
+ )}
  </div>
  </div>
  </div>

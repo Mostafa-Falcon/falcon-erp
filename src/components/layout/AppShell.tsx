@@ -17,6 +17,8 @@ import { restoreOrgTransportToken } from '@/core/supabase/supabase_client';
 import { ensureCleanLookupState } from '@/core/db/seed';
 import { AccountSuspensionGuard } from '@/components/auth/AccountSuspensionGuard';
 
+import { MobileBottomNav } from './MobileBottomNav';
+
 interface AppShellProps {
     title?: string;
     subtitle?: string;
@@ -162,7 +164,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
     if (!mounted || !currentUser) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-app">
+            <div className="flex h-[100dvh] min-h-[100dvh] w-full items-center justify-center bg-app">
                 <div className="flex flex-col items-center gap-3">
                     <div className="h-9 w-9 animate-spin rounded-full border-3 border-items border-t-transparent" />
                     <span className="text-xs font-bold text-muted-foreground">جاري التحقق من بيانات الدخول...</span>
@@ -173,7 +175,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
     return (
         <AccountSuspensionGuard>
-            <div className="flex h-screen w-full overflow-hidden bg-app transition-colors duration-200 select-none">
+            <div className="flex h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-app transition-colors duration-200 select-none">
                 <Suspense fallback={<div className="w-(--spacing-sidebar) shrink-0" />}>
                     <AppSidebar
                         isOpen={sidebarOpen}
@@ -191,12 +193,18 @@ export const AppShell: React.FC<AppShellProps> = ({
                         title={title}
                     />
 
-                    <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+                    <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0">
                         <PageContainer>
                             {!hideHeaderBanner && <PageHeader title={title} subtitle={subtitle} actions={actions} />}
                             {children}
                         </PageContainer>
                     </main>
+
+                    {/* Mobile Bottom Navigation */}
+                    <MobileBottomNav
+                        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                        sidebarOpen={sidebarOpen}
+                    />
                 </div>
             </div>
         </AccountSuspensionGuard>

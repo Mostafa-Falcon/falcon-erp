@@ -106,15 +106,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <Icons.ToggleSidebar className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
           <button
             onClick={() => router.push('/')}
-            className="text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary transition-colors font-medium shrink-0 cursor-pointer"
+            className="hidden sm:inline text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary transition-colors font-medium shrink-0 cursor-pointer"
           >
             الرئيسية
           </button>
-          <span className="text-slate-300 dark:text-slate-700 font-bold shrink-0">/</span>
-          <span className="font-extrabold text-slate-900 dark:text-white truncate">
+          <span className="hidden sm:inline text-slate-300 dark:text-slate-700 font-bold shrink-0">/</span>
+          <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
             {title}
           </span>
         </div>
@@ -164,7 +164,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 ? 'المزامنة السحابية نشطة (اضغط للتحديث الفوري)'
                 : 'غير متصل بالإنترنت'
             }
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-bold border transition-all cursor-pointer shadow-2xs ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-2xs font-bold border transition-all cursor-pointer shadow-2xs ${
               isOnline
                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/80 hover:bg-emerald-100/60'
                 : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800'

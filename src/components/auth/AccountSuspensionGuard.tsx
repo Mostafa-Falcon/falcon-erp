@@ -50,13 +50,16 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
  let suspended = false;
  let reason ='';
 
+ const localExpiresAt = localOrg?.subscription_expires_at;
+ const localIsExpired = localExpiresAt ? new Date(localExpiresAt) < new Date() : false;
+
  if (localOrg && localOrg.is_active === false) {
  suspended = true;
  reason ='تم تعليق وصول المنشأة بالكامل من قبل إدارة المنظومة.';
  } else if (localUser && localUser.is_active === false) {
  suspended = true;
  reason ='تم إيقاف حسابك من قبل الإدارة.';
- } else if (localOrg && localOrg.subscription_expires_at && new Date(localOrg.subscription_expires_at) < new Date()) {
+ } else if (localIsExpired) {
  suspended = true;
  reason ='انتهت فترة التجربة المجانية (7 أيام) أو اشتراك المنشأة. يرجى التواصل معنا عبر الواتساب على رقم 01116603371 لاختيار الاشتراك المناسب وتفعيل حسابك.';
  }
@@ -69,18 +72,22 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
  try {
  const { data: cloudOrg, error: orgErr } = await supabase
  .from('organizations')
- .select('is_active, name')
+ .select('is_active, name, subscription_tier, subscription_expires_at')
  .eq('id', currentUser.org_id)
  .maybeSingle();
 
  if (!orgErr && cloudOrg) {
  if (cloudOrg.name) setOrgName(cloudOrg.name);
 
- // If cloud state differs from local, synchronize Dexie
- if (cloudOrg.is_active !== undefined) {
- if (localOrg && localOrg.is_active !== cloudOrg.is_active) {
+ const effectiveExpiresAt = cloudOrg.subscription_expires_at || localExpiresAt;
+ const cloudIsExpired = effectiveExpiresAt ? new Date(effectiveExpiresAt) < new Date() : false;
+
+ // Synchronize Dexie with cloud
+ if (localOrg) {
  await db.organizations.update(currentUser.org_id, {
- is_active: cloudOrg.is_active,
+ is_active: cloudOrg.is_active ?? localOrg.is_active ?? true,
+ subscription_tier: cloudOrg.subscription_tier || localOrg.subscription_tier ||'trial',
+ subscription_expires_at: cloudOrg.subscription_expires_at || localOrg.subscription_expires_at,
  updated_at: new Date().toISOString(),
  });
  }
@@ -90,6 +97,11 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
  setSuspensionReason('تم تعليق وصول المنشأة بالكامل من قبل إدارة المنظومة.');
  return;
  }
+
+ if (cloudIsExpired) {
+ setIsSuspended(true);
+ setSuspensionReason('انتهت فترة التجربة المجانية (7 أيام) أو اشتراك المنشأة. يرجى التواصل معنا عبر الواتساب على رقم 01116603371 لاختيار الاشتراك المناسب وتفعيل حسابك.');
+ return;
  }
  }
 
@@ -114,8 +126,8 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
  }
  }
 
- // If both are active in cloud
- if (cloudOrg?.is_active && (cloudUser?.is_active ?? true)) {
+ // If active and NOT expired in both local and cloud
+ if (cloudOrg?.is_active && (cloudUser?.is_active ?? true) && !localIsExpired) {
  setIsSuspended(false);
  setSuspensionReason('');
  }

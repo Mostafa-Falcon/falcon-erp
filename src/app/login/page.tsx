@@ -114,7 +114,7 @@ export default function LoginPage() {
 
  if (isCheckingAuth || currentUser) {
  return (
- <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-[#070b18]">
+ <div className="min-h-[100dvh] w-full flex items-center justify-center bg-slate-50 dark:bg-[#070b18]">
  <div className="flex flex-col items-center gap-3">
  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"/>
  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">جاري التحقق من الجلسة...</span>
@@ -124,7 +124,7 @@ export default function LoginPage() {
  }
 
  return (
- <div className="min-h-screen w-full flex flex-col lg:flex-row bg-slate-50 dark:bg-[#070b18] select-none overflow-x-hidden transition-colors duration-300">
+ <div className="min-h-[100dvh] w-full flex flex-col lg:flex-row bg-slate-50 dark:bg-[#070b18] select-none overflow-x-hidden transition-colors duration-300">
  {/* 1. Mobile & Tablet Top Branding Banner (< lg) */}
  <div className="lg:hidden w-full bg-gradient-to-br from-[#0a1026] via-[#0f1738] to-[#070b1a] text-white px-6 py-8 flex flex-col items-center text-center shadow-lg relative overflow-hidden">
  <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-blue-600/20 blur-[60px] pointer-events-none"/>

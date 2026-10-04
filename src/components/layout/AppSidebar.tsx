@@ -376,7 +376,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
 
             <aside
                 className={cn(
-                    'fixed right-0 top-0 z-50 flex h-screen w-(--spacing-sidebar) shrink-0 select-none',
+                    'fixed right-0 top-0 z-50 flex h-[100dvh] w-(--spacing-sidebar) max-w-[85vw] shrink-0 select-none',
                     'flex-col border-e border-line bg-surface shadow-2xl',
                     'transition-transform duration-300 ease-in-out motion-reduce:transition-none',
                     isDesktop && 'sticky z-40 shadow-sm',
