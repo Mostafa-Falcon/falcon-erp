@@ -103,6 +103,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
 
     const domain = getDomainProfile(orgActivity);
     const subProfile = getSubscriptionProfile(orgSubscription);
+    const isTrial = !orgSubscription || orgSubscription === 'trial';
+    const isPharmacy = orgActivity === 'pharmacy';
+    const isMobile = orgActivity === 'mobile_shop' || orgActivity === 'electronics';
 
     // Branch switcher state
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -211,12 +214,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                 { label: 'فواتير المبيعات', href: '/sales/invoices', icon: <Receipt className="w-4 h-4" /> },
                 { label: 'إدارة المبيعات بالتقسيط', href: '/sales/installments', icon: <CreditCard className="w-4 h-4 text-indigo-500" /> },
                 { label: 'عروض الأسعار', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
-                { label: 'مراجعة الروشتات', href: '/sales/prescriptions', icon: <FileCheck className="w-4 h-4" /> },
+                ...(isTrial || isPharmacy ? [{ label: 'مراجعة الروشتات', href: '/sales/prescriptions', icon: <FileCheck className="w-4 h-4" /> }] : []),
                 { label: 'مرتجعات المبيعات', href: '/sales/returns', icon: <RotateCcw className="w-4 h-4" /> },
                 { label: 'ورديات الكاشير', href: '/sales/shifts', icon: <History className="w-4 h-4" /> },
             ],
         },
-        {
+        ...(isTrial || isMobile ? [{
             id: 'mobile',
             label: 'الموبايل والصيانة',
             icon: <Smartphone className="w-4 h-4 text-sky-500" />,
@@ -225,7 +228,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                 { label: 'تتبع السيريال والـ IMEI', href: '/mobile/serials', icon: <QrCode className="w-4 h-4" /> },
                 { label: 'المحافظ والشحن كاش', href: '/mobile/wallets', icon: <Wallet className="w-4 h-4" /> },
             ],
-        },
+        }] : []),
         {
             id: 'contacts',
             label: 'العملاء والموردين',

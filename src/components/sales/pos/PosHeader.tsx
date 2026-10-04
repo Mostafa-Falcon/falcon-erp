@@ -30,6 +30,8 @@ interface PosHeaderProps {
  onToggleTheme: () => void;
  activityType?: string;
  isTrial?: boolean;
+ orgName?: string;
+ branchName?: string;
 }
 
 export function PosHeader({
@@ -42,6 +44,8 @@ export function PosHeader({
  onToggleTheme,
  activityType,
  isTrial,
+ orgName,
+ branchName,
 }: PosHeaderProps) {
  const router = useRouter();
  const { unreadCount } = useNotificationStore();
@@ -66,30 +70,19 @@ export function PosHeader({
 
  {activityType && (
    <span
-     title={!isTrial ? 'نشاط المنشأة المعتمد والمثبّت رسمياً' : 'الفترة التجريبية — متاح تجربة واجهات الكاشير'}
-     className={`hidden sm:inline-flex items-center gap-1.5 text-2xs font-bold px-2 py-0.5 rounded-lg border ${
-       !isTrial
-         ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/60'
-         : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200/80 dark:border-amber-800/60'
-     }`}
+     className="hidden sm:inline-flex items-center gap-1.5 text-2xs font-bold px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200"
    >
      <span>{getDomainProfile(activityType).icon}</span>
-     <span>{getDomainProfile(activityType).nameAr}</span>
-     {!isTrial ? (
-       <span className="text-4xs bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 px-1 py-0.2 rounded font-black">
-         🔒 مثبت
-       </span>
-     ) : (
-       <span className="text-4xs bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1 py-0.2 rounded font-black">
-         تجريبي
-       </span>
-     )}
+     <span>{getDomainProfile(activityType).posTitle}</span>
    </span>
  )}
 
- <span className="hidden lg:inline-flex text-2xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 rounded-md px-2.5 py-0.5 mr-2">
- لوجيسكا سيستمز | نظام إدارة الموارد والمبيعات v1
- </span>
+ {(orgName || branchName) && (
+   <span className="hidden lg:inline-flex items-center gap-1.5 text-2xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-lg px-2.5 py-1 mr-1">
+     <span>{orgName}</span>
+     {branchName && <span className="text-slate-400 font-normal">({branchName})</span>}
+   </span>
+ )}
  </div>
 
  {/* Left side: Controls, Status, Quick Tools, Date */}

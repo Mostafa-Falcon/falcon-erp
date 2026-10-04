@@ -530,33 +530,30 @@ return (
       onToggleTheme={toggleTheme}
       activityType={organization?.activity_type}
       isTrial={isTrial}
+      orgName={organization?.name}
+      branchName={branchName}
     />
 
     {/* Specialized POS Domain Switcher (Active ONLY during trial mode for testing) */}
     {activeShift && isTrial && (
       <div className="bg-slate-900 border-b border-slate-800 text-white px-2 sm:px-4 py-1.5 flex items-center justify-between text-xs gap-2">
-        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-          <span className="font-black text-amber-400 text-xs">
-            واجهة الكاشير (تجريبي):
-          </span>
-          <span className="text-slate-400 text-4xs hidden lg:inline">
-            (يمكنك تجربة واجهات الكاشير خلال الفترة التجريبية — سيتم تثبيت واجهة نشاطك المعتمد عند تفعيل الحساب)
-          </span>
-        </div>
+        <span className="font-bold text-slate-300 text-xs shrink-0">
+          معاينة واجهات الكاشير المتخصصة:
+        </span>
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto justify-start sm:justify-end">
           {[
-            { id: 'restaurant', label: '🍽️ مطاعم', fullLabel: '🍽️ مطاعم (صالة وبون)' },
-            { id: 'cafe', label: '☕ كافيهات', fullLabel: '☕ كافيهات وباريستا' },
-            { id: 'mobile_shop', label: '📱 موبايل', fullLabel: '📱 موبايل وصيانة' },
-            { id: 'pharmacy', label: '💊 صيدلية', fullLabel: '💊 صيدلية ومستلزمات' },
-            { id: 'retail', label: '🛒 تجزئة', fullLabel: '🛒 كاشير سريع وتجزئة' },
+            { id: 'mobile_shop', label: '📱 موبايل وصيانة' },
+            { id: 'restaurant', label: '🍽️ مطاعم وصالة' },
+            { id: 'cafe', label: '☕ كافيهات وباريستا' },
+            { id: 'pharmacy', label: '💊 صيدلية ومستلزمات' },
+            { id: 'retail', label: '🛒 كاشير سريع وتجزئة' },
           ].map((d) => (
             <button
               key={d.id}
               type="button"
               onClick={() => {
                 setPreviewDomain(d.id);
-                toast.info(`تم التبديل إلى: ${d.fullLabel}`);
+                toast.info(`تم التبديل إلى: ${d.label}`);
               }}
               className={`px-2.5 py-1 rounded-xl text-3xs font-black transition-all shrink-0 cursor-pointer ${
                 resolvedDomain === d.id
@@ -564,28 +561,9 @@ return (
                   : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
               }`}
             >
-              <span className="sm:hidden">{d.label}</span>
-              <span className="hidden sm:inline">{d.fullLabel}</span>
+              {d.label}
             </button>
           ))}
-        </div>
-      </div>
-    )}
-
-    {/* Activated Account Domain Fixed Banner (Non-trial, permanent domain lock) */}
-    {activeShift && !isTrial && (
-      <div className="bg-slate-900/95 border-b border-slate-800 text-white px-3 py-1 flex items-center justify-between text-3xs">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-slate-300">واجهة الكاشير المعتمدة للمنشأة:</span>
-          <span className="font-bold text-amber-400">
-            {getDomainProfile(organization?.activity_type).icon} {getDomainProfile(organization?.activity_type).posTitle}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <span className="text-4xs bg-emerald-950/80 text-emerald-400 border border-emerald-800/70 px-2 py-0.5 rounded-full font-bold">
-            🔒 نشاط معتمد ومثبّت
-          </span>
         </div>
       </div>
     )}

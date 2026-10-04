@@ -490,17 +490,9 @@ export function MobilePosView({
 
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-sm text-slate-900 dark:text-white">
-                  فاتورة مبيعات الأجهزة والقطع
-                </span>
-                <span
-                  title="يمكنك سحب الفاصل لتكبير أو تصغير عرض الفاتورة (انقر مرتين للاستعادة)"
-                  className="hidden md:inline-flex items-center text-4xs bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 border border-sky-200/80 dark:border-sky-800/60 px-1.5 py-0.2 rounded-md font-mono font-bold"
-                >
-                  {cartWidth}px
-                </span>
-              </div>
+              <span className="font-black text-sm text-slate-900 dark:text-white">
+                فاتورة مبيعات الأجهزة والقطع
+              </span>
               <span className="text-3xs text-slate-400 font-mono block">
                 {cart.length} أصناف مسجلة
               </span>
