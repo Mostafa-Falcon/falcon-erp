@@ -166,28 +166,26 @@ export class StockMovementService {
  const factor = params.conversionFactor > 0 ? params.conversionFactor : 1;
  const baseQuantity = factor > 1 ? params.quantity / factor : params.quantity * factor;
 
- // Product card decides whether the movement must also update lot balances.
- // Using Dexie.ignoreTransaction isolates read lookups so that caller transactions
- // don't fail with "objectStore was not found" if they didn't include these read-only tables.
- const [product, unit, allowNegativeSetting] = await Dexie.ignoreTransaction(async () => {
- const p = await db.products.get(params.productId);
- const u = await db.units.get(params.unitId);
- const s = await db.app_settings.get('allow_negative_stock');
- return [p, u, s];
- });
-
- const baseUnitName = product ? await Dexie.ignoreTransaction(async () => {
- const bu = await db.units.get(product.base_unit_id);
- return bu?.name || '';
- }) : '';
-
- const unitName = params.unitName?.trim() || unit?.name || baseUnitName || '';
- const allowNegative = allowNegativeSetting?.value ==='true';
-
  return await db.transaction(
- 'rw',
- [db.stock_levels, db.inventory_transactions, db.product_batches, db.product_units, db.sync_queue],
- async () => {
+      'rw',
+      [
+        db.stock_levels,
+        db.inventory_transactions,
+        db.product_batches,
+        db.product_units,
+        db.products,
+        db.units,
+        db.app_settings,
+        db.sync_queue,
+      ],
+      async () => {
+        const product = await db.products.get(params.productId);
+        const unit = await db.units.get(params.unitId);
+        const allowNegativeSetting = await db.app_settings.get('allow_negative_stock');
+        const baseUnit = product ? await db.units.get(product.base_unit_id) : undefined;
+        const baseUnitName = baseUnit?.name || '';
+        const unitName = params.unitName?.trim() || unit?.name || baseUnitName || '';
+        const allowNegative = allowNegativeSetting?.value === 'true';
  const currentStock = await db.stock_levels.get(stockId);
  const currentQty = currentStock?.quantity || 0;
  const newBalance = currentQty + baseQuantity;

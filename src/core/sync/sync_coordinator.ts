@@ -82,32 +82,32 @@ const DELTA_ROUTES: Record<string, DeltaRoute> = {
  stock_levels: {
  rpc:'falcon_adjust_stock',
  toArgs: (_id, delta, meta) => ({
- warehouse_id: meta.warehouse_id,
- product_id: meta.product_id,
- delta_quantity: (delta.quantity as number) ?? 0,
- delta_reserved: (delta.reserved_quantity as number) ?? 0,
- allow_negative: delta.allow_negative === true,
+ p_warehouse_id: meta.warehouse_id,
+      p_product_id: meta.product_id,
+      p_delta_quantity: (delta.quantity as number) ?? 0,
+      p_delta_reserved: (delta.reserved_quantity as number) ?? 0,
+      p_allow_negative: delta.allow_negative === true,
  }),
  },
  product_batches: {
  rpc:'falcon_adjust_batch',
  toArgs: (id, delta) => ({
- batch_id: id,
- delta_current_quantity: (delta.current_quantity as number) ?? 0,
- allow_negative: delta.allow_negative === true,
+ p_batch_id: id,
+      p_delta_current_quantity: (delta.current_quantity as number) ?? 0,
+      p_allow_negative: delta.allow_negative === true,
  }),
  },
  treasuries: {
  rpc:'falcon_adjust_treasury',
- toArgs: (id, delta) => ({ treasury_id: id, delta_balance: (delta.current_balance as number) ?? 0 }),
+ toArgs: (id, delta) => ({ p_treasury_id: id, p_delta_balance: (delta.current_balance as number) ?? 0 }),
  },
  contacts: {
  rpc:'falcon_adjust_contact',
- toArgs: (id, delta) => ({ contact_id: id, delta_balance: (delta.current_balance as number) ?? 0 }),
+ toArgs: (id, delta) => ({ p_contact_id: id, p_delta_balance: (delta.current_balance as number) ?? 0 }),
  },
  accounts: {
  rpc:'falcon_adjust_account',
- toArgs: (id, delta) => ({ account_id: id, delta_balance: (delta.current_balance as number) ?? 0 }),
+ toArgs: (id, delta) => ({ p_account_id: id, p_delta_balance: (delta.current_balance as number) ?? 0 }),
  },
 };
 

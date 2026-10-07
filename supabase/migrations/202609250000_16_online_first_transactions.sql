@@ -1011,7 +1011,7 @@ begin
 
   -- Update the account balance cache by (debit - credit), as the client does.
   update public.accounts a
-     set current_balance = round(coalesce(a.current_balance, 0) + d.delta, 2),
+     set current_balance = round(coalesce(a.current_balance, 0) + (d.debit - d.credit), 2),
          updated_at = now()
     from (select v_cash_account as account_id, v_cash as debit, 0::numeric as credit
           union all select v_bank_account, v_card, 0

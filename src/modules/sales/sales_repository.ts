@@ -1,3 +1,4 @@
+import { ProductSerialRepository } from '@/modules/mobile/product_serial_repository';
 import Dexie from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
@@ -446,7 +447,6 @@ export class SalesRepository {
  // 2.5 Mark IMEI / Serial numbers sold if present
  for (const item of params.items) {
  if (item.serialNumber) {
- const { ProductSerialRepository } = await import('@/modules/mobile/product_serial_repository');
  await ProductSerialRepository.markSerialSold(item.serialNumber, invoiceId, params.customerId);
  }
  }
@@ -727,21 +727,17 @@ export class SalesRepository {
  const shipping = Number(invoice.shipping_fee || 0);
  const cogs = roundMoney(items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unit_cost || 0), 0));
 
- const [cashAccount, bankAccount, receivables, cogsAccount, salesAccount, accruedTax, inventoryAccount, otherRevenue] =
- await Dexie.ignoreTransaction(async () => {
  const treasuryRow =
- (await db.treasuries.get(params.treasuryId)) ||
- (result.treasury_after?.id ? await db.treasuries.get(result.treasury_after.id) : undefined);
- const c = await AccountingRepository.resolveTreasuryAccountId(params.orgId, treasuryRow);
- const b = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.BANK);
- const r = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.RECEIVABLES);
- const cg = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.COGS);
- const s = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.SALES);
- const at = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.ACCRUED);
- const inv = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.INVENTORY);
- const o = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.OTHER_REVENUE);
- return [c, b, r, cg, s, at, inv, o];
- });
+      (await db.treasuries.get(params.treasuryId)) ||
+      (result.treasury_after?.id ? await db.treasuries.get(result.treasury_after.id) : undefined);
+    const cashAccount = await AccountingRepository.resolveTreasuryAccountId(params.orgId, treasuryRow);
+    const bankAccount = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.BANK);
+    const receivables = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.RECEIVABLES);
+    const cogsAccount = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.COGS);
+    const salesAccount = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.SALES);
+    const accruedTax = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.ACCRUED);
+    const inventoryAccount = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.INVENTORY);
+    const otherRevenue = await AccountingRepository.nativeAccountId(params.orgId, NATIVE_ACCOUNT_CODES.OTHER_REVENUE);
 
  const rawLines: { account_id: string; debit: number; credit: number }[] = [
  { account_id: cashAccount, debit: cashPaid, credit: 0 },
