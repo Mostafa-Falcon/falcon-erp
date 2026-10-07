@@ -24,11 +24,11 @@ export const CustomizationToolbar: React.FC<CustomizationToolbarProps> = ({
     isPharmacy = false,
 }) => {
     return (
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
             <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-black text-slate-800 dark:text-slate-200 shrink-0">
+                <div className="flex items-center gap-1.5 px-1 py-1 text-xs font-black text-slate-800 dark:text-slate-200 shrink-0">
                     <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
-                    <span>تخصيص واجهة الإدخال:</span>
+                    <span>تخصيص الواجهة:</span>
                 </div>
 
                 {isPharmacy && (

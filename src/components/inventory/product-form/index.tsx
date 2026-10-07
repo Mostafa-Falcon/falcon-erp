@@ -167,43 +167,9 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
                 isPharmacy={isPharmacy}
             />
 
-            {/* 4. الشاشة الوسطى: التصنيفات والإعدادات (يسار) والوحدات والتسعير (يمين) */}
+            {/* 4. الشاشة الوسطى: كروت تسعير الوحدات (يمين في RTL وأولاً على الموبايل) والتصنيفات (يسار) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                {/* العمود الأيسر: التصنيفات + الإعدادات المتقدمة (إن فُعّلت) */}
-                <div className="lg:col-span-4 space-y-4">
-                    <ClassificationsSection
-                        brandId={brandId}
-                        setBrandId={setBrandId}
-                        uniqueBrands={uniqueBrands}
-                        categoryId={categoryId}
-                        setCategoryId={setCategoryId}
-                        uniqueCategories={uniqueCategories}
-                        productType={productType}
-                        setProductType={setProductType}
-                        uniqueProductTypes={uniqueProductTypes}
-                        setActiveModal={setActiveModal}
-                        isPharmacy={isPharmacy}
-                    />
-
-                    {showAdvanced && (
-                        <AdvancedSettingsSection
-                            isTaxable={isTaxable}
-                            setIsTaxable={setIsTaxable}
-                            enableMinStockAlert={enableMinStockAlert}
-                            setEnableMinStockAlert={setEnableMinStockAlert}
-                            minStockAlert={minStockAlert}
-                            setMinStockAlert={setMinStockAlert}
-                            isActiveForSale={isActiveForSale}
-                            setIsActiveForSale={setIsActiveForSale}
-                            isQuickPos={isQuickPos}
-                            setIsQuickPos={setIsQuickPos}
-                            productNotes={productNotes}
-                            setProductNotes={setProductNotes}
-                        />
-                    )}
-                </div>
-
-                {/* العمود الأيمن: كروت تسعير الوحدات (للقطع) أو تسعير الوزن (للميزان) */}
+                {/* كروت تسعير الوحدات (للقطع) أو تسعير الوزن (للميزان) - العمود الأساسي */}
                 <div className="lg:col-span-8 space-y-4">
                     {itemTypeMode === 'unit' ? (
                         <UnitPricingSection
@@ -234,6 +200,40 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
                             setWeightNewSalePrice={setWeightNewSalePrice}
                             weightSalePrice={weightSalePrice}
                             setWeightSalePrice={setWeightSalePrice}
+                        />
+                    )}
+                </div>
+
+                {/* التصنيفات + الإعدادات المتقدمة (إن فُعّلت) - العمود الجانبي */}
+                <div className="lg:col-span-4 space-y-4">
+                    <ClassificationsSection
+                        brandId={brandId}
+                        setBrandId={setBrandId}
+                        uniqueBrands={uniqueBrands}
+                        categoryId={categoryId}
+                        setCategoryId={setCategoryId}
+                        uniqueCategories={uniqueCategories}
+                        productType={productType}
+                        setProductType={setProductType}
+                        uniqueProductTypes={uniqueProductTypes}
+                        setActiveModal={setActiveModal}
+                        isPharmacy={isPharmacy}
+                    />
+
+                    {showAdvanced && (
+                        <AdvancedSettingsSection
+                            isTaxable={isTaxable}
+                            setIsTaxable={setIsTaxable}
+                            enableMinStockAlert={enableMinStockAlert}
+                            setEnableMinStockAlert={setEnableMinStockAlert}
+                            minStockAlert={minStockAlert}
+                            setMinStockAlert={setMinStockAlert}
+                            isActiveForSale={isActiveForSale}
+                            setIsActiveForSale={setIsActiveForSale}
+                            isQuickPos={isQuickPos}
+                            setIsQuickPos={setIsQuickPos}
+                            productNotes={productNotes}
+                            setProductNotes={setProductNotes}
                         />
                     )}
                 </div>

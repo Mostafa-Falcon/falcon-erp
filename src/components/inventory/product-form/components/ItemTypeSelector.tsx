@@ -27,52 +27,52 @@ export const ItemTypeSelector: React.FC<ItemTypeSelectorProps> = ({
 
   return (
     <Card className="border border-slate-200/90 dark:border-slate-800 bg-surface shadow-xs">
-      <CardContent className="p-4 sm:p-5">
-        <Label className="block text-xs font-black text-slate-800 dark:text-slate-200 mb-3">
+      <CardContent className="p-3.5 sm:p-4">
+        <Label className="block text-2xs sm:text-xs font-black text-slate-700 dark:text-slate-300 mb-2">
           {isPharmacy
             ? 'طبيعة وتصنيف بيع المستحضر الدوائي *'
             : isShopFitting
               ? 'طبيعة تسعير ووحدات الصنف وتفكيك المستويات *'
-              : 'اختر نوع الصنف وطبيعة البيع *'}
+              : 'نوع الصنف وطبيعة البيع *'}
         </Label>
-        <div className={`grid ${hideWeight ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-4`}>
+        <div className={`grid ${hideWeight ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3`}>
           {/* خيار 1: صنف بالقطعة والعبوة / وحدات متعددة */}
           <div
             onClick={() => setItemTypeMode('unit')}
-            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3.5 ${itemTypeMode === 'unit'
-              ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/30 shadow-xs'
+            className={`p-3 sm:p-3.5 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${itemTypeMode === 'unit'
+              ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-2xs'
               : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
           >
             <div
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${itemTypeMode === 'unit'
-                ? 'bg-emerald-600 text-white shadow-xs'
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${itemTypeMode === 'unit'
+                ? 'bg-emerald-600 text-white shadow-2xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                 }`}
             >
-              {isPharmacy ? <Pill className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+              {isPharmacy ? <Pill className="w-4 h-4 sm:w-5 sm:h-5" /> : <Package className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4 className="font-black text-sm text-slate-900 dark:text-white">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                   {isPharmacy
-                    ? 'دواء / مستحضر بالعبوات والقطع (علبة / شريط / قرص / أمبول)'
+                    ? 'دواء / مستحضر بالعبوات والقطع (علبة / شريط / قرص)'
                     : isShopFitting
-                      ? 'صنف بالوحدات والقياسات (لوح / متر / قطعة / كرتونة / طقم)'
-                      : 'صنف بالقطعة (وحدات متعددة)'}
+                      ? 'صنف بالوحدات والقياسات (لوح / متر / قطعة / كرتونة)'
+                      : 'صنف بالقطعة (وحدات وتجزئة متعددة)'}
                 </h4>
                 {itemTypeMode === 'unit' && (
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-3xs">
+                  <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-3xs font-black shrink-0">
                     ✓
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+              <p className="text-3xs sm:text-2xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate">
                 {isPharmacy
-                  ? 'علبة، شريط، قرص، كبسولة، أمبول، زجاجة مع معادلة التحويل والتفكيك التلقائي لأسعار التجزئة'
+                  ? 'علبة، شريط، قرص مع معادلة التحويل والتفكيك التلقائي لأسعار التجزئة'
                   : isShopFitting
-                    ? 'لوح، متر مربع، متر طولي، قطعة، عود، كرتونة، باكت، دستة مع معامل التفكيك وتعدد المستويات'
-                    : 'قطعة، كرتونة، باكت، دستة، علبة، طرد مع معامل التفكيك وتعدد المستويات'}
+                    ? 'لوح، متر مربع، متر طولي، قطعة، عود، كرتونة، باكت مع تفكيك المستويات'
+                    : 'قطعة، كرتونة، باكت، دستة مع معامل التفكيك وتعدد المستويات'}
               </p>
             </div>
           </div>

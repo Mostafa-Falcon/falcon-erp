@@ -105,18 +105,28 @@ function NewItemContent() {
  );
  }
 
+ const isShopFitting =
+  activityType === 'shop_fitting' ||
+  activityType === 'decoration' ||
+  activityType === 'decor' ||
+  activityType === 'fitout';
+
+ const pageTitle = isPharmacy
+  ? (editId ? 'تعديل بيانات الدواء' : 'إضافة دواء / مستحضر جديد')
+  : isShopFitting
+   ? (editId ? 'تعديل الخامة / بند المقايسة' : 'إضافة خامة / بند تشطيب جديد')
+   : (editId ? 'تعديل الصنف' : 'إضافة صنف جديد');
+
+ const pageSubtitle = isPharmacy
+  ? (editId ? 'تعديل بيانات الدواء والمادة الفعالة والوحدات والتسعير' : 'إنشاء دواء جديد بالعلبة والشريط والقرص مع المادة الفعالة وتاريخ الصلاحية')
+  : isShopFitting
+   ? (editId ? 'تعديل بيانات وأسعار ووحدات الخامة أو بند الأعمال' : 'إضافة خامة أو بند أعمال جديد مع وحدات القياس وأسعار التكلفة والتوريد')
+   : (editId ? 'تعديل بيانات ووحدات الصنف الموجود' : 'إنشاء صنف جديد في دليل الأصناف مع الوحدات والتسعير');
+
  return (
  <AppShell
- title={
- isPharmacy
- ? editId ?'تعديل بيانات الدواء':'إضافة دواء / مستحضر جديد'
- : editId ?'تعديل الصنف':'إضافة صنف جديد'
- }
- subtitle={
- isPharmacy
- ? editId ?'تعديل بيانات الدواء والمادة الفعالة والوحدات والتسعير':'إنشاء دواء جديد بالعلبة والشريط والقرص مع المادة الفعالة وتاريخ الصلاحية'
- : editId ?'تعديل بيانات ووحدات الصنف الموجود':'إنشاء صنف جديد في دليل الأصناف مع الوحدات والتسعير'
- }
+ title={pageTitle}
+ subtitle={pageSubtitle}
  >
  <ProductForm
  orgId={currentUser!.org_id!}
