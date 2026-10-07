@@ -5,6 +5,7 @@ import { RestaurantCafePosView } from './domains/RestaurantCafePosView';
 import { MobilePosView } from './domains/MobilePosView';
 import { PharmacyPosView } from './domains/PharmacyPosView';
 import { EducationPosView } from './domains/EducationPosView';
+import { ShopFittingPosView } from './domains/ShopFittingPosView';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
 import { toast } from'sonner';
 import { SalesRepository } from'@/modules/sales/sales_repository';
@@ -544,6 +545,7 @@ return (
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto justify-start sm:justify-end">
           {[
             { id: 'education', label: '🎓 سنتر وتعليم' },
+            { id: 'shop_fitting', label: '🏗️ تجهيز وديكور' },
             { id: 'mobile_shop', label: '📱 موبايل وصيانة' },
             { id: 'restaurant', label: '🍽️ مطاعم وصالة' },
             { id: 'cafe', label: '☕ كافيهات وباريستا' },
@@ -714,6 +716,36 @@ return (
  />
  ) : resolvedDomain === 'education' ? (
  <EducationPosView
+ cart={cart}
+ products={products}
+ unitsById={unitsById}
+ unitOptions={unitOptions}
+ availableFor={availableFor}
+ onAddToCart={addToCart}
+ onUpdateQty={updateQty}
+ onSetQty={setLineQty}
+ onRemoveLine={removeLine}
+ onUnitChange={handleUnitChange}
+ onClearCart={clearCart}
+ orgId={orgId}
+ branchId={branchId}
+ onCheckout={(type) => executeCheckout(type)}
+ isSaving={isSaving}
+ subtotal={subtotal}
+ totalDiscount={totalDiscount}
+ shippingFee={shippingFee}
+ totalTax={totalTax}
+ total={total}
+ customerMode={customerMode}
+ selectedCustomerId={selectedCustomerId}
+ onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+ onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
+ onOpenSplitModal={() => setIsSplitModalOpen(true)}
+ lastAddedKey={lastAddedKey}
+ activeShift={activeShift}
+ />
+ ) : resolvedDomain === 'shop_fitting' ? (
+ <ShopFittingPosView
  cart={cart}
  products={products}
  unitsById={unitsById}

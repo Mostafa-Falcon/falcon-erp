@@ -174,6 +174,20 @@ export const DOMAIN_PROFILES: Record<string, DomainProfile> = {
     brandsLabel: 'الشركات المصنعة والماركات',
     posTitle: 'نقطة البيع الكلاسيكية السريعة (POS)',
   },
+  shop_fitting: {
+    id: 'shop_fitting',
+    nameAr: 'تجهيز المحلات والديكور والتشطيبات',
+    nameEn: 'Shop Fitting & Interior Decor',
+    icon: '🏗️',
+    badgeStyle: 'bg-amber-600/10 text-amber-700 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-300',
+    itemsCategoryLabel: 'الخامات وبنود المقايسة والديكور',
+    itemsListLabel: 'دليل الخامات وبنود الأعمال',
+    itemsAddLabel: 'إضافة خامة / بند تشطيب',
+    substitutesLabel: 'الخامات وبدائل التشطيب',
+    expiryAlertsLabel: 'مواعيد تسليم المشاريع والمقايسات',
+    brandsLabel: 'المصانع وشركات التوريد',
+    posTitle: 'شاشة المقايسات وفواتير التجهيز (POS)',
+  },
 };
 
 export const getDomainProfile = (activityType?: string | null): DomainProfile => {
@@ -183,5 +197,6 @@ export const getDomainProfile = (activityType?: string | null): DomainProfile =>
   if (key === 'cafe' || key === 'cafes' || key === 'coffee') return DOMAIN_PROFILES.cafe;
   if (key === 'mobile' || key === 'mobile_shop' || key === 'mobiles') return DOMAIN_PROFILES.mobile_shop;
   if (key === 'education' || key === 'center' || key === 'academy') return DOMAIN_PROFILES.education;
+  if (key === 'shop_fitting' || key === 'decoration' || key === 'decor' || key === 'fitout' || key === 'interior_design') return DOMAIN_PROFILES.shop_fitting;
   return DOMAIN_PROFILES[key] || DOMAIN_PROFILES.retail;
 };

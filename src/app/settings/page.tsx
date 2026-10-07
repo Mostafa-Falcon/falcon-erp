@@ -570,6 +570,7 @@ export default function SettingsPage() {
  <SelectItem value="supermarket">🥬 سوبرماركت وبقالة ومواد غذائية</SelectItem>
  <SelectItem value="clothing">👕 ملابس وأحذية وأزياء</SelectItem>
                     <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار ومواد بناء</SelectItem>
+                    <SelectItem value="shop_fitting">🏗️ تجهيز المحلات والديكور والتشطيبات</SelectItem>
                     <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
                     <SelectItem value="education">🎓 سناتر الدروس والأنشطة التعليمية والتدريب</SelectItem>
                     <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>

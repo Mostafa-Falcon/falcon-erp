@@ -71,6 +71,9 @@ import {
     PieChart,
     GraduationCap,
     Calculator,
+    Hammer,
+    Ruler,
+    Paintbrush,
 } from 'lucide-react';
 import type { Branch } from '@/types';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
@@ -109,6 +112,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
     const isPharmacy = orgActivity === 'pharmacy';
     const isMobile = orgActivity === 'mobile_shop' || orgActivity === 'electronics';
     const isEducation = orgActivity === 'education';
+    const isShopFitting = orgActivity === 'shop_fitting' || orgActivity === 'decoration' || orgActivity === 'decor' || orgActivity === 'fitout';
 
     // Branch switcher state
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -241,6 +245,17 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                 { label: 'سجل الطلاب والاشتراكات', href: '/education/students', icon: <Users className="w-4 h-4" /> },
                 { label: 'المدرسين والمجموعات', href: '/education/teachers', icon: <UserCheck className="w-4 h-4" /> },
                 { label: 'تصفية حسابات المدرسين', href: '/education/settlements', icon: <Calculator className="w-4 h-4" /> },
+            ],
+        }] : []),
+        ...(isTrial || isShopFitting ? [{
+            id: 'shop_fitting',
+            label: 'تجهيز المحلات والديكور',
+            icon: <Hammer className="w-4 h-4 text-amber-500" />,
+            subItems: [
+                { label: 'مشاريع التجهيز والمقايسات', href: '/decor/projects', icon: <Briefcase className="w-4 h-4" /> },
+                { label: 'حاسبة المقاسات والخامات (م²)', href: '/decor/estimator', icon: <Ruler className="w-4 h-4" /> },
+                { label: 'مستخلصات ودفعات المشاريع', href: '/decor/payments', icon: <Receipt className="w-4 h-4" /> },
+                { label: 'فنيين ومقاولي التنفيذ', href: '/decor/contractors', icon: <Users className="w-4 h-4" /> },
             ],
         }] : []),
         {
