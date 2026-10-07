@@ -1,7 +1,8 @@
-import { v4 as uuidv4 } from'uuid';
-import { db } from'@/core/db/app_database';
-import { SyncQueueManager } from'@/core/sync/sync_queue_manager';
-import { roundQty, roundMoney } from'@/lib/decimal';
+import Dexie from 'dexie';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '@/core/db/app_database';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { roundQty, roundMoney } from '@/lib/decimal';
 import type {
  InventoryTransaction,
  InventoryTransactionType,
@@ -166,20 +167,26 @@ export class StockMovementService {
  const baseQuantity = factor > 1 ? params.quantity / factor : params.quantity * factor;
 
  // Product card decides whether the movement must also update lot balances.
- const product = await db.products.get(params.productId);
+ // Using Dexie.ignoreTransaction isolates read lookups so that caller transactions
+ // don't fail with "objectStore was not found" if they didn't include these read-only tables.
+ const [product, unit, allowNegativeSetting] = await Dexie.ignoreTransaction(async () => {
+ const p = await db.products.get(params.productId);
+ const u = await db.units.get(params.unitId);
+ const s = await db.app_settings.get('allow_negative_stock');
+ return [p, u, s];
+ });
 
- // Denormalized level name snapshot for the transaction (no JOIN at display time).
- const unit = await db.units.get(params.unitId);
- const unitName =
- params.unitName?.trim() || unit?.name || (product ? (await db.units.get(product.base_unit_id))?.name ||'':'');
+ const baseUnitName = product ? await Dexie.ignoreTransaction(async () => {
+ const bu = await db.units.get(product.base_unit_id);
+ return bu?.name || '';
+ }) : '';
 
- // Check setting for negative stock
- const allowNegativeSetting = await db.app_settings.get('allow_negative_stock');
+ const unitName = params.unitName?.trim() || unit?.name || baseUnitName || '';
  const allowNegative = allowNegativeSetting?.value ==='true';
 
  return await db.transaction(
-'rw',
- [db.stock_levels, db.inventory_transactions, db.product_batches, db.sync_queue],
+ 'rw',
+ [db.stock_levels, db.inventory_transactions, db.product_batches, db.product_units, db.sync_queue],
  async () => {
  const currentStock = await db.stock_levels.get(stockId);
  const currentQty = currentStock?.quantity || 0;

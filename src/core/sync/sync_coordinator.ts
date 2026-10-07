@@ -614,6 +614,7 @@ export class SyncCoordinator {
  await safeGetAndUpsert('product_categories', payload.category_id);
  await safeGetAndUpsert('product_brands', payload.brand_id);
  } else if (table ==='product_units') {
+ await safeGetAndUpsert('products', payload.product_id);
  await safeGetAndUpsert('units', payload.unit_id);
  } else if (table ==='product_batches'|| table ==='stock_levels'|| table ==='inventory_transactions') {
  await safeGetAndUpsert('warehouses', payload.warehouse_id);
@@ -690,6 +691,14 @@ export class SyncCoordinator {
  const transfer = payload.transfer_id ? await db.stock_transfers.get(payload.transfer_id as string) : undefined;
  if (transfer) {
  payload.org_id = transfer.org_id;
+ }
+ }
+
+ // حقن org_id لمستويات وحدات الأصناف إن كانت مفقودة
+ if (item.entity_table ==='product_units'&& !payload.org_id) {
+ const prod = payload.product_id ? await db.products.get(payload.product_id as string) : undefined;
+ if (prod?.org_id) {
+ payload.org_id = prod.org_id;
  }
  }
 

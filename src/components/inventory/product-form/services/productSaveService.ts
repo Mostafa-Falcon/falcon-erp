@@ -268,6 +268,7 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  const discTypeSec = lvl.discountValue?.trim() ? lvl.discountType : undefined;
 
  secondaryUnitsData.push({
+ org_id: orgId,
  unit_id: subU.id,
  unit_name: lvl.unitName.trim(),
  level_order: i + 1,

@@ -128,6 +128,7 @@ export class ProductRepository {
  const unitsToInsert: ProductUnit[] = secondaryUnits.map((u) => ({
  ...u,
  id: uuidv4(),
+ org_id: u.org_id || productData.org_id,
  product_id: productId,
  created_at: now,
  updated_at: now,

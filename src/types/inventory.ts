@@ -115,6 +115,7 @@ export interface Product {
  */
 export interface ProductUnit {
  id: EntityId;
+ org_id?: EntityId;
  product_id: EntityId;
  unit_id: EntityId;
  conversion_factor: number; // How many base units in this unit (explicitly set)
