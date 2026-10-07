@@ -1,3 +1,3 @@
 'use client';
 
-export { CustomerProfileView } from'./profile/CustomerProfileView';
+export { CustomerProfileView } from './profile/CustomerProfileView';

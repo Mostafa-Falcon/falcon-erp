@@ -318,7 +318,9 @@ export class SalesRepository {
  unit_id: item.unitId,
  conversion_factor: item.conversionFactor,
  quantity: item.quantity,
- base_quantity: item.quantity * item.conversionFactor,
+ base_quantity: (item.conversionFactor && item.conversionFactor > 1)
+ ? item.quantity / item.conversionFactor
+ : item.quantity * (item.conversionFactor || 1),
  unit_price: item.unitPrice,
  unit_cost: item.unitCost,
  discount_amount: discount,

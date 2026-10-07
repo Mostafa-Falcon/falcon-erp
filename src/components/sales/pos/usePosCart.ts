@@ -88,13 +88,13 @@ export function usePosCart({
  const chosenBatch = prodBatches.find((b) => b.id === batchId);
  if (chosenBatch) {
  const batchQtyInBase = chosenBatch.current_quantity;
- return Math.max(0, Number((batchQtyInBase / unitFactor).toFixed(3)));
+ return Math.max(0, Number((batchQtyInBase * unitFactor).toFixed(3)));
  }
  }
 
- // 2. Otherwise calculate based on total warehouse stock for this product
+ // 2. Otherwise calculate based on total warehouse stock for this product (baseStock * unitFactor)
  const baseStock = stock[productId] || 0;
- return Math.max(0, Number((baseStock / unitFactor).toFixed(3)));
+ return Math.max(0, Number((baseStock * unitFactor).toFixed(3)));
  },
  [products, batches, stock]
  );

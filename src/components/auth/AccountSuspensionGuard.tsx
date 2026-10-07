@@ -279,16 +279,14 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
           {/* Hero Emblem */}
           <div className="relative mx-auto w-16 h-16 sm:w-18 sm:h-18 flex items-center justify-center">
             <div
-              className={`absolute inset-0 rounded-2xl blur-lg opacity-60 ${
-                isTrialBarrier ? 'bg-gradient-to-tr from-emerald-500 to-blue-600' : 'bg-gradient-to-tr from-rose-500 to-amber-600'
-              }`}
+              className={`absolute inset-0 rounded-2xl blur-lg opacity-60 ${isTrialBarrier ? 'bg-gradient-to-tr from-emerald-500 to-blue-600' : 'bg-gradient-to-tr from-rose-500 to-amber-600'
+                }`}
             />
             <div
-              className={`relative w-16 h-16 sm:w-18 sm:h-18 rounded-2xl border flex items-center justify-center shadow-lg ${
-                isTrialBarrier
-                  ? 'bg-slate-950/90 border-emerald-500/40 text-emerald-400'
-                  : 'bg-slate-950/90 border-rose-500/40 text-rose-400'
-              }`}
+              className={`relative w-16 h-16 sm:w-18 sm:h-18 rounded-2xl border flex items-center justify-center shadow-lg ${isTrialBarrier
+                ? 'bg-slate-950/90 border-emerald-500/40 text-emerald-400'
+                : 'bg-slate-950/90 border-rose-500/40 text-rose-400'
+                }`}
             >
               {isTrialBarrier ? (
                 <KeyRound className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2] animate-bounce" />
@@ -339,11 +337,10 @@ export const AccountSuspensionGuard: React.FC<AccountSuspensionGuardProps> = ({ 
                 <span>حالة الترخيص</span>
               </span>
               <span
-                className={`font-black px-2 py-0.5 rounded-md text-3xs ${
-                  isTrialBarrier
-                    ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                    : 'bg-rose-950/60 text-rose-300 border border-rose-800/60'
-                }`}
+                className={`font-black px-2 py-0.5 rounded-md text-3xs ${isTrialBarrier
+                  ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                  : 'bg-rose-950/60 text-rose-300 border border-rose-800/60'
+                  }`}
               >
                 {isTrialBarrier ? 'نسخة تجريبية • بانتظار الاعتماد' : 'موقوف إدارياً'}
               </span>

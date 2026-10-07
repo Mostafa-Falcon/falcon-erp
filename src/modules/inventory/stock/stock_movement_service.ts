@@ -162,7 +162,8 @@ export class StockMovementService {
 
  const now = new Date().toISOString();
  const stockId =`${params.warehouseId}_${params.productId}`;
- const baseQuantity = params.quantity * params.conversionFactor;
+ const factor = params.conversionFactor > 0 ? params.conversionFactor : 1;
+ const baseQuantity = factor > 1 ? params.quantity / factor : params.quantity * factor;
 
  // Product card decides whether the movement must also update lot balances.
  const product = await db.products.get(params.productId);
@@ -318,7 +319,7 @@ export class StockMovementService {
  await db.transaction('rw', [db.product_units, db.sync_queue], async () => {
  for (const u of units) {
  const factor = u.conversion_factor > 0 ? u.conversion_factor : 1;
- const silo = roundQty(totalAvailableBase / factor);
+ const silo = roundQty(totalAvailableBase * factor);
  if (roundQty(u.available_quantity ?? 0) === silo) continue;
  const updated: ProductUnit = {
  ...u,

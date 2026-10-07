@@ -24,6 +24,7 @@ function NewItemContent() {
  const [initial, setInitial] = useState<Product | undefined>();
  const [initialUnits, setInitialUnits] = useState<ProductUnit[]>([]);
  const [isPharmacy, setIsPharmacy] = useState(false);
+ const [activityType, setActivityType] = useState<string>('');
  const [isLoading, setIsLoading] = useState(true);
  const [notFound, setNotFound] = useState(false);
 
@@ -49,8 +50,11 @@ function NewItemContent() {
  setProductTypes(ptypes);
  setUnits(uns);
  setWarehouses(whs);
- if (org && org.activity_type ==='pharmacy') {
+ if (org && org.activity_type) {
+ setActivityType(org.activity_type);
+ if (org.activity_type === 'pharmacy') {
  setIsPharmacy(true);
+ }
  }
 
  if (editId) {
@@ -124,6 +128,14 @@ function NewItemContent() {
  initial={initial}
  initialUnits={initialUnits}
  isPharmacy={isPharmacy}
+ activityType={activityType}
+ hideWeight={
+ activityType === 'shop_fitting' ||
+ activityType === 'decoration' ||
+ activityType === 'decor' ||
+ activityType === 'fitout' ||
+ isPharmacy
+ }
  onSaved={() => {
  router.push('/items');
  router.refresh();

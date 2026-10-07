@@ -57,7 +57,8 @@ export class ProductUnitsService {
  /**
  * Get all packaging/secondary units for a product
  */
- public static async getProductUnits(productId: string): Promise<ProductUnit[]> {
- return await db.product_units.where('product_id').equals(productId).toArray();
- }
+  public static async getProductUnits(productId: string): Promise<ProductUnit[]> {
+    const list = await db.product_units.where('product_id').equals(productId).toArray();
+    return list.sort((a, b) => (a.level_order || 0) - (b.level_order || 0));
+  }
 }

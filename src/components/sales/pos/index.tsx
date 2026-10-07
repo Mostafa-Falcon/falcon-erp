@@ -5,7 +5,6 @@ import { RestaurantCafePosView } from './domains/RestaurantCafePosView';
 import { MobilePosView } from './domains/MobilePosView';
 import { PharmacyPosView } from './domains/PharmacyPosView';
 import { EducationPosView } from './domains/EducationPosView';
-import { ShopFittingPosView } from './domains/ShopFittingPosView';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
 import { toast } from'sonner';
 import { SalesRepository } from'@/modules/sales/sales_repository';
@@ -184,14 +183,8 @@ export function POS() {
  );
 
  const resolvedDomain = useMemo(() => {
-   // If the account is activated (non-trial), permanently lock the POS domain to the organization's activity_type
-   if (!isTrial) {
-     return getDomainProfile(organization?.activity_type).id;
-   }
-   // In trial period, allow preview switcher
-   if (previewDomain) return previewDomain;
-   return getDomainProfile(organization?.activity_type).id;
- }, [isTrial, previewDomain, organization?.activity_type]);
+    return getDomainProfile(organization?.activity_type).id;
+  }, [organization?.activity_type]);
  const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
 
  // Theme
@@ -536,43 +529,7 @@ return (
       branchName={branchName}
     />
 
-    {/* Specialized POS Domain Switcher (Active ONLY during trial mode for testing) */}
-    {activeShift && isTrial && (
-      <div className="bg-slate-900 border-b border-slate-800 text-white px-2 sm:px-4 py-1.5 flex items-center justify-between text-xs gap-2">
-        <span className="font-bold text-slate-300 text-xs shrink-0">
-          معاينة واجهات الكاشير المتخصصة:
-        </span>
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto justify-start sm:justify-end">
-          {[
-            { id: 'education', label: '🎓 سنتر وتعليم' },
-            { id: 'shop_fitting', label: '🏗️ تجهيز وديكور' },
-            { id: 'mobile_shop', label: '📱 موبايل وصيانة' },
-            { id: 'restaurant', label: '🍽️ مطاعم وصالة' },
-            { id: 'cafe', label: '☕ كافيهات وباريستا' },
-            { id: 'pharmacy', label: '💊 صيدلية ومستلزمات' },
-            { id: 'retail', label: '🛒 كاشير سريع وتجزئة' },
-          ].map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => {
-                setPreviewDomain(d.id);
-                toast.info(`تم التبديل إلى: ${d.label}`);
-              }}
-              className={`px-2.5 py-1 rounded-xl text-3xs font-black transition-all shrink-0 cursor-pointer ${
-                resolvedDomain === d.id
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-1 ring-amber-400'
-                  : 'text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    )}
-
-  {/* 2. Main POS Flow or Open Shift View */}
+    {/* 2. Main POS Flow or Open Shift View */}
  {!activeShift ? (
  <PosOpenShiftView
  currentUser={currentUser}
@@ -744,36 +701,7 @@ return (
  lastAddedKey={lastAddedKey}
  activeShift={activeShift}
  />
- ) : resolvedDomain === 'shop_fitting' ? (
- <ShopFittingPosView
- cart={cart}
- products={products}
- unitsById={unitsById}
- unitOptions={unitOptions}
- availableFor={availableFor}
- onAddToCart={addToCart}
- onUpdateQty={updateQty}
- onSetQty={setLineQty}
- onRemoveLine={removeLine}
- onUnitChange={handleUnitChange}
- onClearCart={clearCart}
- orgId={orgId}
- branchId={branchId}
- onCheckout={(type) => executeCheckout(type)}
- isSaving={isSaving}
- subtotal={subtotal}
- totalDiscount={totalDiscount}
- shippingFee={shippingFee}
- totalTax={totalTax}
- total={total}
- customerMode={customerMode}
- selectedCustomerId={selectedCustomerId}
- onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
- onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
- onOpenSplitModal={() => setIsSplitModalOpen(true)}
- lastAddedKey={lastAddedKey}
- activeShift={activeShift}
- />
+
  ) : (
  <>
  {/* Operations Toolbar */}

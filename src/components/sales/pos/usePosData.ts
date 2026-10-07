@@ -133,7 +133,7 @@ export function usePosData() {
  list.push({
  unitId: pu.unit_id,
  factor: pu.conversion_factor || 1,
- price: basePrice !== undefined && pu.sale_price !== undefined ? pu.sale_price : (p.sale_price || 0) * (pu.conversion_factor || 1),
+ price: basePrice !== undefined && pu.sale_price !== undefined ? pu.sale_price : ((p.sale_price || 0) / (pu.conversion_factor || 1)),
  });
  }
 

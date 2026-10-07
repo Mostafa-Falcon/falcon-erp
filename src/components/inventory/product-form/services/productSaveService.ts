@@ -120,11 +120,11 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  let baseU = units.find((u) =>
  itemTypeMode ==='weight'
  ? u.name.includes('كيلو') || u.symbol.toLowerCase() ==='kg'
- : u.name === unitLevels[0]?.unitName
+ : u.name === unitLevels[0]?.unitName?.trim()
  );
 
  if (!baseU) {
- const uName = itemTypeMode ==='weight'?'كيلوجرام': unitLevels[0]?.unitName ||'قطعة';
+ const uName = itemTypeMode ==='weight'?'كيلوجرام': unitLevels[0]?.unitName?.trim() ||'قطعة';
  baseU = await ProductRepository.createUnit(uName, uName.slice(0, 3), orgId);
  }
 
@@ -225,18 +225,29 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  for (let i = 1; i < Math.min(3, unitLevels.length); i++) {
  const lvl = unitLevels[i];
  if (!lvl.unitName.trim()) continue;
- let subU = units.find((u) => u.name === lvl.unitName);
+ let subU = units.find((u) => u.name === lvl.unitName.trim());
  if (!subU) {
- subU = await ProductRepository.createUnit(lvl.unitName, lvl.unitName.slice(0, 3), orgId);
+ subU = await ProductRepository.createUnit(lvl.unitName.trim(), lvl.unitName.trim().slice(0, 3), orgId);
  }
- const secondarySale = lvl.dualPricing && lvl.newSalePrice
+ const factor = parseFloat(lvl.conversionFactor) || 1;
+
+ const prevLvl = unitLevels[i - 1];
+ const prevSale = parseFloat(prevLvl?.newSalePrice || prevLvl?.salePrice || '0') || sPrice;
+ const prevCost = parseFloat(prevLvl?.purchasePrice || '0') || pPrice;
+
+ let secondarySale = lvl.dualPricing && lvl.newSalePrice
  ? parseFloat(lvl.newSalePrice)
  : (lvl.salePrice ? parseFloat(lvl.salePrice) : undefined);
+
+ if ((secondarySale === undefined || secondarySale <= 0) && prevSale > 0 && factor > 0) {
+ secondarySale = Number((prevSale / factor).toFixed(2));
+ }
+
  const secondaryOldSale = lvl.dualPricing && lvl.oldSalePrice
  ? parseFloat(lvl.oldSalePrice)
  : undefined;
 
- const secondaryCost = lvl.purchasePrice
+ let secondaryCost = lvl.purchasePrice
  ? (calculatePriceDetails(
  lvl.purchasePrice,
  lvl.salePrice,
@@ -245,13 +256,22 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  ).netCost || parseFloat(lvl.purchasePrice))
  : undefined;
 
- const rawCostSec = lvl.purchasePrice ? parseFloat(lvl.purchasePrice) : undefined;
+ if ((secondaryCost === undefined || secondaryCost <= 0) && prevCost > 0 && factor > 0) {
+ secondaryCost = Number((prevCost / factor).toFixed(2));
+ }
+
+ const rawCostSec = lvl.purchasePrice
+ ? parseFloat(lvl.purchasePrice)
+ : (secondaryCost !== undefined ? secondaryCost : undefined);
+
  const discValSec = lvl.discountValue?.trim() ? parseFloat(lvl.discountValue) : undefined;
  const discTypeSec = lvl.discountValue?.trim() ? lvl.discountType : undefined;
 
  secondaryUnitsData.push({
  unit_id: subU.id,
- conversion_factor: parseFloat(lvl.conversionFactor) || 1,
+ unit_name: lvl.unitName.trim(),
+ level_order: i + 1,
+ conversion_factor: factor,
  purchase_price: secondaryCost,
  raw_purchase_price: rawCostSec,
  purchase_discount_value: discValSec,
@@ -321,7 +341,7 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  const q3 = parseFloat(unitLevels[2]?.openingStock ||'0') || 0;
  const f3 = parseFloat(unitLevels[2]?.conversionFactor ||'1') || 1;
 
- totalOpeningStock = q1 + (q2 * f2) + (q3 * f3);
+ totalOpeningStock = q1 + (f2 > 0 ? q2 / f2 : q2) + (f2 > 0 && f3 > 0 ? q3 / (f2 * f3) : q3);
  }
 
  if (totalOpeningStock > 0) {
