@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { RestaurantCafePosView } from './domains/RestaurantCafePosView';
 import { MobilePosView } from './domains/MobilePosView';
 import { PharmacyPosView } from './domains/PharmacyPosView';
-import { EducationPosView } from './domains/EducationPosView';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
 import { toast } from'sonner';
 import { SalesRepository } from'@/modules/sales/sales_repository';
@@ -671,37 +670,6 @@ return (
  onOpenSplitModal={() => setIsSplitModalOpen(true)}
  activeShift={activeShift}
  />
- ) : resolvedDomain === 'education' ? (
- <EducationPosView
- cart={cart}
- products={products}
- unitsById={unitsById}
- unitOptions={unitOptions}
- availableFor={availableFor}
- onAddToCart={addToCart}
- onUpdateQty={updateQty}
- onSetQty={setLineQty}
- onRemoveLine={removeLine}
- onUnitChange={handleUnitChange}
- onClearCart={clearCart}
- orgId={orgId}
- branchId={branchId}
- onCheckout={(type) => executeCheckout(type)}
- isSaving={isSaving}
- subtotal={subtotal}
- totalDiscount={totalDiscount}
- shippingFee={shippingFee}
- totalTax={totalTax}
- total={total}
- customerMode={customerMode}
- selectedCustomerId={selectedCustomerId}
- onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
- onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
- onOpenSplitModal={() => setIsSplitModalOpen(true)}
- lastAddedKey={lastAddedKey}
- activeShift={activeShift}
- />
-
  ) : (
  <>
  {/* Operations Toolbar */}

@@ -490,7 +490,6 @@ export default function RegisterPage() {
                     <SelectItem value="hardware">🛠️ حدايد وبويات وقطع غيار</SelectItem>
                     <SelectItem value="shop_fitting">🏗️ تجهيز المحلات والديكور والتشطيبات</SelectItem>
                     <SelectItem value="pharmacy">💊 صيدلية ومستلزمات طبية</SelectItem>
-                    <SelectItem value="education">🎓 سناتر الدروس والأنشطة التعليمية والتدريب</SelectItem>
                     <SelectItem value="services">🛎️ خدمات عامة وأنشطة أخرى</SelectItem>
  </SelectContent>
  </Select>

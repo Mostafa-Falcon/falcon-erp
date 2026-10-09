@@ -111,7 +111,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
     const isTrial = !orgSubscription || orgSubscription === 'trial';
     const isPharmacy = orgActivity === 'pharmacy';
     const isMobile = orgActivity === 'mobile_shop' || orgActivity === 'electronics';
-    const isEducation = orgActivity === 'education';
     const isShopFitting = orgActivity === 'shop_fitting' || orgActivity === 'decoration' || orgActivity === 'decor' || orgActivity === 'fitout';
 
     // Branch switcher state
@@ -236,17 +235,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
                 { label: 'المحافظ والشحن كاش', href: '/mobile/wallets', icon: <Wallet className="w-4 h-4" /> },
             ],
         }] : []),
-        ...(isEducation ? [{
-            id: 'education',
-            label: 'السنتر والتعليم',
-            icon: <GraduationCap className="w-4 h-4 text-emerald-500" />,
-            subItems: [
-                { label: 'شاشة الحضور السريع (QR)', href: '/education/attendance', icon: <QrCode className="w-4 h-4" /> },
-                { label: 'سجل الطلاب والاشتراكات', href: '/education/students', icon: <Users className="w-4 h-4" /> },
-                { label: 'المدرسين والمجموعات', href: '/education/teachers', icon: <UserCheck className="w-4 h-4" /> },
-                { label: 'تصفية حسابات المدرسين', href: '/education/settlements', icon: <Calculator className="w-4 h-4" /> },
-            ],
-        }] : []),
         ...(isShopFitting ? [{
             id: 'shop_fitting',
             label: 'مقايسات ومشاريع التجهيز',
@@ -347,7 +335,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, isDesktop, onClo
         }
         // 3. Specialized domain modules
         if (item.id === 'mobile' && !isMobile) return false;
-        if (item.id === 'education' && !isEducation) return false;
         if (item.id === 'shop_fitting' && !isShopFitting) return false;
         return true;
     }).map((item) => {
