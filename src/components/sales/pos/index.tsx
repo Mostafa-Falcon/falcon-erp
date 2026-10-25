@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { RestaurantCafePosView } from './domains/RestaurantCafePosView';
 import { MobilePosView } from './domains/MobilePosView';
 import { PharmacyPosView } from './domains/PharmacyPosView';
+import { EducationPosView } from './domains/EducationPosView';
 import { getDomainProfile } from '@/core/constants/domain_profiles';
 import { toast } from'sonner';
 import { SalesRepository } from'@/modules/sales/sales_repository';
@@ -171,10 +172,11 @@ export function POS() {
  };
  }, [isResizing, sidebarWidth]);
 
- // Saving / Invoice
- const [isSaving, setIsSaving] = useState(false);
- const [successInvoice, setSuccessInvoice] = useState<SalesInvoice | null>(null);
- const [previewDomain, setPreviewDomain] = useState<string | null>(null);
+  // Saving / Invoice
+  const [isSaving, setIsSaving] = useState(false);
+  const checkoutLockRef = React.useRef(false);
+  const [successInvoice, setSuccessInvoice] = useState<SalesInvoice | null>(null);
+  const [previewDomain, setPreviewDomain] = useState<string | null>(null);
 
  // Check if account is in trial period or officially activated (standard/pro/vip)
  const isTrial = Boolean(
@@ -277,167 +279,177 @@ export function POS() {
  }, [isLoading]);
 
  // Checkout Execution
- const executeCheckout = async (
- payType:'cash'|'card'|'credit'|'split',
- splitDetails?: { cashAmount: number; cardAmount: number }
- ) => {
- if (!activeShift) {
- toast.error('لا يمكن إتمام العملية بدون فتح وردية كاشير أولاً');
- setIsShiftModalOpen(true);
- return;
- }
- if (cart.length === 0) {
- toast.error('السلة فارغة! يرجى إضافة أصناف أولاً.');
- return;
- }
- if (!warehouseId || !treasuryId) {
- toast.error('يرجى تحديد المخزن والخزينة لإتمام العملية.');
- return;
- }
+  const executeCheckout = async (
+    payType:'cash'|'card'|'credit'|'split',
+    splitDetails?: { cashAmount: number; cardAmount: number }
+  ) => {
+    if (isSaving || checkoutLockRef.current) {
+      return;
+    }
+    if (!activeShift) {
+      toast.error('لا يمكن إتمام العملية بدون فتح وردية كاشير أولاً');
+      setIsShiftModalOpen(true);
+      return;
+    }
+    if (cart.length === 0) {
+      toast.error('السلة فارغة! يرجى إضافة أصناف أولاً.');
+      return;
+    }
+    if (!warehouseId || !treasuryId) {
+      toast.error('يرجى تحديد المخزن والخزينة لإتمام العملية.');
+      return;
+    }
+    checkoutLockRef.current = true;
 
- // Return Mode Checkout
- if (activeReturnInvoice) {
- setIsSaving(true);
- try {
- const returnItems = cart.map((line) => ({
- productId: line.productId,
- unitId: line.unitId,
- conversionFactor: line.factor,
- quantity: line.qty,
- unitPrice: line.price,
- unitCost: line.cost * line.factor,
- discountAmount: line.discount,
- taxRate: line.taxRate,
- }));
+  // Return Mode Checkout
+  if (activeReturnInvoice) {
+    setIsSaving(true);
+    try {
+      const returnItems = cart.map((line) => ({
+        productId: line.productId,
+        unitId: line.unitId,
+        conversionFactor: line.factor,
+        quantity: line.qty,
+        unitPrice: line.price,
+        unitCost: line.cost * line.factor,
+        discountAmount: line.discount,
+        taxRate: line.taxRate,
+      }));
 
- await SalesRepository.createSalesReturn({
- orgId,
- branchId,
- warehouseId,
- originalInvoiceId: activeReturnInvoice.id,
- shiftId: activeShift.id,
- customerId: activeReturnInvoice.customer_id || null,
- items: returnItems,
- discountAmount: globalDiscount,
- discountPercent: globalDiscountPercent,
- enableTax,
- vatRate,
- treasuryId,
- userId: currentUser?.id ||'',
- reason: notes.trim() ||`مرتجع مبيعات مباشر من الفاتورة #${activeReturnInvoice.invoice_number}`,
- });
+      await SalesRepository.createSalesReturn({
+        orgId,
+        branchId,
+        warehouseId,
+        originalInvoiceId: activeReturnInvoice.id,
+        shiftId: activeShift.id,
+        customerId: activeReturnInvoice.customer_id || null,
+        items: returnItems,
+        discountAmount: globalDiscount,
+        discountPercent: globalDiscountPercent,
+        enableTax,
+        vatRate,
+        treasuryId,
+        userId: currentUser?.id ||'',
+        reason: notes.trim() ||`مرتجع مبيعات مباشر من الفاتورة #${activeReturnInvoice.invoice_number}`,
+      });
 
- // Live update shift balance
- const { db } = await import('@/core/db/app_database');
- const refreshedShift = await db.cashier_shifts.get(activeShift.id);
- if (refreshedShift) {
- setActiveShift(refreshedShift);
- }
+      // Live update shift balance
+      const { db } = await import('@/core/db/app_database');
+      const refreshedShift = await db.cashier_shifts.get(activeShift.id);
+      if (refreshedShift) {
+        setActiveShift(refreshedShift);
+      }
 
- toast.success(`تم حفظ المرتجع للفاتورة #${activeReturnInvoice.invoice_number} بنجاح!`);
- cancelReturnMode();
- loadData();
- } catch (err) {
- console.error('Error processing sales return:', err);
- toast.error(err instanceof Error ? err.message :'حدث خطأ أثناء حفظ المرتجع.');
- } finally {
- setIsSaving(false);
- }
- return;
- }
+      toast.success(`تم حفظ المرتجع للفاتورة #${activeReturnInvoice.invoice_number} بنجاح!`);
+      cancelReturnMode();
+      loadData();
+    } catch (err) {
+      console.error('Error processing sales return:', err);
+      toast.error(err instanceof Error ? err.message :'حدث خطأ أثناء حفظ المرتجع.');
+    } finally {
+      setIsSaving(false);
+      checkoutLockRef.current = false;
+    }
+    return;
+  }
 
- if (payType ==='credit'&& !selectedCustomerId) {
- setIsCustomerModalOpen(true);
- toast.error('البيع الآجل يتطلب تحديد العميل أولاً!');
- return;
- }
+  if (payType ==='credit'&& !selectedCustomerId) {
+    checkoutLockRef.current = false;
+    setIsCustomerModalOpen(true);
+    toast.error('البيع الآجل يتطلب تحديد العميل أولاً!');
+    return;
+  }
 
- setIsSaving(true);
- try {
- const items = cart.map((line) => ({
- productId: line.productId,
- batchId: line.batchId || null,
- unitId: line.unitId,
- conversionFactor: line.factor,
- quantity: line.qty,
- unitPrice: line.price,
- unitCost: line.cost * line.factor,
- discountAmount: line.discount,
- taxRate: line.taxRate,
- }));
+  setIsSaving(true);
+  try {
+    const items = cart.map((line) => ({
+      productId: line.productId,
+      batchId: line.batchId || null,
+      unitId: line.unitId,
+      conversionFactor: line.factor,
+      quantity: line.qty,
+      unitPrice: line.price,
+      unitCost: line.cost * line.factor,
+      discountAmount: line.discount,
+      taxRate: line.taxRate,
+    }));
 
- let cashAmount = 0;
- let cardAmount = 0;
+    let cashAmount = 0;
+    let cardAmount = 0;
 
- if (payType ==='cash') {
- cashAmount = total;
- } else if (payType ==='card') {
- cardAmount = total;
- } else if (payType ==='split') {
- cashAmount = splitDetails?.cashAmount ?? 0;
- cardAmount = splitDetails?.cardAmount ?? 0;
- }
+    if (payType ==='cash') {
+      cashAmount = total;
+    } else if (payType ==='card') {
+      cardAmount = total;
+    } else if (payType ==='split') {
+      cashAmount = splitDetails?.cashAmount ?? 0;
+      cardAmount = splitDetails?.cardAmount ?? 0;
+    }
 
- const invoice = await SalesRepository.createSalesInvoice({
- orgId,
- branchId,
- warehouseId,
- shiftId: activeShift.id,
- customerId: selectedCustomerId || null,
- items,
- discountAmount: globalDiscount,
- discountPercent: globalDiscountPercent,
- shippingFee,
- paymentType: payType,
- cashAmount,
- cardAmount,
- treasuryId,
- userId: currentUser?.id ||'',
- notes: [notes.trim(), shippingFee > 0 ?`مصاريف توصيل/شحن: ${shippingFee} ج.م`:'']
- .filter(Boolean)
- .join('|') || undefined,
- });
+    const invoice = await SalesRepository.createSalesInvoice({
+      orgId,
+      branchId,
+      warehouseId,
+      shiftId: activeShift.id,
+      customerId: selectedCustomerId || null,
+      items,
+      discountAmount: globalDiscount,
+      discountPercent: globalDiscountPercent,
+      shippingFee,
+      paymentType: payType,
+      cashAmount,
+      cardAmount,
+      treasuryId,
+      userId: currentUser?.id ||'',
+      notes: [notes.trim(), shippingFee > 0 ?`مصاريف توصيل/شحن: ${shippingFee} ج.م`:'']
+        .filter(Boolean)
+        .join('|') || undefined,
+    });
 
- // Live update shift balance
- const { db } = await import('@/core/db/app_database');
- const refreshedShift = await db.cashier_shifts.get(activeShift.id);
- if (refreshedShift) {
- setActiveShift(refreshedShift);
- }
+    // Live update shift balance
+    const { db } = await import('@/core/db/app_database');
+    const refreshedShift = await db.cashier_shifts.get(activeShift.id);
+    if (refreshedShift) {
+      setActiveShift(refreshedShift);
+    }
 
- setSuccessInvoice(invoice);
- toast.success(`تم حفظ وطباعة الفاتورة #${invoice.invoice_number} بنجاح!`);
- setCart([]);
- setGlobalDiscount(0);
- setShippingFee(0);
- setGlobalDiscountPercent(0);
- setNotes('');
- setSelectedCustomerId('');
- setCustomerMode('cash');
- setIsSplitModalOpen(false);
- } catch (err) {
- console.error(err);
- toast.error(err instanceof Error ? err.message :'حدث خطأ أثناء إتمام عملية البيع.');
- } finally {
- setIsSaving(false);
- }
- };
+    setSuccessInvoice(invoice);
+    toast.success(`تم حفظ وطباعة الفاتورة #${invoice.invoice_number} بنجاح!`);
+    setCart([]);
+    setGlobalDiscount(0);
+    setShippingFee(0);
+    setGlobalDiscountPercent(0);
+    setNotes('');
+    setSelectedCustomerId('');
+    setCustomerMode('cash');
+    setIsSplitModalOpen(false);
+  } catch (err) {
+    console.error(err);
+    toast.error(err instanceof Error ? err.message :'حدث خطأ أثناء إتمام عملية البيع.');
+  } finally {
+    setIsSaving(false);
+    checkoutLockRef.current = false;
+  }
+  };
 
- // Global Keyboard Shortcuts inside POS
- useEffect(() => {
- const handleKeyDown = (e: KeyboardEvent) => {
- // F10: Cash Checkout
- if (e.key ==='F10') {
- e.preventDefault();
- executeCheckout('cash');
- return;
- }
- // F7: Card Payment
- if (e.key ==='F7') {
- e.preventDefault();
- executeCheckout('card');
- return;
- }
+  // Global Keyboard Shortcuts inside POS
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSaving || checkoutLockRef.current) {
+        return;
+      }
+      // F10: Cash Checkout
+      if (e.key ==='F10') {
+        e.preventDefault();
+        executeCheckout('cash');
+        return;
+      }
+      // F7: Card Payment
+      if (e.key ==='F7') {
+        e.preventDefault();
+        executeCheckout('card');
+        return;
+      }
  // F9: Split Payment Modal
  if (e.key ==='F9') {
  e.preventDefault();
@@ -670,6 +682,37 @@ return (
  onOpenSplitModal={() => setIsSplitModalOpen(true)}
  activeShift={activeShift}
  />
+ ) : resolvedDomain === 'education' ? (
+ <EducationPosView
+ cart={cart}
+ products={products}
+ unitsById={unitsById}
+ unitOptions={unitOptions}
+ availableFor={availableFor}
+ onAddToCart={addToCart}
+ onUpdateQty={updateQty}
+ onSetQty={setLineQty}
+ onRemoveLine={removeLine}
+ onUnitChange={handleUnitChange}
+ onClearCart={clearCart}
+ orgId={orgId}
+ branchId={branchId}
+ onCheckout={(type) => executeCheckout(type)}
+ isSaving={isSaving}
+ subtotal={subtotal}
+ totalDiscount={totalDiscount}
+ shippingFee={shippingFee}
+ totalTax={totalTax}
+ total={total}
+ customerMode={customerMode}
+ selectedCustomerId={selectedCustomerId}
+ onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+ onOpenDiscountsModal={() => setIsDiscountsModalOpen(true)}
+ onOpenSplitModal={() => setIsSplitModalOpen(true)}
+ lastAddedKey={lastAddedKey}
+ activeShift={activeShift}
+ />
+
  ) : (
  <>
  {/* Operations Toolbar */}

@@ -57,13 +57,19 @@ export function qtySum(values: readonly number[]): number {
  return roundedSum(values, QTY_DECIMALS);
 }
 
-/** Accurate product (qty x unit price) rounded to money precision. */
+ /** Accurate product (qty x unit price) rounded to money precision. */
 export function moneyProduct(quantity: number, unitPrice: number): number {
- return roundMoney(quantity * unitPrice);
+  return roundMoney(quantity * unitPrice);
+}
+
+/** Converts entered quantity to base unit quantity using conversion factor. */
+export function toBaseQty(quantity: number, conversionFactor?: number | null): number {
+  const factor = conversionFactor && conversionFactor > 0 ? conversionFactor : 1;
+  return roundQty(quantity * factor);
 }
 
 /** Formats a monetary amount with exactly MONEY_DECIMALS decimals. */
 export function formatMoney(value: number | null | undefined): string {
- const v = typeof value ==='number'&& Number.isFinite(value) ? value : 0;
- return roundMoney(v).toFixed(MONEY_DECIMALS);
+  const v = typeof value ==='number'&& Number.isFinite(value) ? value : 0;
+  return roundMoney(v).toFixed(MONEY_DECIMALS);
 }

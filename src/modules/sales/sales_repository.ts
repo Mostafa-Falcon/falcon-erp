@@ -22,7 +22,7 @@ import type {
  JournalEntry,
  JournalEntryLine,
 } from'@/types';
-import { roundMoney } from'@/lib/decimal';
+import { roundMoney, roundQty, toBaseQty } from'@/lib/decimal';
 
 /** Payload shared by the local and the online-first sales creation paths. */
 export interface CreateSalesInvoiceParams {
@@ -282,14 +282,15 @@ export class SalesRepository {
  }
  }
 
- // ONLINE-FIRST: when the cloud is reachable it processes the ENTIRE sale
- // atomically (numbering, stock guards, treasury, contact, journal) and the
- // authoritative answer is mirrored locally as synced. Only when unreachable
- // (or the online RPC is not deployed yet) do we fall back to the local path.
- if (networkListener.getStatus()) {
- const onlineInvoice = await SalesRepository.createSalesInvoiceOnline(params);
- if (onlineInvoice) return onlineInvoice;
- }
+  // ONLINE-FIRST: when the cloud is reachable it processes the ENTIRE sale
+  // atomically (numbering, stock guards, treasury, contact, journal) and the
+  // authoritative answer is mirrored locally as synced. Only when unreachable
+  // (or the online RPC is not deployed yet) do we fall back to the local path.
+  const invoiceIdForAttempt = uuidv4();
+  if (networkListener.getStatus()) {
+    const onlineInvoice = await SalesRepository.createSalesInvoiceOnline(params, invoiceIdForAttempt);
+    if (onlineInvoice) return onlineInvoice;
+  }
 
  const now = new Date().toISOString();
  const invoiceId = uuidv4();
@@ -300,37 +301,35 @@ export class SalesRepository {
  let totalItemDiscount = 0;
  let totalTax = 0;
 
- const invoiceItems: SalesInvoiceItem[] = params.items.map((item) => {
- const lineSubtotal = roundMoney(item.quantity * item.unitPrice);
- const discount = roundMoney(item.discountAmount || 0);
- const taxableAmount = roundMoney(Math.max(0, lineSubtotal - discount));
- const taxRate = item.taxRate || 0;
- const taxAmount = roundMoney((taxableAmount * taxRate) / 100);
- const lineTotal = roundMoney(taxableAmount + taxAmount);
+  const invoiceItems: SalesInvoiceItem[] = params.items.map((item) => {
+    const lineSubtotal = roundMoney(item.quantity * item.unitPrice);
+    const discount = roundMoney(item.discountAmount || 0);
+    const taxableAmount = roundMoney(Math.max(0, lineSubtotal - discount));
+    const taxRate = item.taxRate || 0;
+    const taxAmount = roundMoney((taxableAmount * taxRate) / 100);
+    const lineTotal = roundMoney(taxableAmount + taxAmount);
 
- subtotal += lineSubtotal;
- totalItemDiscount += discount;
- totalTax += taxAmount;
+    subtotal += lineSubtotal;
+    totalItemDiscount += discount;
+    totalTax += taxAmount;
 
- return {
- id: uuidv4(),
- invoice_id: invoiceId,
- product_id: item.productId,
- batch_id: item.batchId,
- unit_id: item.unitId,
- conversion_factor: item.conversionFactor,
- quantity: item.quantity,
- base_quantity: (item.conversionFactor && item.conversionFactor > 1)
- ? item.quantity / item.conversionFactor
- : item.quantity * (item.conversionFactor || 1),
- unit_price: item.unitPrice,
- unit_cost: item.unitCost,
- discount_amount: discount,
- tax_rate: taxRate,
- tax_amount: taxAmount,
- total: lineTotal,
- };
- });
+    return {
+      id: uuidv4(),
+      invoice_id: invoiceId,
+      product_id: item.productId,
+      batch_id: item.batchId,
+      unit_id: item.unitId,
+      conversion_factor: item.conversionFactor,
+      quantity: item.quantity,
+      base_quantity: toBaseQty(item.quantity, item.conversionFactor),
+      unit_price: item.unitPrice,
+      unit_cost: item.unitCost,
+      discount_amount: discount,
+      tax_rate: taxRate,
+      tax_amount: taxAmount,
+      total: lineTotal,
+    };
+  });
 
  const overallDiscount =
  params.discountPercent && params.discountPercent > 0
@@ -544,85 +543,102 @@ export class SalesRepository {
  return entry ||'تعذر تنفيذ الفاتورة على السحابة';
  }
 
- private static async createSalesInvoiceOnline(params: CreateSalesInvoiceParams): Promise<SalesInvoice | null> {
- const invoiceId = uuidv4();
- const payload = {
- p_invoice_id: invoiceId,
- p_org_id: params.orgId,
- p_branch_id: params.branchId,
- p_warehouse_id: params.warehouseId,
- p_shift_id: params.shiftId || null,
- p_customer_id: params.customerId || null,
- p_treasury_id: params.treasuryId,
- p_user_id: params.userId,
- p_invoice_date: new Date().toISOString(),
- p_payment_type: params.paymentType,
- p_cash_amount: params.cashAmount || 0,
- p_card_amount: params.cardAmount || 0,
- p_discount_amount: params.discountAmount || 0,
- p_discount_percent: params.discountPercent || 0,
- p_shipping_fee: params.shippingFee || 0,
- p_notes: params.notes || null,
- p_items: params.items.map((item) => ({
- id: uuidv4(),
- product_id: item.productId,
- batch_id: item.batchId || null,
- unit_id: item.unitId,
- conversion_factor: item.conversionFactor,
- quantity: item.quantity,
- unit_price: item.unitPrice,
- unit_cost: item.unitCost,
- discount_amount: item.discountAmount || 0,
- tax_rate: item.taxRate || 0,
- })),
- };
+  private static async createSalesInvoiceOnline(params: CreateSalesInvoiceParams, invoiceId: string): Promise<SalesInvoice | null> {
+    const payload = {
+      p_invoice_id: invoiceId,
+      p_org_id: params.orgId,
+      p_branch_id: params.branchId,
+      p_warehouse_id: params.warehouseId,
+      p_shift_id: params.shiftId || null,
+      p_customer_id: params.customerId || null,
+      p_treasury_id: params.treasuryId,
+      p_user_id: params.userId,
+      p_invoice_date: new Date().toISOString(),
+      p_payment_type: params.paymentType,
+      p_cash_amount: params.cashAmount || 0,
+      p_card_amount: params.cardAmount || 0,
+      p_discount_amount: params.discountAmount || 0,
+      p_discount_percent: params.discountPercent || 0,
+      p_shipping_fee: params.shippingFee || 0,
+      p_notes: params.notes || null,
+      p_items: params.items.map((item) => ({
+        id: uuidv4(),
+        product_id: item.productId,
+        batch_id: item.batchId || null,
+        unit_id: item.unitId,
+        conversion_factor: item.conversionFactor,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        unit_cost: item.unitCost,
+        discount_amount: item.discountAmount || 0,
+        tax_rate: item.taxRate || 0,
+      })),
+    };
 
- let result: FalconSalesInvoiceResult | undefined;
- try {
- const { data, error } = await supabase.rpc('falcon_create_sales_invoice', payload);
- if (error) {
- // Transport/protocol failure or the RPC is not deployed yet -> degraded
- // local path (which now uses collision-safe temp numbers while offline).
- console.warn('[Sales] cloud RPC unavailable, falling back to local path:', error.message);
- return null;
- }
- result = data as FalconSalesInvoiceResult;
- } catch {
- return null;
- }
+    let result: FalconSalesInvoiceResult | undefined;
+    try {
+      const { data, error } = await supabase.rpc('falcon_create_sales_invoice', payload);
+      if (error) {
+        // Transport/protocol failure or the RPC is not deployed yet -> degraded
+        // local path (which now uses collision-safe temp numbers while offline).
+        console.warn('[Sales] cloud RPC unavailable, falling back to local path:', error.message);
+        return null;
+      }
+      result = data as FalconSalesInvoiceResult;
+    } catch {
+      return null;
+    }
 
- if (!result || result.ok === false) {
- throw new Error(this.salesRpcMessage(result || {}));
- }
+    if (!result || result.ok === false) {
+      throw new Error(this.salesRpcMessage(result || {}));
+    }
 
- return await SalesRepository.ingestAuthoritativeSalesInvoice(result, params, invoiceId);
- }
+    return await SalesRepository.ingestAuthoritativeSalesInvoice(result, params, invoiceId);
+  }
 
- private static async ingestAuthoritativeSalesInvoice(
- result: FalconSalesInvoiceResult,
- params: CreateSalesInvoiceParams,
- invoiceId: string
- ): Promise<SalesInvoice> {
- if (!result.invoice) {
- throw new Error('استجابة السحابة غير مكتملة (لا توجد بيانات الفاتورة)');
- }
- const now = new Date().toISOString();
- const invoice: SalesInvoice = {
- ...(result.invoice as SalesInvoice),
- id: invoiceId,
- org_id: params.orgId,
- branch_id: params.branchId,
- warehouse_id: params.warehouseId,
- shift_id: result.invoice.shift_id ?? params.shiftId ?? null,
- customer_id: result.invoice.customer_id ?? params.customerId ?? null,
- treasury_id: result.invoice.treasury_id ?? params.treasuryId,
- created_by: params.userId,
- sync_status:'synced',
- };
- const items: SalesInvoiceItem[] = (result.items || []).map((item) => ({
- ...(item as SalesInvoiceItem),
- sync_status:'synced',
- }));
+  private static async ingestAuthoritativeSalesInvoice(
+    result: FalconSalesInvoiceResult,
+    params: CreateSalesInvoiceParams,
+    invoiceId: string
+  ): Promise<SalesInvoice> {
+    if (!result.invoice) {
+      throw new Error('استجابة السحابة غير مكتملة (لا توجد بيانات الفاتورة)');
+    }
+    const now = new Date().toISOString();
+    const invoice: SalesInvoice = {
+      ...(result.invoice as SalesInvoice),
+      id: invoiceId,
+      org_id: params.orgId,
+      branch_id: params.branchId,
+      warehouse_id: params.warehouseId,
+      shift_id: result.invoice.shift_id ?? params.shiftId ?? null,
+      customer_id: result.invoice.customer_id ?? params.customerId ?? null,
+      treasury_id: result.invoice.treasury_id ?? params.treasuryId,
+      created_by: params.userId,
+      sync_status:'synced',
+    };
+
+    let items: SalesInvoiceItem[] = (result.items || []).map((item) => ({
+      ...(item as SalesInvoiceItem),
+      sync_status:'synced',
+    }));
+
+    if (items.length === 0 && result.code === 'ALREADY_EXISTS') {
+      try {
+        const { data: serverItems } = await supabase
+          .from('sales_invoice_items')
+          .select('*')
+          .eq('invoice_id', invoiceId);
+        if (serverItems && serverItems.length > 0) {
+          items = serverItems.map((item: any) => ({
+            ...(item as SalesInvoiceItem),
+            sync_status: 'synced',
+          }));
+        }
+      } catch (fetchErr) {
+        console.warn('[Sales] Failed to fetch items for existing invoice:', fetchErr);
+      }
+    }
 
  await db.transaction(
 'rw',
@@ -973,7 +989,7 @@ export class SalesRepository {
           unit_id: item.unitId,
           conversion_factor: item.conversionFactor,
           quantity: item.quantity,
-          base_quantity: item.quantity * item.conversionFactor,
+          base_quantity: toBaseQty(item.quantity, item.conversionFactor),
           unit_price: item.unitPrice,
           unit_cost: item.unitCost,
           discount_amount: lineDisc,
@@ -1248,35 +1264,35 @@ export class SalesRepository {
  let calcItemDisc = 0;
  let calcTax = 0;
 
- newItemsToSave = params.items.map((line) => {
- const lineGross = roundMoney(line.quantity * line.unitPrice);
- const discount = roundMoney(line.discountAmount || 0);
- const taxable = roundMoney(lineGross - discount);
- const taxRate = line.taxRate || 0;
- const taxAmount = roundMoney((taxable * taxRate) / 100);
- const lineTotal = roundMoney(taxable + taxAmount);
+  newItemsToSave = params.items.map((line) => {
+    const lineGross = roundMoney(line.quantity * line.unitPrice);
+    const discount = roundMoney(line.discountAmount || 0);
+    const taxable = roundMoney(lineGross - discount);
+    const taxRate = line.taxRate || 0;
+    const taxAmount = roundMoney((taxable * taxRate) / 100);
+    const lineTotal = roundMoney(taxable + taxAmount);
 
- calcSub += lineGross;
- calcItemDisc += discount;
- calcTax += taxAmount;
+    calcSub += lineGross;
+    calcItemDisc += discount;
+    calcTax += taxAmount;
 
- return {
- id: uuidv4(),
- invoice_id: existing.id,
- product_id: line.productId,
- batch_id: line.batchId || null,
- unit_id: line.unitId,
- conversion_factor: line.conversionFactor,
- quantity: line.quantity,
- base_quantity: line.quantity * line.conversionFactor,
- unit_price: line.unitPrice,
- unit_cost: line.unitCost,
- discount_amount: discount,
- tax_rate: taxRate,
- tax_amount: taxAmount,
- total: lineTotal,
- };
- });
+    return {
+      id: uuidv4(),
+      invoice_id: existing.id,
+      product_id: line.productId,
+      batch_id: line.batchId || null,
+      unit_id: line.unitId,
+      conversion_factor: line.conversionFactor,
+      quantity: line.quantity,
+      base_quantity: toBaseQty(line.quantity, line.conversionFactor),
+      unit_price: line.unitPrice,
+      unit_cost: line.unitCost,
+      discount_amount: discount,
+      tax_rate: taxRate,
+      tax_amount: taxAmount,
+      total: lineTotal,
+    };
+  });
 
  subtotal = roundMoney(calcSub);
  const overallDiscount = params.discountAmount !== undefined ? roundMoney(params.discountAmount) : 0;

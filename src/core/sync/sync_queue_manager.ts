@@ -141,26 +141,37 @@ export class SyncQueueManager {
  });
  }
 
- /**
- * Retrieves pending sync items ordered by creation time (including failed items ready for retry).
- */
- public static async getPendingItems(limit = 50): Promise<SyncQueueItem[]> {
- const now = Date.now();
- const items = await db.sync_queue
- .filter((item) => {
- if (item.status ==='pending') return true;
- if (item.status ==='failed') return true;
- if (item.status ==='in_flight') {
- const age = now - new Date(item.updated_at || item.created_at).getTime();
- return age > 15000; // stuck in flight for over 15s
- }
- return false;
- })
- .limit(limit)
- .toArray();
+  /**
+   * Retrieves pending sync items ordered by creation time.
+   */
+  public static async getPendingItems(limit = 50): Promise<SyncQueueItem[]> {
+    const now = Date.now();
+    const items = await db.sync_queue
+      .filter((item) => {
+        if (item.status ==='pending') return true;
+        if (item.status ==='in_flight') {
+          const age = now - new Date(item.updated_at || item.created_at).getTime();
+          return age > 15000; // stuck in flight for over 15s
+        }
+        return false;
+      })
+      .limit(limit)
+      .toArray();
 
- return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
- }
+    return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+
+  /**
+   * Retrieves permanently/explicitly failed items for manual review/retry.
+   */
+  public static async getFailedItems(limit = 100): Promise<SyncQueueItem[]> {
+    const items = await db.sync_queue
+      .where('status')
+      .equals('failed')
+      .limit(limit)
+      .toArray();
+    return items.sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime());
+  }
 
  /**
  * Marks an item as in-flight.
@@ -197,12 +208,14 @@ export class SyncQueueManager {
  });
  }
 
- /**
- * Count total pending sync items.
- */
- public static async getPendingCount(): Promise<number> {
- return await db.sync_queue.where('status').equals('pending').count();
- }
+  /**
+   * Count total pending sync items.
+   */
+  public static async getPendingCount(): Promise<number> {
+    const pending = await db.sync_queue.where('status').equals('pending').count();
+    const inFlight = await db.sync_queue.where('status').equals('in_flight').count();
+    return pending + inFlight;
+  }
 }
 
 /**

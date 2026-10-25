@@ -551,7 +551,7 @@ begin
   if p_invoice_id is null then
     return jsonb_build_object('ok', false, 'code', 'INVALID_INVOICE_ID');
   end if;
-  if p_payment_type not in ('cash', 'card', 'split') then
+  if p_payment_type not in ('cash', 'card', 'split', 'credit') then
     return jsonb_build_object('ok', false, 'code', 'INVALID_PAYMENT');
   end if;
 
@@ -802,8 +802,13 @@ begin
 
   if p_payment_type = 'cash' then
     v_cash := v_final_total;
+    v_card := 0;
   elsif p_payment_type = 'card' then
     v_card := v_final_total;
+    v_cash := 0;
+  elsif p_payment_type = 'credit' then
+    v_cash := 0;
+    v_card := 0;
   else
     v_cash := round(coalesce(p_cash_amount, 0), 2);
     v_card := round(coalesce(p_card_amount, 0), 2);
