@@ -287,29 +287,88 @@ export function POS() {
       return;
     }
     checkoutLockRef.current = true;
-    setIsSaving(true);
 
-    try {
-      if (!activeShift) {
-        toast.error('لا يمكن إتمام العملية بدون فتح وردية كاشير أولاً');
-        setIsShiftModalOpen(true);
-        return;
-      }
-      if (cart.length === 0) {
-        toast.error('السلة فارغة! يرجى إضافة أصناف أولاً.');
-        return;
-      }
-      if (!warehouseId || !treasuryId) {
-        toast.error('يرجى تحديد المخزن والخزينة لإتمام العملية.');
-        return;
-      }
+    if (!activeShift) {
+      toast.error('لا يمكن إتمام العملية بدون فتح وردية كاشير أولاً');
+      setIsShiftModalOpen(true);
+      checkoutLockRef.current = false;
+      return;
+    }
+    if (cart.length === 0) {
+      toast.error('السلة فارغة! يرجى إضافة أصناف أولاً.');
+      checkoutLockRef.current = false;
+      return;
+    }
+    if (!warehouseId || !treasuryId) {
+      toast.error('يرجى تحديد المخزن والخزينة لإتمام العملية.');
+      checkoutLockRef.current = false;
+      return;
+    }
 
-  // Return Mode Checkout
-  if (activeReturnInvoice) {
+    // Return Mode Checkout
+    if (activeReturnInvoice) {
+      setIsSaving(true);
+      try {
+        const returnItems = cart.map((line) => ({
+          productId: line.productId,
+          unitId: line.unitId,
+          conversionFactor: line.factor,
+          quantity: line.qty,
+          unitPrice: line.price,
+          unitCost: line.cost * line.factor,
+          discountAmount: line.discount,
+          taxRate: line.taxRate,
+        }));
+
+        await SalesRepository.createSalesReturn({
+          orgId,
+          branchId,
+          warehouseId,
+          originalInvoiceId: activeReturnInvoice.id,
+          shiftId: activeShift.id,
+          customerId: activeReturnInvoice.customer_id || null,
+          items: returnItems,
+          discountAmount: globalDiscount,
+          discountPercent: globalDiscountPercent,
+          enableTax,
+          vatRate,
+          treasuryId,
+          userId: currentUser?.id || '',
+          reason: notes.trim() || `مرتجع مبيعات مباشر من الفاتورة #${activeReturnInvoice.invoice_number}`,
+        });
+
+        // Live update shift balance
+        const { db } = await import('@/core/db/app_database');
+        const refreshedShift = await db.cashier_shifts.get(activeShift.id);
+        if (refreshedShift) {
+          setActiveShift(refreshedShift);
+        }
+
+        toast.success(`تم حفظ المرتجع للفاتورة #${activeReturnInvoice.invoice_number} بنجاح!`);
+        cancelReturnMode();
+        loadData();
+      } catch (err) {
+        console.error('Error processing sales return:', err);
+        toast.error(err instanceof Error ? err.message : 'حدث خطأ أثناء حفظ المرتجع.');
+      } finally {
+        setIsSaving(false);
+        checkoutLockRef.current = false;
+      }
+      return;
+    }
+
+    if (payType === 'credit' && !selectedCustomerId) {
+      checkoutLockRef.current = false;
+      setIsCustomerModalOpen(true);
+      toast.error('البيع الآجل يتطلب تحديد العميل أولاً!');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const returnItems = cart.map((line) => ({
+      const items = cart.map((line) => ({
         productId: line.productId,
+        batchId: line.batchId || null,
         unitId: line.unitId,
         conversionFactor: line.factor,
         quantity: line.qty,
@@ -319,21 +378,36 @@ export function POS() {
         taxRate: line.taxRate,
       }));
 
-      await SalesRepository.createSalesReturn({
+      let cashAmount = 0;
+      let cardAmount = 0;
+
+      if (payType === 'cash') {
+        cashAmount = total;
+      } else if (payType === 'card') {
+        cardAmount = total;
+      } else if (payType === 'split') {
+        cashAmount = splitDetails?.cashAmount ?? 0;
+        cardAmount = splitDetails?.cardAmount ?? 0;
+      }
+
+      const invoice = await SalesRepository.createSalesInvoice({
         orgId,
         branchId,
         warehouseId,
-        originalInvoiceId: activeReturnInvoice.id,
         shiftId: activeShift.id,
-        customerId: activeReturnInvoice.customer_id || null,
-        items: returnItems,
+        customerId: selectedCustomerId || null,
+        items,
         discountAmount: globalDiscount,
         discountPercent: globalDiscountPercent,
-        enableTax,
-        vatRate,
+        shippingFee,
+        paymentType: payType,
+        cashAmount,
+        cardAmount,
         treasuryId,
-        userId: currentUser?.id ||'',
-        reason: notes.trim() ||`مرتجع مبيعات مباشر من الفاتورة #${activeReturnInvoice.invoice_number}`,
+        userId: currentUser?.id || '',
+        notes: [notes.trim(), shippingFee > 0 ? `مصاريف توصيل/شحن: ${shippingFee} ج.م` : '']
+          .filter(Boolean)
+          .join('|') || undefined,
       });
 
       // Live update shift balance
@@ -343,96 +417,23 @@ export function POS() {
         setActiveShift(refreshedShift);
       }
 
-      toast.success(`تم حفظ المرتجع للفاتورة #${activeReturnInvoice.invoice_number} بنجاح!`);
-      cancelReturnMode();
-      loadData();
+      setSuccessInvoice(invoice);
+      toast.success(`تم حفظ وطباعة الفاتورة #${invoice.invoice_number} بنجاح!`);
+      setCart([]);
+      setGlobalDiscount(0);
+      setShippingFee(0);
+      setGlobalDiscountPercent(0);
+      setNotes('');
+      setSelectedCustomerId('');
+      setCustomerMode('cash');
+      setIsSplitModalOpen(false);
     } catch (err) {
-      console.error('Error processing sales return:', err);
-      toast.error(err instanceof Error ? err.message :'حدث خطأ أثناء حفظ المرتجع.');
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'حدث خطأ أثناء إتمام عملية البيع.');
     } finally {
       setIsSaving(false);
       checkoutLockRef.current = false;
     }
-    return;
-  }
-
-  if (payType ==='credit'&& !selectedCustomerId) {
-    checkoutLockRef.current = false;
-    setIsCustomerModalOpen(true);
-    toast.error('البيع الآجل يتطلب تحديد العميل أولاً!');
-    return;
-  }
-
-  setIsSaving(true);
-  try {
-    const items = cart.map((line) => ({
-      productId: line.productId,
-      batchId: line.batchId || null,
-      unitId: line.unitId,
-      conversionFactor: line.factor,
-      quantity: line.qty,
-      unitPrice: line.price,
-      unitCost: line.cost * line.factor,
-      discountAmount: line.discount,
-      taxRate: line.taxRate,
-    }));
-
-    let cashAmount = 0;
-    let cardAmount = 0;
-
-    if (payType ==='cash') {
-      cashAmount = total;
-    } else if (payType ==='card') {
-      cardAmount = total;
-    } else if (payType ==='split') {
-      cashAmount = splitDetails?.cashAmount ?? 0;
-      cardAmount = splitDetails?.cardAmount ?? 0;
-    }
-
-    const invoice = await SalesRepository.createSalesInvoice({
-      orgId,
-      branchId,
-      warehouseId,
-      shiftId: activeShift.id,
-      customerId: selectedCustomerId || null,
-      items,
-      discountAmount: globalDiscount,
-      discountPercent: globalDiscountPercent,
-      shippingFee,
-      paymentType: payType,
-      cashAmount,
-      cardAmount,
-      treasuryId,
-      userId: currentUser?.id ||'',
-      notes: [notes.trim(), shippingFee > 0 ?`مصاريف توصيل/شحن: ${shippingFee} ج.م`:'']
-        .filter(Boolean)
-        .join('|') || undefined,
-    });
-
-    // Live update shift balance
-    const { db } = await import('@/core/db/app_database');
-    const refreshedShift = await db.cashier_shifts.get(activeShift.id);
-    if (refreshedShift) {
-      setActiveShift(refreshedShift);
-    }
-
-    setSuccessInvoice(invoice);
-    toast.success(`تم حفظ وطباعة الفاتورة #${invoice.invoice_number} بنجاح!`);
-    setCart([]);
-    setGlobalDiscount(0);
-    setShippingFee(0);
-    setGlobalDiscountPercent(0);
-    setNotes('');
-    setSelectedCustomerId('');
-    setCustomerMode('cash');
-    setIsSplitModalOpen(false);
-  } catch (err) {
-    console.error(err);
-    toast.error(err instanceof Error ? err.message :'حدث خطأ أثناء إتمام عملية البيع.');
-  } finally {
-    setIsSaving(false);
-    checkoutLockRef.current = false;
-  }
   };
 
   // Global Keyboard Shortcuts inside POS
