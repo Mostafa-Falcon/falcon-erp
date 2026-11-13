@@ -130,28 +130,35 @@ export function useMonitoringDashboard() {
  });
 
  // 4. Real Products & Stock Shortages
- const products = await db.products.where('org_id').equals(orgId).toArray();
- const stockLevels = await db.stock_levels.toArray();
+ const [products, stockLevels, appSettings] = await Promise.all([
+   db.products.where('org_id').equals(orgId).toArray(),
+   db.stock_levels.toArray(),
+   db.app_settings.where('org_id').equals(orgId).toArray(),
+ ]);
+
+ const defaultReorderSetting = appSettings.find((s) => s.id === 'default_reorder_qty' || s.id === 'min_stock_alert');
+ const globalDefaultLimit = defaultReorderSetting ? (Number(defaultReorderSetting.value) || 1) : 1;
+
  const stockMap = new Map<string, number>();
  stockLevels.forEach((sl) => {
- stockMap.set(sl.product_id, (stockMap.get(sl.product_id) || 0) + (Number(sl.available_quantity) || 0));
+   stockMap.set(sl.product_id, (stockMap.get(sl.product_id) || 0) + (Number(sl.available_quantity) || 0));
  });
 
  const realShortages: StockAlertItem[] = [];
  products.forEach((p) => {
- const qty = stockMap.get(p.id) ?? 0;
- const limit = Number(p.min_stock_alert) || 5;
- if (qty <= limit) {
- realShortages.push({
- id: p.id,
- name: p.name,
- sku: p.sku ||'N/A',
- remainingStock: qty,
- safetyLimit: limit,
- purchasePrice: Number(p.purchase_price) || 0,
- salePrice: Number(p.sale_price) || 0,
- });
- }
+   const qty = stockMap.get(p.id) ?? 0;
+   const limit = (p.min_stock_alert && p.min_stock_alert !== 5) ? p.min_stock_alert : globalDefaultLimit;
+   if (qty <= limit) {
+     realShortages.push({
+       id: p.id,
+       name: p.name,
+       sku: p.sku || 'N/A',
+       remainingStock: qty,
+       safetyLimit: limit,
+       purchasePrice: Number(p.purchase_price) || 0,
+       salePrice: Number(p.sale_price) || 0,
+     });
+   }
  });
 
  // 5. Real Batches Nearing Expiry (within 90 days)

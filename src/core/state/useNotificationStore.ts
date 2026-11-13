@@ -72,14 +72,18 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
  const readIds = getStorageSet('falcon_read_notifications');
  const deletedIds = getStorageSet('falcon_deleted_notifications');
 
- const [sales, purchases, products, stockLevels, batches, contacts] = await Promise.all([
+ const [sales, purchases, products, stockLevels, batches, contacts, appSettings] = await Promise.all([
  db.sales_invoices.where('org_id').equals(orgId).reverse().limit(50).toArray(),
  db.purchase_invoices.where('org_id').equals(orgId).reverse().limit(30).toArray(),
  db.products.where('org_id').equals(orgId).toArray(),
  db.stock_levels.toArray(),
  db.product_batches.toArray(),
  db.contacts.where('org_id').equals(orgId).toArray(),
+ db.app_settings.where('org_id').equals(orgId).toArray(),
  ]);
+
+ const defaultReorderSetting = appSettings.find((s) => s.id === 'default_reorder_qty' || s.id === 'min_stock_alert');
+ const globalDefaultLimit = defaultReorderSetting ? (Number(defaultReorderSetting.value) || 1) : 1;
 
  const contactMap = new Map(contacts.map((c) => [c.id, c.name]));
  const productMap = new Map(products.map((p) => [p.id, p]));
@@ -129,7 +133,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
  // 3. Stock Shortages Notifications (Consolidated & Real)
  const lowStockProducts = products.filter((prod) => {
  const qty = stockMap.get(prod.id) ?? 0;
- const limit = Number(prod.min_stock_alert) || 5;
+ const limit = (prod.min_stock_alert && prod.min_stock_alert !== 5) ? prod.min_stock_alert : globalDefaultLimit;
  return qty <= limit;
  });
 
@@ -139,7 +143,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
  const notifId =`stock-${prod.id}`;
  if (deletedIds.has(notifId)) return;
  const qty = stockMap.get(prod.id) ?? 0;
- const limit = Number(prod.min_stock_alert) || 5;
+ const limit = (prod.min_stock_alert && prod.min_stock_alert !== 5) ? prod.min_stock_alert : globalDefaultLimit;
  list.push({
  id: notifId,
  type:'stock',
