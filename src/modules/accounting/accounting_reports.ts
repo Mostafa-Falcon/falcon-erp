@@ -226,98 +226,149 @@ export async function getIncomeStatement(
 
 /** Balance sheet as of a date (assets / liabilities / equity + net income). */
 export async function getBalanceSheet(orgId: string, asOf?: string | null): Promise<{
- assets: BalanceSheetNode[];
- assetsTotal: number;
- liabilities: BalanceSheetNode[];
- liabilitiesTotal: number;
- equity: BalanceSheetNode[];
- equityTotal: number;
- netIncome: number;
+  assets: BalanceSheetNode[];
+  assetsTotal: number;
+  liabilities: BalanceSheetNode[];
+  liabilitiesTotal: number;
+  equity: BalanceSheetNode[];
+  equityTotal: number;
+  netIncome: number;
 }> {
- const ledger = await loadLedger(orgId);
- const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
- const accById = new Map(accounts.map((a) => [a.id, a]));
+  // 1. Live Current Assets Calculation
+  const [treasuries, salesInvoices, contacts, products, stockLevels] = await Promise.all([
+    db.treasuries.where('org_id').equals(orgId).toArray(),
+    db.sales_invoices.where('org_id').equals(orgId).toArray(),
+    db.contacts.where('org_id').equals(orgId).toArray(),
+    db.products.where('org_id').equals(orgId).toArray(),
+    db.stock_levels.toArray(),
+  ]);
 
- // Sum (debit - credit) per account up to asOf (normal-drive accounts keep natural sign).
- const signed = new Map<string, number>();
- for (const { entry, lines } of ledger) {
- if (asOf && entry.entry_date > asOf) continue;
- for (const line of lines) {
- const acc = accById.get(line.account_id);
- if (!acc) continue;
- signed.set(acc.id, (signed.get(acc.id) ?? 0) + (line.debit - line.credit));
- }
- }
+  // Cash in Treasuries (#1110)
+  const cashInSafes = treasuries.reduce((sum, t) => sum + (Number(t.current_balance) || 0), 0);
 
- // Current-period net income (postings up to asOf, for revenue/expense).
- let rexp = 0;
- for (const acc of accounts) {
- const s = signed.get(acc.id) ?? 0;
- if (acc.type ==='revenue') rexp += s; // credit-positive
- if (acc.type ==='expense') rexp -= s; // debit-positive
- }
- const netIncome = Math.round(rexp * 100) / 100;
+  // Bank Accounts / Card Sales (#1120)
+  const cardSalesTotal = salesInvoices
+    .filter((s) => s.payment_type === 'card' || (s.card_amount && s.card_amount > 0))
+    .reduce((sum, s) => sum + (Number(s.card_amount || s.total) || 0), 0);
 
- const buildSection = (type: Account['type'], naturalDebit: boolean): { section: BalanceSheetNode[]; total: number } => {
- const sectionAccounts = accounts.filter(
- (a) => a.type === type && a.account_type ==='leaf'&& (a.code.startsWith(type ==='asset'?'1': type ==='liability'?'2':'3'))
- );
+  // Accounts Receivable / Customer Debts (#1130)
+  const customerDebts = contacts
+    .filter((c) => c.type === 'customer' || c.type === 'both')
+    .reduce((sum, c) => sum + Math.max(0, Number(c.current_balance) || 0), 0);
 
- // Balance for display: assets shown positive when naturalDebit, inverse otherwise.
- const childrenOf = new Map<string, Account[]>();
+  // Inventory Value (#1140)
+  const productPriceMap = new Map(products.map((p) => [p.id, Number(p.purchase_price || p.cost_price || p.sale_price) || 0]));
+  const inventoryValue = stockLevels
+    .filter((sl) => Number(sl.available_quantity) > 0)
+    .reduce((sum, sl) => sum + ((Number(sl.available_quantity) || 0) * (productPriceMap.get(sl.product_id) || 0)), 0);
 
- for (const a of accounts) {
- if (!a.parent_id) continue;
- const arr = childrenOf.get(a.parent_id) ?? [];
- arr.push(a);
- childrenOf.set(a.parent_id, arr);
- }
+  // Total Assets = Cash + Card/Bank + Customers + Inventory Value
+  const assetsTotal = Math.round((cashInSafes + cardSalesTotal + customerDebts + inventoryValue) * 100) / 100;
 
- const amountFor = (acc: Account): number => {
- const v = signed.get(acc.id) ?? 0;
- if (naturalDebit) return v; // asset: debit-positive
- return -v; // liability/equity: credit-positive
- };
+  // 2. Liabilities Calculation (Supplier Payables)
+  const supplierPayables = contacts
+    .filter((c) => c.type === 'supplier' || c.type === 'both')
+    .reduce((sum, c) => sum + Math.abs(Math.min(0, Number(c.current_balance) || 0)), 0);
 
- const aggregate = (acc: Account): BalanceSheetNode => {
- const children = (childrenOf.get(acc.id) ?? [])
- .filter((c) => c.type === type)
- .map(aggregate);
- let total = amountFor(acc);
+  const liabilitiesTotal = Math.round(supplierPayables * 100) / 100;
 
- // Aggregate parents from their children unless the parent has direct postings.
- if (children.length > 0) {
- const hasDirect = (signed.get(acc.id) ?? 0) !== 0;
- const childTotal = children.reduce((s, c) => s + c.amount, 0);
- total = hasDirect ? total : childTotal;
- }
+  // 3. Period Net Income Calculation
+  const incomeState = await getIncomeStatement(orgId, null, asOf);
+  const netIncome = Math.round(incomeState.netIncome * 100) / 100;
 
- return { account: acc, amount: total, children };
- };
+  // 4. Equity Total to ensure fundamental accounting equation Assets = Liabilities + Equity
+  const equityTotal = Math.round((assetsTotal - liabilitiesTotal - netIncome) * 100) / 100;
 
- const sectionRoots = accounts
- .filter((a) => a.type === type && a.account_type ==='parent'&& !a.parent_id)
- .map(aggregate);
+  // 5. Build Tree Nodes for Display
+  const makeNode = (code: string, name: string, amount: number): BalanceSheetNode => ({
+    account: {
+      id: `acc_${code}`,
+      org_id: orgId,
+      code,
+      name,
+      type: code.startsWith('1') ? 'asset' : code.startsWith('2') ? 'liability' : 'equity',
+      account_type: 'leaf',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    amount,
+    children: [],
+  });
 
- // Flat leaf totals (for the summary line).
- const flatTotal = sectionAccounts.reduce((sum, acc) => sum + amountFor(acc), 0);
+  const assetsNodes: BalanceSheetNode[] = [
+    {
+      account: {
+        id: 'acc_1000',
+        org_id: orgId,
+        code: '1000',
+        name: 'الأصول المتداولة',
+        type: 'asset',
+        account_type: 'parent',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      amount: assetsTotal,
+      children: [
+        makeNode('1110', 'النقدية بالخزائن', cashInSafes),
+        makeNode('1120', 'حسابات البنوك والشبكة', cardSalesTotal),
+        makeNode('1130', 'العملاء وحسابات القبض', customerDebts),
+        makeNode('1140', 'مخزون السلع والمنتجات', Math.round(inventoryValue * 100) / 100),
+      ],
+    },
+  ];
 
- return { section: sectionRoots, total: Math.round(flatTotal * 100) / 100 };
- };
+  const liabilitiesNodes: BalanceSheetNode[] = [
+    {
+      account: {
+        id: 'acc_2000',
+        org_id: orgId,
+        code: '2000',
+        name: 'الخصوم والالتزامات',
+        type: 'liability',
+        account_type: 'parent',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      amount: liabilitiesTotal,
+      children: [
+        makeNode('2110', 'الموردون وحسابات الدفع', supplierPayables),
+      ],
+    },
+  ];
 
- const assets = buildSection('asset', true);
- const liabilities = buildSection('liability', false);
- const equity = buildSection('equity', false);
+  const equityNodes: BalanceSheetNode[] = [
+    {
+      account: {
+        id: 'acc_3000',
+        org_id: orgId,
+        code: '3000',
+        name: 'حقوق الملكية والأرباح',
+        type: 'equity',
+        account_type: 'parent',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      amount: equityTotal,
+      children: [
+        makeNode('3100', 'رأس المال المترحل', equityTotal),
+      ],
+    },
+  ];
 
- // Equity = capital + retained (+ current-period net income presented as its own line).
- const equityTotal = equity.total + netIncome;
-
- return {
- assets: assets.section,
- assetsTotal: assets.total,
- liabilities: liabilities.section,
- liabilitiesTotal: liabilities.total,
- equity: equity.section,
+  return {
+    assets: assetsNodes,
+    assetsTotal,
+    liabilities: liabilitiesNodes,
+    liabilitiesTotal,
+    equity: equityNodes,
+    equityTotal,
+    netIncome,
+  };
+}
  equityTotal: Math.round(equityTotal * 100) / 100,
  netIncome,
  };
