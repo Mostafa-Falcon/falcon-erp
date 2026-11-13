@@ -149,9 +149,6 @@ export default function ProfitsReportPage() {
       returnRate: filteredInvoices.length > 0 ? (filteredReturns.length / filteredInvoices.length) * 100 : 0,
     };
   }, [filteredInvoices, filteredItems, filteredReturns, filteredExpenses]);
-      returnRate: filteredInvoices.length > 0 ? (filteredReturns.length / filteredInvoices.length) * 100 : 0,
-    };
-  }, [filteredInvoices, filteredItems, filteredReturns, filteredExpenses]);
 
   const expenseDistribution = useMemo(() => {
     const dist: Record<string, number> = {};
