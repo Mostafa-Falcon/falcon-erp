@@ -3,6 +3,7 @@ import { Cairo } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { DirectionProvider } from '@radix-ui/react-direction';
+import { PwaRegister } from '@/components/layout/PwaRegister';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -47,9 +48,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body className="min-h-[100dvh] h-[100dvh] w-full overflow-hidden font-sans antialiased text-foreground bg-app">
+        <PwaRegister />
         <DirectionProvider dir="rtl">
           <div className="min-h-[100dvh] h-[100dvh] w-full overflow-hidden flex flex-col font-sans">
             {children}
