@@ -71,39 +71,40 @@ function InvoicesContent() {
  const [eNotes, setENotes] = useState('');
  const [isBusy, setIsBusy] = useState(false);
 
- const loadData = async () => {
- if (!orgId) return;
- try {
- const { db } = await import('@/core/db/app_database');
- const [invList, allItems, prods, unts, tres, whs, sups] = await Promise.all([
- PurchasesRepository.getPurchaseInvoices(orgId),
- db.purchase_invoice_items.toArray(),
- db.products.where('org_id').equals(orgId).toArray(),
- db.units.where('org_id').equals(orgId).toArray(),
- db.treasuries.where('org_id').equals(orgId).toArray(),
- db.warehouses.where('org_id').equals(orgId).toArray(),
- db.contacts.where('org_id').equals(orgId).and((c) => c.is_active).toArray(),
- ]);
+  const loadData = async () => {
+    if (!orgId) return;
+    try {
+      setIsLoading(true);
+      const { db } = await import('@/core/db/app_database');
+      const [invList, allItems, prods, unts, tres, whs, sups] = await Promise.all([
+        PurchasesRepository.getPurchaseInvoices(orgId).catch(() => []),
+        db.purchase_invoice_items.toArray().catch(() => []),
+        db.products.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.units.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.treasuries.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.warehouses.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.contacts.where('org_id').equals(orgId).toArray().catch(() => []),
+      ]);
 
- const grouped: Record<string, PurchaseInvoiceItem[]> = {};
- for (const it of allItems) {
- (grouped[it.invoice_id] = grouped[it.invoice_id] || []).push(it);
- }
+      const grouped: Record<string, PurchaseInvoiceItem[]> = {};
+      for (const it of allItems) {
+        (grouped[it.invoice_id] = grouped[it.invoice_id] || []).push(it);
+      }
 
- setInvoices(invList);
- setItemsByInvoice(grouped);
- setProducts(prods);
- setUnits(unts);
- setTreasuries(tres);
- setWarehouses(whs);
- setSuppliers(sups);
- } catch (err) {
- console.error('Load invoices error:', err);
- toast.error('حدث خطأ أثناء تحميل فواتير المشتريات');
- } finally {
- setIsLoading(false);
- }
- };
+      setInvoices(invList);
+      setItemsByInvoice(grouped);
+      setProducts(prods);
+      setUnits(unts);
+      setTreasuries(tres);
+      setWarehouses(whs);
+      setSuppliers(sups.filter((c) => c.is_active !== false));
+    } catch (err) {
+      console.error('Load invoices error:', err);
+      toast.error('حدث خطأ أثناء تحميل فواتير المشتريات');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
  useEffect(() => {
  if (!orgId) return;

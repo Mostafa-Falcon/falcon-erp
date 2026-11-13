@@ -152,46 +152,62 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  setHasDraftNotice(false);
  };
 
- const loadData = async () => {
- if (!orgId) return;
- try {
- const { db } = await import('@/core/db/app_database');
- const [sups, whs, tres, prods, unts, pUnits] = await Promise.all([
- ContactsRepository.getContacts(orgId),
- branchId ? db.warehouses.where('org_id').equals(orgId).and((w) => w.is_active && (w.branch_id === branchId)).toArray() : InventoryRepository.getWarehouses(orgId),
- db.treasuries.where('org_id').equals(orgId).and((t) => t.is_active).toArray(),
- db.products.where('org_id').equals(orgId).and((p) => p.is_active && p.item_type ==='storable').toArray(),
- db.units.where('org_id').equals(orgId).toArray(),
- db.product_units.toArray(),
- ]);
+  const loadData = async () => {
+    if (!orgId) return;
+    try {
+      setIsLoading(true);
+      const { db } = await import('@/core/db/app_database');
+      const [allContacts, allWhs, allTres, allProds, unts, pUnits] = await Promise.all([
+        ContactsRepository.getContacts(orgId).catch(() => []),
+        db.warehouses.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.treasuries.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.products.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.units.where('org_id').equals(orgId).toArray().catch(() => []),
+        db.product_units.toArray().catch(() => []),
+      ]);
 
- const umap: Record<string, Unit> = {};
- for (const u of unts) umap[u.id] = u;
+      const sups = allContacts.filter((c) => c.is_active !== false && (c.type === 'supplier' || c.type === 'both'));
+      const safeSups = sups.length > 0 ? sups : allContacts;
 
- const opts: Record<string, { unitId: string; factor: number; cost?: number }[]> = {};
- for (const p of prods) {
- const list: { unitId: string; factor: number; cost?: number }[] = [{ unitId: p.base_unit_id, factor: 1 }];
- for (const pu of pUnits.filter((x) => x.product_id === p.id)) {
- list.push({ unitId: pu.unit_id, factor: pu.conversion_factor || 1, cost: pu.purchase_price });
- }
- opts[p.id] = list;
- }
+      const whs = allWhs.filter((w) => w.is_active !== false && (!branchId || !w.branch_id || w.branch_id === branchId));
+      const safeWhs = whs.length > 0 ? whs : allWhs;
 
- setSuppliers(sups.filter((c) => c.type ==='supplier'|| c.type ==='both'));
- setWarehouses(whs);
- setTreasuries(tres);
- setProducts(prods);
- setUnitsById(umap);
- setUnitOptions(opts);
+      const tres = allTres.filter((t) => t.is_active !== false);
+      const safeTres = tres.length > 0 ? tres : allTres;
 
- if (whs.length > 0) setWarehouseId((prev) => prev || whs[0].id);
- if (tres.length > 0) setTreasuryId((prev) => prev || tres.find((t) => t.is_default)?.id || tres[0].id);
- } catch (err) {
- console.error('Load purchase form error:', err);
- } finally {
- setIsLoading(false);
- }
- };
+      const prods = allProds.filter((p) => p.is_active !== false);
+
+      const umap: Record<string, Unit> = {};
+      for (const u of unts) umap[u.id] = u;
+
+      const opts: Record<string, { unitId: string; factor: number; cost?: number }[]> = {};
+      for (const p of prods) {
+        const list: { unitId: string; factor: number; cost?: number }[] = [];
+        if (p.base_unit_id) {
+          list.push({ unitId: p.base_unit_id, factor: 1 });
+        }
+        for (const pu of pUnits.filter((x) => x.product_id === p.id)) {
+          list.push({ unitId: pu.unit_id, factor: pu.conversion_factor || 1, cost: pu.purchase_price });
+        }
+        opts[p.id] = list;
+      }
+
+      setSuppliers(safeSups);
+      setWarehouses(safeWhs);
+      setTreasuries(safeTres);
+      setProducts(prods);
+      setUnitsById(umap);
+      setUnitOptions(opts);
+
+      if (safeSups.length > 0) setSupplierId((prev) => prev || safeSups[0].id);
+      if (safeWhs.length > 0) setWarehouseId((prev) => prev || safeWhs[0].id);
+      if (safeTres.length > 0) setTreasuryId((prev) => prev || safeTres.find((t) => t.is_default)?.id || safeTres[0].id);
+    } catch (err) {
+      console.error('Load purchase form error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
  useEffect(() => {
  if (!orgId) return;
