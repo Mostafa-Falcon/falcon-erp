@@ -546,11 +546,15 @@ export class SyncCoordinator {
  let pushedCount = 0;
 
  try {
- // Pull latest org profile & settings from cloud
- const currentAuthUser = AuthRepository.getCurrentUser();
- if (currentAuthUser?.org_id) {
- PullSyncService.pullAll(currentAuthUser.org_id).catch(() => {});
- }
+   // Ensure Realtime Listener is active for the user's organization
+   const currentAuthUser = AuthRepository.getCurrentUser();
+   if (currentAuthUser?.org_id) {
+     import('./realtime_sync_listener').then(({ realtimeSyncListener }) => {
+       realtimeSyncListener.start(currentAuthUser.org_id);
+     }).catch(() => {});
+
+     PullSyncService.pullAll(currentAuthUser.org_id).catch(() => {});
+   }
 
  // جلب العناصر المعلقة
  const pendingItems = await SyncQueueManager.getPendingItems(50);

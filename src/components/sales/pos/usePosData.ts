@@ -260,7 +260,12 @@ export function usePosData() {
  };
 
  useEffect(() => {
- loadData();
+   loadData();
+   if (orgId) {
+     import('@/core/sync/realtime_sync_listener').then(({ realtimeSyncListener }) => {
+       realtimeSyncListener.start(orgId);
+     }).catch(() => {});
+   }
  }, [orgId, branchId]);
 
  return {

@@ -63,6 +63,12 @@ export class SyncQueueManager {
  };
 
  await db.sync_queue.add(queueItem);
+
+ // Instant Push Trigger: Flush sync queue to cloud immediately (0ms delay)
+ import('@/core/sync/sync_coordinator').then(({ SyncCoordinator }) => {
+   SyncCoordinator.getInstance().triggerSync().catch(() => {});
+ }).catch(() => {});
+
  return queueItem;
  }
 
@@ -125,6 +131,12 @@ export class SyncQueueManager {
  };
 
  await db.sync_queue.add(queueItem);
+
+ // Instant Push Trigger: Flush sync queue to cloud immediately (0ms delay)
+ import('@/core/sync/sync_coordinator').then(({ SyncCoordinator }) => {
+   SyncCoordinator.getInstance().triggerSync().catch(() => {});
+ }).catch(() => {});
+
  return queueItem;
  }
 
