@@ -112,15 +112,18 @@ export default function ProfitsReportPage() {
 
   // Financial Calculations
   const fin = useMemo(() => {
-    const grossSales = filteredItems.reduce((acc, it) => acc + it.quantity * it.unit_price, 0);
-    const returnsTotal = filteredReturns.reduce((acc, r) => acc + r.total, 0);
-    const totalDiscounts = filteredInvoices.reduce((acc, inv) => acc + (inv.discount_amount || 0), 0);
-    const netRevenue = grossSales - returnsTotal - totalDiscounts;
+    const invoiceGrossSales = filteredInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0);
+    const itemsGrossSales = filteredItems.reduce((acc, it) => acc + (Number(it.total) || (Number(it.quantity) * Number(it.unit_price)) || 0), 0);
+    const grossSales = invoiceGrossSales > 0 ? invoiceGrossSales : itemsGrossSales;
 
-    const cogs = filteredItems.reduce((acc, it) => acc + it.quantity * (it.unit_cost || 0), 0);
+    const returnsTotal = filteredReturns.reduce((acc, r) => acc + (Number(r.total) || 0), 0);
+    const totalDiscounts = filteredInvoices.reduce((acc, inv) => acc + (Number(inv.discount_amount) || 0), 0);
+    const netRevenue = Math.max(0, grossSales - returnsTotal - totalDiscounts);
+
+    const cogs = filteredItems.reduce((acc, it) => acc + (Number(it.quantity) * (Number(it.unit_cost) || 0)), 0);
     const grossProfit = netRevenue - cogs;
 
-    const operatingExpenses = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
+    const operatingExpenses = filteredExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
     const netIncome = grossProfit - operatingExpenses;
 
     const cogsPercent = netRevenue > 0 ? (cogs / netRevenue) * 100 : 0;
@@ -139,10 +142,13 @@ export default function ProfitsReportPage() {
       cogsPercent,
       expensesPercent,
       netProfitMargin,
-      totalUnits: filteredItems.reduce((acc, it) => acc + it.quantity, 0),
+      totalUnits: filteredItems.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0),
       invoiceCount: filteredInvoices.length,
       aov: filteredInvoices.length > 0 ? netRevenue / filteredInvoices.length : 0,
       avgProfitPerInv: filteredInvoices.length > 0 ? netIncome / filteredInvoices.length : 0,
+      returnRate: filteredInvoices.length > 0 ? (filteredReturns.length / filteredInvoices.length) * 100 : 0,
+    };
+  }, [filteredInvoices, filteredItems, filteredReturns, filteredExpenses]);
       returnRate: filteredInvoices.length > 0 ? (filteredReturns.length / filteredInvoices.length) * 100 : 0,
     };
   }, [filteredInvoices, filteredItems, filteredReturns, filteredExpenses]);
