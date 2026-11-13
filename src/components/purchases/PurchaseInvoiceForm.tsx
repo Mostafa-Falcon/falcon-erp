@@ -50,7 +50,8 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  const [warehouseId, setWarehouseId] = useState('');
  const [treasuryId, setTreasuryId] = useState('');
  const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState('');
- const [paymentType, setPaymentType] = useState<'cash'|'credit'>('cash');
+ const [paymentType, setPaymentType] = useState<'cash'|'credit'|'split'>('cash');
+ const [customPaidAmount, setCustomPaidAmount] = useState('0');
  const [discount, setDiscount] = useState('0');
  const [discountMode, setDiscountMode] = useState<'amount'|'percentage'>('amount');
  const [discountPercent, setDiscountPercent] = useState('');
@@ -91,6 +92,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  treasuryId,
  supplierInvoiceNumber,
  paymentType,
+ customPaidAmount,
  discount,
  discountMode,
  discountPercent,
@@ -99,7 +101,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  };
  localStorage.setItem(draftKey, JSON.stringify(payload));
  }
- }, [orgId, draftKey, isLoading, supplierId, warehouseId, treasuryId, supplierInvoiceNumber, paymentType, discount, discountMode, discountPercent, notes, lines]);
+ }, [orgId, draftKey, isLoading, supplierId, warehouseId, treasuryId, supplierInvoiceNumber, paymentType, customPaidAmount, discount, discountMode, discountPercent, notes, lines]);
 
  // 3. BeforeUnload browser warning when leaving page with unsaved items
  useEffect(() => {
@@ -124,6 +126,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  if (parsed.treasuryId) setTreasuryId(parsed.treasuryId);
  if (parsed.supplierInvoiceNumber) setSupplierInvoiceNumber(parsed.supplierInvoiceNumber);
  if (parsed.paymentType) setPaymentType(parsed.paymentType);
+ if (parsed.customPaidAmount) setCustomPaidAmount(parsed.customPaidAmount);
  if (parsed.discount) setDiscount(parsed.discount);
  if (parsed.discountMode) setDiscountMode(parsed.discountMode);
  if (parsed.discountPercent) setDiscountPercent(parsed.discountPercent);
@@ -278,6 +281,16 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  : Number(discount) || 0;
  const total = Math.max(0, subtotal - appliedDiscount + taxTotal);
 
+ const paidVal = useMemo(() => {
+ if (paymentType ==='cash') return total;
+ if (paymentType ==='credit') return 0;
+ return Math.min(total, Math.max(0, Number(customPaidAmount) || 0));
+ }, [paymentType, total, customPaidAmount]);
+
+ const remainingVal = useMemo(() => {
+ return Math.max(0, total - paidVal);
+ }, [total, paidVal]);
+
  const save = async () => {
  setFormError('');
  if (!currentUser) return;
@@ -285,8 +298,8 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  setFormError('اختر المورد والمخزن.');
  return;
  }
- if (paymentType ==='cash'&& !treasuryId) {
- setFormError('اختر الخزينة لدفع الفاتورة نقداً.');
+ if (paidVal > 0 && !treasuryId) {
+ setFormError('اختر الخزينة المسدد منها المبلغ النقدي.');
  return;
  }
 
@@ -331,6 +344,8 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
 
  setIsSaving(true);
  try {
+ const actualPaymentType = (paidVal >= total && total > 0) ?'cash': (paidVal <= 0) ?'credit':'split';
+
  const invoice = await PurchasesRepository.createPurchaseInvoice({
  orgId,
  branchId,
@@ -342,8 +357,9 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  discountMode ==='amount'? Number(discount) || 0 : appliedDiscount,
  discountPercent:
  discountMode ==='percentage'? Math.max(0, Math.min(100, Number(discountPercent) || 0)) : 0,
- paymentType,
- treasuryId: paymentType ==='cash'? treasuryId : null,
+ paymentType: actualPaymentType,
+ paidAmount: paidVal,
+ treasuryId: paidVal > 0 ? treasuryId : null,
  userId: currentUser.id,
  notes: notes.trim() || undefined,
  });
@@ -405,267 +421,341 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  )}
 
  {/* Headers */}
- <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
- <div className="md:col-span-2">
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المورد</span>
- <Select value={supplierId} onValueChange={setSupplierId}>
- <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
- <SelectValue placeholder="— اختر المورد —"/>
- </SelectTrigger>
- <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
- {suppliers.map((c) => (
- <SelectItem key={c.id} value={c.id} className="">
- {c.name}{c.phone ?`(${c.phone})`:''}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- <div>
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المخزن</span>
- <Select value={warehouseId} onValueChange={setWarehouseId}>
- <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
- <SelectValue placeholder="اختر المخزن"/>
- </SelectTrigger>
- <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
- {warehouses.map((w) => (
- <SelectItem key={w.id} value={w.id} className="">
- {w.name}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- <div>
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">رقم فاتورة المورد</span>
- <Input type="text"value={supplierInvoiceNumber} onChange={(e) => setSupplierInvoiceNumber(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900 text-sm"placeholder="اختياري"/>
- </div>
- </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="md:col-span-2">
+          <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المورد</span>
+          <Select value={supplierId} onValueChange={setSupplierId}>
+            <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
+              <SelectValue placeholder="— اختر المورد —" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+              {suppliers.map((c) => (
+                <SelectItem key={c.id} value={c.id} className="">
+                  {c.name}{c.phone ? `(${c.phone})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المخزن</span>
+          <Select value={warehouseId} onValueChange={setWarehouseId}>
+            <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
+              <SelectValue placeholder="اختر المخزن" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
+              {warehouses.map((w) => (
+                <SelectItem key={w.id} value={w.id} className="">
+                  {w.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">رقم فاتورة المورد</span>
+          <Input type="text" value={supplierInvoiceNumber} onChange={(e) => setSupplierInvoiceNumber(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900 text-sm font-bold" placeholder="اختياري" />
+        </div>
+      </div>
 
- <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
- <div>
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">طريقة الدفع</span>
- <div className="flex gap-2">
- <button
- type="button"
- onClick={() => setPaymentType('cash')}
- className={
-'h-10 flex-1 rounded-xl border text-xs font-bold transition-all cursor-pointer '+
- (paymentType ==='cash'
- ?'bg-blue-600 border-blue-600 text-white shadow-sm font-black'
- :'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100')
- }
- >
- نقدي
- </button>
- <button
- type="button"
- onClick={() => setPaymentType('credit')}
- className={
-'h-10 flex-1 rounded-xl border text-xs font-bold transition-all cursor-pointer '+
- (paymentType ==='credit'
- ?'bg-blue-600 border-blue-600 text-white shadow-sm font-black'
- :'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100')
- }
- >
- آجل
- </button>
- </div>
- </div>
- {paymentType ==='cash'? (
- <div className="md:col-span-2">
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الخزينة (سداد نقدي)</span>
- <Select value={treasuryId} onValueChange={setTreasuryId}>
- <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
- <SelectValue placeholder="اختر الخزينة"/>
- </SelectTrigger>
- <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
- {treasuries.map((t) => (
- <SelectItem key={t.id} value={t.id} className="">
- {t.name} ({t.current_balance.toLocaleString('en-US', { maximumFractionDigits: 2 })})
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- ) : (
- <div className="md:col-span-2">
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملاحظات</span>
- <Input type="text"value={notes} onChange={(e) => setNotes(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900 text-sm"placeholder="ملاحظات على الفاتورة (اختياري)"/>
- </div>
- )}
- </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+        <div>
+          <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">طريقة السداد</span>
+          <div className="flex gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType('cash');
+                setCustomPaidAmount(String(total));
+              }}
+              className={
+                'h-8 flex-1 rounded-lg text-3xs sm:text-2xs font-bold transition-all cursor-pointer ' +
+                (paymentType === 'cash'
+                  ? 'bg-blue-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white')
+              }
+            >
+              نقدي بالكامل
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType('credit');
+                setCustomPaidAmount('0');
+              }}
+              className={
+                'h-8 flex-1 rounded-lg text-3xs sm:text-2xs font-bold transition-all cursor-pointer ' +
+                (paymentType === 'credit'
+                  ? 'bg-blue-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white')
+              }
+            >
+              آجل بالكامل
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType('split');
+                if (!customPaidAmount || customPaidAmount === '0') {
+                  setCustomPaidAmount(String(Math.round(total / 2)));
+                }
+              }}
+              className={
+                'h-8 flex-1 rounded-lg text-3xs sm:text-2xs font-bold transition-all cursor-pointer ' +
+                (paymentType === 'split'
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white')
+              }
+            >
+              سداد جزئي
+            </button>
+          </div>
+        </div>
 
- {/* Items Table Section */}
- <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
- <div className="flex items-center justify-between">
- <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
- <span className="text-blue-600"><Icons.Receipt /></span>
- أصناف الفاتورة ({lines.length})
- </h3>
- <Button onClick={addLine} className="h-10 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow transition-all">
- <Icons.Plus className="w-4 h-4" /> <span>إضافة صنف</span>
- </Button>
- </div>
+        {/* Paid Amount Input */}
+        <div>
+          <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المبلغ المدفوع كاش (ج.م)</span>
+          <Input
+            type="number"
+            min={0}
+            max={total}
+            step="any"
+            disabled={paymentType === 'cash' || paymentType === 'credit'}
+            value={paymentType === 'cash' ? String(total) : paymentType === 'credit' ? '0' : customPaidAmount}
+            onChange={(e) => setCustomPaidAmount(e.target.value)}
+            className="h-10 bg-slate-50 dark:bg-slate-900 text-sm font-mono font-black border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400"
+            placeholder="0.00"
+          />
+        </div>
 
- {formError && (
- <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-xs font-bold text-red-700 dark:text-red-300">
- {formError}
- </div>
- )}
+        {/* Treasury Selection (if paidVal > 0) */}
+        {paidVal > 0 ? (
+          <div className="md:col-span-2">
+            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الخزينة (خصم السداد النقدي)</span>
+            <Select value={treasuryId} onValueChange={setTreasuryId}>
+              <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                <SelectValue placeholder="اختر الخزينة" />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
+                {treasuries.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name} ({t.current_balance.toLocaleString('en-US', { maximumFractionDigits: 2 })} ج.م)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="md:col-span-2">
+            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملاحظات</span>
+            <Input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="h-10 bg-slate-50 dark:bg-slate-900 text-xs font-bold"
+              placeholder="ملاحظات على الفاتورة (اختياري)"
+            />
+          </div>
+        )}
+      </div>
 
- {lines.length === 0 ? (
- <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 py-10 text-center text-xs font-semibold text-slate-400">
- أضف الأصناف المشتراة باستخدام زر «إضافة صنف».
- </div>
- ) : (
- <div className="space-y-2">
- {lines.map((line, idx) => {
- const p = lineProduct(line);
- return (
- <div key={line.id || idx} className="grid grid-cols-2 md:grid-cols-12 gap-2 items-end rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
- {/* Sequence Order Number Badge & Product Select */}
- <div className="col-span-2 md:col-span-3 flex items-center gap-2">
- <span className="w-7 h-7 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-900 shadow-2xs">
- #{idx + 1}
- </span>
- <div className="flex-1 min-w-0">
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الصنف</span>
- <Select value={line.productId} onValueChange={(val) => onProductChange(idx, val)}>
- <SelectTrigger className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-xs font-bold">
- <SelectValue placeholder="— اختر الصنف —"/>
- </SelectTrigger>
- <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
- {products.map((pr) => (
- <SelectItem key={pr.id} value={pr.id} className="">
- {pr.name}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- </div>
+      {/* Items Table Section */}
+      <div className="bg-surface rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <span className="text-blue-600"><Icons.Receipt /></span>
+            أصناف الفاتورة ({lines.length})
+          </h3>
+          <Button onClick={addLine} className="h-10 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow transition-all">
+            <Icons.Plus className="w-4 h-4" /> <span>إضافة صنف</span>
+          </Button>
+        </div>
 
- {p?.tracks_batch && (
- <>
- <div className="md:col-span-2">
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">رقم الدفعة</span>
- <Input type="text"value={line.batchNumber} onChange={(e) => updateLine(idx, { batchNumber: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs"/>
- </div>
- {p.tracks_expiry && (
- <div className="md:col-span-1">
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الانتهاء</span>
- <DatePicker value={line.expiryDate} onChange={(dateStr) => updateLine(idx, { expiryDate: dateStr })} placeholder="تاريخ الصلاحية..." className="h-9 text-xs" />
- </div>
- )}
- </>
- )}
- <div>
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الوحدة</span>
- <Select value={line.unitId} onValueChange={(val) => onUnitChange(idx, val)}>
- <SelectTrigger className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-xs font-bold">
- <SelectValue placeholder="الوحدة"/>
- </SelectTrigger>
- <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
- {(unitOptions[line.productId] || []).map((u) => (
- <SelectItem key={u.unitId} value={u.unitId} className="">
- {unitsById[u.unitId]?.symbol ||''}{u.factor !== 1 ?`(×${u.factor})`:''}
- </SelectItem>
- ))}
- </SelectContent>
- </Select>
- </div>
- <div>
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الكمية</span>
- <Input type="number"min={0} step="any"value={line.qty} onChange={(e) => updateLine(idx, { qty: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold"/>
- </div>
- <div>
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">التكلفة</span>
- <Input type="number"min={0} step="any"value={line.cost} onChange={(e) => updateLine(idx, { cost: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold"/>
- </div>
- <div>
- <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">ضريبة %</span>
- <Input type="number"min={0} step="any"value={line.taxRate} onChange={(e) => updateLine(idx, { taxRate: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold"/>
- </div>
- <div className="flex items-end justify-between gap-1">
- <div className="text-xs font-black text-primary font-mono pt-1 whitespace-nowrap">{formatNumber(lineTotals(line))}</div>
- <button type="button"onClick={() => removeLine(idx)} className="text-red-500 hover:text-red-700 cursor-pointer p-1">
- <Icons.X />
- </button>
- </div>
- </div>
- );
- })}
- </div>
- )}
+        {formError && (
+          <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-xs font-bold text-red-700 dark:text-red-300">
+            {formError}
+          </div>
+        )}
 
- {/* Totals */}
- <div className="border-t border-slate-100 dark:border-slate-800 pt-4 grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
- <div>
- <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">خصم على الفاتورة</span>
- <div className="flex gap-2 items-center">
- <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
- <button
- type="button"
- onClick={() => setDiscountMode('amount')}
- className={
-'px-3 h-10 text-2xs font-bold transition-all cursor-pointer '+
- (discountMode ==='amount'?'bg-blue-600 text-white font-black':'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
- }
- >
- مبلغ
- </button>
- <button
- type="button"
- onClick={() => setDiscountMode('percentage')}
- className={
-'px-3 h-10 text-2xs font-bold transition-all cursor-pointer '+
- (discountMode ==='percentage'?'bg-blue-600 text-white font-black':'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
- }
- >
- نسبة %
- </button>
- </div>
- {discountMode ==='amount'? (
- <Input type="number"min={0} step="any"value={discount} onChange={(e) => setDiscount(e.target.value)} className="h-10 text-sm font-mono font-bold"/>
- ) : (
- <Input type="number"min={0} max={100} step="any"value={discountPercent} onChange={(e) => setDiscountPercent(e.target.value)} className="h-10 text-sm font-mono font-bold"/>
- )}
- </div>
- </div>
+        {lines.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 py-10 text-center text-xs font-semibold text-slate-400">
+            أضف الأصناف المشتراة باستخدام زر «إضافة صنف».
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {lines.map((line, idx) => {
+              const p = lineProduct(line);
+              return (
+                <div key={line.id || idx} className="grid grid-cols-2 md:grid-cols-12 gap-2 items-end rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
+                  {/* Sequence Order Number Badge & Product Native Select with Search Capability */}
+                  <div className="col-span-2 md:col-span-4 flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-900 shadow-2xs">
+                      #{idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الصنف</span>
+                      <select
+                        value={line.productId}
+                        onChange={(e) => onProductChange(idx, e.target.value)}
+                        className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs font-bold px-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      >
+                        <option value="">— اختر الصنف —</option>
+                        {products.map((pr) => (
+                          <option key={pr.id} value={pr.id}>
+                            {pr.name} {pr.sku ? `(${pr.sku})` : ''} - {formatNumber(pr.purchase_price || 0)} ج.م
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
- <div>
- <span className="block text-xs font-bold text-slate-500 mb-1">إجمالي الخصم</span>
- <div className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center text-sm font-mono font-black text-rose-600">
- {formatNumber(appliedDiscount)} ج.م
- </div>
- </div>
+                  {p?.tracks_batch && (
+                    <>
+                      <div className="md:col-span-2">
+                        <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">رقم الدفعة</span>
+                        <Input type="text" value={line.batchNumber} onChange={(e) => updateLine(idx, { batchNumber: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs" />
+                      </div>
+                      {p.tracks_expiry && (
+                        <div className="md:col-span-1">
+                          <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الانتهاء</span>
+                          <DatePicker value={line.expiryDate} onChange={(dateStr) => updateLine(idx, { expiryDate: dateStr })} placeholder="تاريخ الصلاحية..." className="h-9 text-xs" />
+                        </div>
+                      )}
+                    </>
+                  )}
 
- <div>
- <span className="block text-xs font-bold text-slate-500 mb-1">إجمالي الضريبة</span>
- <div className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center text-sm font-mono font-black text-amber-600">
- {formatNumber(taxTotal)} ج.م
- </div>
- </div>
+                  <div>
+                    <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الوحدة</span>
+                    <select
+                      value={line.unitId}
+                      onChange={(e) => onUnitChange(idx, e.target.value)}
+                      className="w-full h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs font-bold px-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    >
+                      {(unitOptions[line.productId] || []).map((u) => (
+                        <option key={u.unitId} value={u.unitId}>
+                          {unitsById[u.unitId]?.symbol || ''}{u.factor !== 1 ? `(×${u.factor})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
- <div>
- <span className="block text-xs font-bold text-slate-500 mb-1">الصافي المطلوب</span>
- <div className="h-10 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center text-base font-mono font-black text-emerald-600 dark:text-emerald-400">
- {formatNumber(total)} ج.م
- </div>
- </div>
- </div>
- </div>
+                  <div>
+                    <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">الكمية</span>
+                    <Input type="number" min={0} step="any" value={line.qty} onChange={(e) => updateLine(idx, { qty: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold" />
+                  </div>
 
- <div className="flex items-center justify-end gap-3 pt-2">
- <Button
- disabled={isSaving}
- onClick={save}
- className="h-12 px-8 rounded-xl text-sm font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-2"
- >
- {isSaving ?'جارٍ الاعتماد والحفظ...':'اعتماد وحفظ الفاتورة'}
- </Button>
- </div>
- </div>
- );
+                  <div>
+                    <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">التكلفة</span>
+                    <Input type="number" min={0} step="any" value={line.cost} onChange={(e) => updateLine(idx, { cost: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold" />
+                  </div>
+
+                  <div>
+                    <span className="block text-3xs font-bold text-slate-500 dark:text-slate-400 mb-1">ضريبة %</span>
+                    <Input type="number" min={0} step="any" value={line.taxRate} onChange={(e) => updateLine(idx, { taxRate: e.target.value })} className="h-9 bg-white dark:bg-slate-800 text-xs font-mono font-bold" />
+                  </div>
+
+                  <div className="flex items-end justify-between gap-1">
+                    <div className="text-xs font-black text-primary font-mono pt-1 whitespace-nowrap">{formatNumber(lineTotals(line))}</div>
+                    <button type="button" onClick={() => removeLine(idx)} className="text-red-500 hover:text-red-700 cursor-pointer p-1">
+                      <Icons.X />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Totals & Financial Overview */}
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+            <div>
+              <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">خصم على الفاتورة</span>
+              <div className="flex gap-2 items-center">
+                <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setDiscountMode('amount')}
+                    className={
+                      'px-3 h-10 text-2xs font-bold transition-all cursor-pointer ' +
+                      (discountMode === 'amount' ? 'bg-blue-600 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
+                    }
+                  >
+                    مبلغ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiscountMode('percentage')}
+                    className={
+                      'px-3 h-10 text-2xs font-bold transition-all cursor-pointer ' +
+                      (discountMode === 'percentage' ? 'bg-blue-600 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300')
+                    }
+                  >
+                    نسبة %
+                  </button>
+                </div>
+                {discountMode === 'amount' ? (
+                  <Input type="number" min={0} step="any" value={discount} onChange={(e) => setDiscount(e.target.value)} className="h-10 text-sm font-mono font-bold" />
+                ) : (
+                  <Input type="number" min={0} max={100} step="any" value={discountPercent} onChange={(e) => setDiscountPercent(e.target.value)} className="h-10 text-sm font-mono font-bold" />
+                )}
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-xs font-bold text-slate-500 mb-1">إجمالي الخصم</span>
+              <div className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center text-sm font-mono font-black text-rose-600">
+                {formatNumber(appliedDiscount)} ج.م
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-xs font-bold text-slate-500 mb-1">إجمالي الضريبة</span>
+              <div className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center text-sm font-mono font-black text-amber-600">
+                {formatNumber(taxTotal)} ج.م
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-xs font-bold text-slate-500 mb-1">الصافي المطلوب</span>
+              <div className="h-10 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center text-base font-mono font-black text-emerald-600 dark:text-emerald-400">
+                {formatNumber(total)} ج.م
+              </div>
+            </div>
+          </div>
+
+          {/* High-End Partial / Cash / Remaining Summary Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 bg-slate-50/80 dark:bg-slate-900/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                💵 المدفوع كاش للمورد (من الخزينة):
+              </span>
+              <span className="text-sm font-mono font-black text-emerald-600 dark:text-emerald-400">
+                {formatNumber(paidVal)} ج.م
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                📋 المتبقي كآجل / ديون على المنشأة:
+              </span>
+              <span className="text-sm font-mono font-black text-indigo-600 dark:text-indigo-400">
+                {formatNumber(remainingVal)} ج.م
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3 pt-2">
+        <Button
+          disabled={isSaving}
+          onClick={save}
+          className="h-12 px-8 rounded-xl text-sm font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-2"
+        >
+          {isSaving ? 'جارٍ الاعتماد والحفظ...' : 'اعتماد وحفظ الفاتورة'}
+        </Button>
+      </div>
+    </div>
+  );
 }
