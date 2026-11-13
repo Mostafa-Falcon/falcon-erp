@@ -19,8 +19,8 @@
 ---
 
 ### 3. المشروع الحالي (New Current Project - Falcon ERP)
-- **رمز التوكين (Management Token):**
-  `sbp_v0_be16d8fb7183dc9d470f1a0fd5bae9221980b6a4`
+- **رمز التوكين الدائم (Lifetime Management Token):**
+  `sbp_fc305a132430a271a906...0282a66`
 - **معرف المشروع (Project Ref):** `ztcbzzojfzzpthwcszau`
 - **اسم المشروع:** `Falcon ERP`
 - **معرف المنشأة السحابية (Organization ID):** `czwgkmltekxolwbmhbtp` (`fareselkmaly-prog's Org`)
