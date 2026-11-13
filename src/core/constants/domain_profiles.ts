@@ -174,6 +174,20 @@ export const DOMAIN_PROFILES: Record<string, DomainProfile> = {
     brandsLabel: 'المصانع وشركات التوريد',
     posTitle: 'شاشة المقايسات وفواتير التجهيز (POS)',
   },
+  education: {
+    id: 'education',
+    nameAr: 'مراكز تعليمية وأكاديميات ومكتبات',
+    nameEn: 'Education & Academies',
+    icon: '🎓',
+    badgeStyle: 'bg-emerald-600/10 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-300',
+    itemsCategoryLabel: 'الكورسات والكتب والمستلزمات',
+    itemsListLabel: 'دليل الكورسات والكتب الدراسية',
+    itemsAddLabel: 'إضافة كورس / دورة / كتاب',
+    substitutesLabel: 'الكورسات والمواد البديلة',
+    expiryAlertsLabel: 'مواعيد الدورات والاشتراكات',
+    brandsLabel: 'المدرسون ودور النشر',
+    posTitle: 'شاشة حجز الكورسات والكتب (POS)',
+  },
 };
 
 export const getDomainProfile = (activityType?: string | null): DomainProfile => {
@@ -183,5 +197,6 @@ export const getDomainProfile = (activityType?: string | null): DomainProfile =>
   if (key === 'cafe' || key === 'cafes' || key === 'coffee') return DOMAIN_PROFILES.cafe;
   if (key === 'mobile' || key === 'mobile_shop' || key === 'mobiles') return DOMAIN_PROFILES.mobile_shop;
   if (key === 'shop_fitting' || key === 'decoration' || key === 'decor' || key === 'fitout' || key === 'interior_design') return DOMAIN_PROFILES.shop_fitting;
+  if (key === 'education' || key === 'academy' || key === 'school' || key === 'center') return DOMAIN_PROFILES.education;
   return DOMAIN_PROFILES[key] || DOMAIN_PROFILES.retail;
 };
