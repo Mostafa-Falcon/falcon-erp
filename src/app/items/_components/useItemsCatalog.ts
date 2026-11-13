@@ -118,7 +118,8 @@ export function useItemsCatalog() {
 
  const stock: Record<string, number> = {};
  for (const s of sLevels) {
- stock[s.product_id] = (stock[s.product_id] || 0) + s.quantity;
+   const qty = typeof s.available_quantity === 'number' ? s.available_quantity : (Number(s.available_quantity) || Number(s.quantity) || 0);
+   stock[s.product_id] = (stock[s.product_id] || 0) + qty;
  }
 
  const batchMap: Record<string, ProductBatch[]> = {};
@@ -162,8 +163,15 @@ export function useItemsCatalog() {
  };
 
  useEffect(() => {
- if (!orgId) return;
- loadData();
+   if (!orgId) return;
+   loadData();
+
+   // Auto-pull latest stock levels & products from cloud on mount for real-time sync across devices
+   import('@/core/sync/pull_sync_service').then(({ PullSyncService }) => {
+     PullSyncService.pullAll(orgId).then(() => {
+       loadData();
+     }).catch(() => {});
+   }).catch(() => {});
  }, [orgId]);
 
  // الاستجابة لتغييرات السحابة (realtime أو reconcile) لإعادة قراءة دليل الأصناف

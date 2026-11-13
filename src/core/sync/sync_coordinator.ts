@@ -620,11 +620,21 @@ export class SyncCoordinator {
  } else if (table ==='product_units') {
  await safeGetAndUpsert('products', payload.product_id);
  await safeGetAndUpsert('units', payload.unit_id);
- } else if (table ==='product_batches'|| table ==='stock_levels'|| table ==='inventory_transactions') {
- await safeGetAndUpsert('warehouses', payload.warehouse_id);
- if (table ==='inventory_transactions') {
- await safeGetAndUpsert('products', payload.product_id);
- }
+    } else if (table === 'product_batches' || table === 'stock_levels' || table === 'inventory_transactions') {
+      if (payload.warehouse_id) {
+        const wh = await db.warehouses.get(payload.warehouse_id as string);
+        if (!wh) {
+          const branchWh = await db.warehouses.where('branch_id').equals(payload.warehouse_id as string).first()
+            || (payload.org_id ? await db.warehouses.where('org_id').equals(payload.org_id as string).first() : undefined);
+          if (branchWh) {
+            payload.warehouse_id = branchWh.id;
+          }
+        }
+      }
+      await safeGetAndUpsert('warehouses', payload.warehouse_id);
+      if (table === 'inventory_transactions') {
+        await safeGetAndUpsert('products', payload.product_id);
+      }
  } else if (table ==='stock_transfer_items') {
  await safeGetAndUpsert('stock_transfers', payload.transfer_id);
  await safeGetAndUpsert('products', payload.product_id);
