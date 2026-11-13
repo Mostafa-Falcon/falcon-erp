@@ -63,16 +63,18 @@ export function CustomerProfileView({
             const txs = await ContactsRepository.getStatement(customerId);
             setTransactions(txs as any);
 
-            // 2. Sales Invoices
-            const invs = await db.sales_invoices
+            // 2. Sales Invoices (Active / Non-deleted only)
+            const allInvs = await db.sales_invoices
                 .where('customer_id')
                 .equals(customerId)
                 .reverse()
                 .sortBy('invoice_date');
-            setSalesInvoices(invs);
 
-            // 3. Purchased Items
-            const invIds = invs.map((i) => i.id);
+            const activeInvs = allInvs.filter((i) => !i.is_deleted && i.status !== 'cancelled');
+            setSalesInvoices(activeInvs);
+
+            // 3. Purchased Items (Active / Non-deleted invoices only)
+            const invIds = activeInvs.map((i) => i.id);
             if (invIds.length > 0) {
                 const items = await db.sales_invoice_items.where('invoice_id').anyOf(invIds).toArray();
                 const productIds = Array.from(new Set(items.map((it) => it.product_id)));
@@ -80,7 +82,7 @@ export function CustomerProfileView({
                 const prodMap = new Map(products.map((p) => [p.id, p.name]));
 
                 const summary = items.map((it) => {
-                    const inv = invs.find((i) => i.id === it.invoice_id);
+                    const inv = activeInvs.find((i) => i.id === it.invoice_id);
                     return {
                         id: it.id,
                         name: prodMap.get(it.product_id) || it.notes || 'صنف مباع',

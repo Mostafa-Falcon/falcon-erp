@@ -1371,17 +1371,28 @@ export class SalesRepository {
  await TreasuryRepository.adjustBalance(invoice.treasury_id, -cashPaid);
  }
 
- // 4. Revert customer debt
- if (invoice.customer_id && invoice.remaining_amount > 0) {
- await ContactsRepository.adjustBalance({
- orgId: invoice.org_id,
- contactId: invoice.customer_id,
- referenceType:'sale_invoice',
- referenceId: invoice.id,
- debit: 0,
- credit: invoice.remaining_amount,
- notes:`إلغاء مديونية فاتورة مبيعات #${invoice.invoice_number}`,
- });
+ // 4. Revert customer debt and remove linked transactions
+ if (invoice.customer_id) {
+   const linkedTxs = await db.contact_transactions
+     .where('reference_id')
+     .equals(invoice.id)
+     .toArray();
+   for (const tx of linkedTxs) {
+     await db.contact_transactions.delete(tx.id);
+     await SyncQueueManager.enqueue('contact_transactions', tx.id, 'delete', { id: tx.id });
+   }
+
+   if (invoice.remaining_amount > 0) {
+     await ContactsRepository.adjustBalance({
+       orgId: invoice.org_id,
+       contactId: invoice.customer_id,
+       referenceType: 'sale_invoice',
+       referenceId: invoice.id,
+       debit: 0,
+       credit: invoice.remaining_amount,
+       notes: `إلغاء مديونية فاتورة مبيعات #${invoice.invoice_number}`,
+     });
+   }
  }
 
  // 5. Update cashier shift running totals if attached to open shift
