@@ -160,4 +160,26 @@ export class QuotationsRepository {
 
  return updated;
  }
+
+ /**
+ * Delete a quotation and its items
+ */
+ public static async deleteQuotation(id: string): Promise<boolean> {
+ const quotation = await db.quotations.get(id);
+ if (!quotation) return false;
+
+ const items = await db.quotation_items.where('quotation_id').equals(id).toArray();
+
+ await db.transaction('rw', [db.quotations, db.quotation_items, db.sync_queue], async () => {
+ for (const item of items) {
+ await db.quotation_items.delete(item.id);
+ await SyncQueueManager.enqueue('quotation_items', item.id,'delete', { id: item.id });
+ }
+
+ await db.quotations.delete(id);
+ await SyncQueueManager.enqueue('quotations', id,'delete', { id });
+ });
+
+ return true;
+ }
 }

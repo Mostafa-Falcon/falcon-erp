@@ -42,6 +42,7 @@ import {
  Clock,
  Building2,
  DollarSign,
+ Trash2,
 } from'lucide-react';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import { QuotationsRepository } from'@/modules/sales/quotations_repository';
@@ -123,6 +124,22 @@ function QuotesContent() {
  } catch (err) {
  console.error(err);
  toast.error('فشل تحديث حالة عرض السعر');
+ }
+ };
+
+ const handleDeleteQuote = async (id: string) => {
+ if (!window.confirm('هل أنت تأكد من رغبتك في حذف عرض السعر هذا؟')) return;
+ try {
+ await QuotationsRepository.deleteQuotation(id);
+ toast.success('تم حذف عرض السعر بنجاح');
+ if (selectedQuote?.id === id) {
+ setIsDetailOpen(false);
+ setSelectedQuote(null);
+ }
+ loadData();
+ } catch (err) {
+ console.error(err);
+ toast.error('فشل حذف عرض السعر');
  }
  };
 
@@ -365,6 +382,15 @@ function QuotesContent() {
  </Button>
  </>
  )}
+ <Button
+ size="xs"
+ variant="ghost"
+ className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+ onClick={() => handleDeleteQuote(q.id)}
+ title="حذف عرض السعر"
+ >
+ <Trash2 className="w-4 h-4"/>
+ </Button>
  </div>
  </TableCell>
  </TableRow>
@@ -429,6 +455,7 @@ function QuotesContent() {
 
  {/* Summary & Actions */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t pt-3">
+ <div className="flex items-center gap-2">
  <Button
  type="button"
  onClick={() => handleConvertToInvoice(selectedQuote)}
@@ -437,6 +464,16 @@ function QuotesContent() {
  <CheckCircle className="w-4 h-4" />
  <span>تحويل إلى فاتورة مبيعات ومخصوم مخزنياً</span>
  </Button>
+ <Button
+ type="button"
+ variant="destructive"
+ onClick={() => handleDeleteQuote(selectedQuote.id)}
+ className="font-bold text-xs gap-1.5 cursor-pointer"
+ >
+ <Trash2 className="w-4 h-4" />
+ <span>حذف عرض السعر</span>
+ </Button>
+ </div>
 
  <div className="flex flex-col items-end gap-1 font-semibold">
  <div className="flex justify-between w-60">
