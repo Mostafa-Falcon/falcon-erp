@@ -77,32 +77,48 @@ export default function SalesReportPage() {
  loadData();
  }, [orgId]);
 
+ const formatDateSafe = (dateVal?: string | Date | null, formatPattern: string = 'yyyy-MM-dd') => {
+   if (!dateVal) return '—';
+   const d = new Date(dateVal);
+   if (isNaN(d.getTime())) return '—';
+   try {
+     return format(d, formatPattern);
+   } catch {
+     return '—';
+   }
+ };
+
  const filteredInvoices = useMemo(() => {
- return invoices.filter((inv) => {
- // Search
- const matchesSearch = !searchQuery ||
- inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
- customers.find(c => c.id === inv.customer_id)?.name.toLowerCase().includes(searchQuery.toLowerCase());
+   return invoices.filter((inv) => {
+     // Search
+     const matchesSearch = !searchQuery ||
+       inv.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       customers.find(c => c.id === inv.customer_id)?.name?.toLowerCase().includes(searchQuery.toLowerCase());
 
- // Payment Type
- const matchesPayment = paymentType ==='all'|| inv.payment_type === paymentType;
+     // Payment Type
+     const matchesPayment = paymentType === 'all' || inv.payment_type === paymentType;
 
- // Period Filter (Logic for Today, Yesterday, etc.)
- let matchesPeriod = true;
- const invDate = new Date(inv.invoice_date);
- const now = new Date();
- if (period ==='today') {
- matchesPeriod = invDate.toDateString() === now.toDateString();
- } else if (period ==='yesterday') {
- const yesterday = new Date();
- yesterday.setDate(now.getDate() - 1);
- matchesPeriod = invDate.toDateString() === yesterday.toDateString();
- } else if (period ==='month') {
- matchesPeriod = invDate.getMonth() === now.getMonth() && invDate.getFullYear() === now.getFullYear();
- }
+     // Period Filter (Logic for Today, Yesterday, etc.)
+     let matchesPeriod = true;
+     const rawDate = inv.invoice_date || inv.created_at;
+     if (rawDate && period !== 'all') {
+       const invDate = new Date(rawDate);
+       if (!isNaN(invDate.getTime())) {
+         const now = new Date();
+         if (period === 'today') {
+           matchesPeriod = invDate.toDateString() === now.toDateString();
+         } else if (period === 'yesterday') {
+           const yesterday = new Date();
+           yesterday.setDate(now.getDate() - 1);
+           matchesPeriod = invDate.toDateString() === yesterday.toDateString();
+         } else if (period === 'month') {
+           matchesPeriod = invDate.getMonth() === now.getMonth() && invDate.getFullYear() === now.getFullYear();
+         }
+       }
+     }
 
- return matchesSearch && matchesPayment && matchesPeriod;
- });
+     return matchesSearch && matchesPayment && matchesPeriod;
+   });
  }, [invoices, searchQuery, paymentType, period, customers]);
 
  // Calculated Stats
@@ -296,7 +312,7 @@ export default function SalesReportPage() {
  <td className="py-4 px-4 text-slate-900 dark:text-white font-black">{inv.invoice_number}</td>
  <td className="py-4 px-4 text-slate-600 dark:text-slate-400">{customerName(inv.customer_id)}</td>
  <td className="py-4 px-4 text-slate-500 font-medium">
- {format(new Date(inv.invoice_date),'yyyy-MM-dd')} <span className="mr-1 text-3xs opacity-70">{format(new Date(inv.invoice_date),'hh:mm a')}</span>
+ {formatDateSafe(inv.invoice_date || inv.created_at, 'yyyy-MM-dd')} <span className="mr-1 text-3xs opacity-70">{formatDateSafe(inv.invoice_date || inv.created_at, 'hh:mm a')}</span>
  </td>
  <td className="py-4 px-4 text-center">
  <span className={`px-2.5 py-1 rounded-lg text-3xs font-black ${
