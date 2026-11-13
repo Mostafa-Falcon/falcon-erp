@@ -1499,22 +1499,52 @@ export class SalesRepository {
  * Get all sales invoices for an organization (newest first, filtered by active/deleted)
  */
  public static async getSalesInvoices(
- orgId: string,
- options?: { branchId?: string; includeDeleted?: boolean }
+   orgId: string,
+   options?: { branchId?: string; includeDeleted?: boolean }
  ): Promise<SalesInvoice[]> {
- let list = await db.sales_invoices
- .where('org_id')
- .equals(orgId)
- .reverse()
- .sortBy('created_at');
+   if (typeof window !== 'undefined' && navigator.onLine) {
+     try {
+       const { data: cloudInvoices } = await supabase
+         .from('sales_invoices')
+         .select('*')
+         .eq('org_id', orgId);
 
- if (options?.branchId) {
- list = list.filter((inv) => inv.branch_id === options.branchId);
- }
- if (!options?.includeDeleted) {
- list = list.filter((inv) => !inv.is_deleted && inv.status !=='cancelled');
- }
- return list;
+       if (Array.isArray(cloudInvoices)) {
+         const cloudIds = new Set(cloudInvoices.map((inv) => inv.id));
+         const localInvoices = await db.sales_invoices.where('org_id').equals(orgId).toArray();
+
+         for (const li of localInvoices) {
+           if (!cloudIds.has(li.id) && li.sync_status !== 'pending') {
+             await db.sales_invoices.delete(li.id);
+             await db.sales_invoice_items.where('invoice_id').equals(li.id).delete();
+           }
+         }
+
+         if (cloudInvoices.length > 0) {
+           await db.sales_invoices.bulkPut(cloudInvoices.map((ci) => ({ ...ci, sync_status: 'synced' })));
+         }
+       }
+     } catch (e) {
+       console.warn('[SalesRepository] Cloud sync notice:', e);
+     }
+   }
+
+   let list = await db.sales_invoices
+     .where('org_id')
+     .equals(orgId)
+     .reverse()
+     .sortBy('created_at');
+
+   // Filter out empty ghost/draft invoices with total 0 and no valid invoice number
+   list = list.filter((inv) => (inv.total && inv.total > 0) || (inv.invoice_number && inv.invoice_number.trim().length > 0));
+
+   if (options?.branchId) {
+     list = list.filter((inv) => inv.branch_id === options.branchId);
+   }
+   if (!options?.includeDeleted) {
+     list = list.filter((inv) => !inv.is_deleted && inv.status !== 'cancelled');
+   }
+   return list;
  }
 
  /**
