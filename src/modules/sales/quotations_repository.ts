@@ -1,20 +1,48 @@
-import { v4 as uuidv4 } from'uuid';
-import { db } from'@/core/db/app_database';
-import { SyncQueueManager } from'@/core/sync/sync_queue_manager';
-import { roundMoney } from'@/lib/decimal';
-import type { Quotation, QuotationItem, QuotationStatus } from'@/types';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '@/core/db/app_database';
+import { supabase } from '@/core/supabase/supabase_client';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { roundMoney } from '@/lib/decimal';
+import type { Quotation, QuotationItem, QuotationStatus } from '@/types';
 
 export class QuotationsRepository {
- /**
- * Get all quotations for an organization
- */
- public static async getQuotations(orgId: string): Promise<Quotation[]> {
- return await db.quotations
- .where('org_id')
- .equals(orgId)
- .reverse()
- .sortBy('created_at');
- }
+  /**
+   * Get all quotations for an organization
+   */
+  public static async getQuotations(orgId: string): Promise<Quotation[]> {
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      try {
+        const { data: cloudQuotes } = await supabase
+          .from('quotations')
+          .select('*')
+          .eq('org_id', orgId);
+
+        if (Array.isArray(cloudQuotes)) {
+          const cloudIds = new Set(cloudQuotes.map((q) => q.id));
+          const localQuotes = await db.quotations.where('org_id').equals(orgId).toArray();
+
+          for (const lq of localQuotes) {
+            if (!cloudIds.has(lq.id) && lq.sync_status !== 'pending') {
+              await db.quotations.delete(lq.id);
+              await db.quotation_items.where('quotation_id').equals(lq.id).delete();
+            }
+          }
+
+          if (cloudQuotes.length > 0) {
+            await db.quotations.bulkPut(cloudQuotes.map((cq) => ({ ...cq, sync_status: 'synced' })));
+          }
+        }
+      } catch (e) {
+        console.warn('[QuotationsRepository] Cloud sync notice:', e);
+      }
+    }
+
+    return await db.quotations
+      .where('org_id')
+      .equals(orgId)
+      .reverse()
+      .sortBy('created_at');
+  }
 
  /**
  * Get quotation by ID

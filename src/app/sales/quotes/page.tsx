@@ -80,7 +80,19 @@ function QuotesContent() {
  };
 
  useEffect(() => {
- loadData();
+   loadData();
+
+   const handleDataChange = () => {
+     loadData();
+   };
+
+   window.addEventListener('falcon_cloud_data_changed', handleDataChange);
+   window.addEventListener('storage', handleDataChange);
+
+   return () => {
+     window.removeEventListener('falcon_cloud_data_changed', handleDataChange);
+     window.removeEventListener('storage', handleDataChange);
+   };
  }, [orgId]);
 
  const filteredQuotations = useMemo(() => {
