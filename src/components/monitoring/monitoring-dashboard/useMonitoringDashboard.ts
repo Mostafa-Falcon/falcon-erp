@@ -137,7 +137,9 @@ export function useMonitoringDashboard() {
  ]);
 
  const defaultReorderSetting = appSettings.find((s) => s.id === 'default_reorder_qty' || s.id === 'min_stock_alert');
- const globalDefaultLimit = defaultReorderSetting ? (Number(defaultReorderSetting.value) || 1) : 1;
+ const globalDefaultLimit = (defaultReorderSetting && defaultReorderSetting.value !== undefined && defaultReorderSetting.value !== '')
+   ? Number(defaultReorderSetting.value)
+   : 1;
 
  const stockMap = new Map<string, number>();
  stockLevels.forEach((sl) => {
@@ -147,8 +149,12 @@ export function useMonitoringDashboard() {
  const realShortages: StockAlertItem[] = [];
  products.forEach((p) => {
    const qty = stockMap.get(p.id) ?? 0;
-   const limit = (p.min_stock_alert && p.min_stock_alert !== 5) ? p.min_stock_alert : globalDefaultLimit;
-   if (qty <= limit) {
+   const limit = (p.min_stock_alert !== undefined && p.min_stock_alert !== null && p.min_stock_alert > 0 && p.min_stock_alert !== 5)
+     ? Number(p.min_stock_alert)
+     : globalDefaultLimit;
+
+   const isShortage = qty < limit;
+   if (isShortage) {
      realShortages.push({
        id: p.id,
        name: p.name,

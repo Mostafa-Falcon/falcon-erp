@@ -132,18 +132,22 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
  // 3. Stock Shortages Notifications (Consolidated & Real)
  const lowStockProducts = products.filter((prod) => {
- const qty = stockMap.get(prod.id) ?? 0;
- const limit = (prod.min_stock_alert && prod.min_stock_alert !== 5) ? prod.min_stock_alert : globalDefaultLimit;
- return qty <= limit;
+   const qty = stockMap.get(prod.id) ?? 0;
+   const limit = (prod.min_stock_alert !== undefined && prod.min_stock_alert !== null && prod.min_stock_alert > 0 && prod.min_stock_alert !== 5)
+     ? Number(prod.min_stock_alert)
+     : globalDefaultLimit;
+   return qty < limit;
  });
 
  if (lowStockProducts.length > 0) {
- if (lowStockProducts.length <= 3) {
- lowStockProducts.forEach((prod) => {
- const notifId =`stock-${prod.id}`;
- if (deletedIds.has(notifId)) return;
- const qty = stockMap.get(prod.id) ?? 0;
- const limit = (prod.min_stock_alert && prod.min_stock_alert !== 5) ? prod.min_stock_alert : globalDefaultLimit;
+   if (lowStockProducts.length <= 3) {
+     lowStockProducts.forEach((prod) => {
+       const notifId = `stock-${prod.id}`;
+       if (deletedIds.has(notifId)) return;
+       const qty = stockMap.get(prod.id) ?? 0;
+       const limit = (prod.min_stock_alert !== undefined && prod.min_stock_alert !== null && prod.min_stock_alert > 0 && prod.min_stock_alert !== 5)
+         ? Number(prod.min_stock_alert)
+         : globalDefaultLimit;
  list.push({
  id: notifId,
  type:'stock',
