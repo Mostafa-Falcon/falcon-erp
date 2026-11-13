@@ -57,45 +57,81 @@ export function ShiftDetailModal({
  users,
  treasuries,
 }: ShiftDetailModalProps) {
- const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
- const [returns, setReturns] = useState<SalesReturn[]>([]);
- const [customers, setCustomers] = useState<Record<string, Contact>>({});
- const [isLoading, setIsLoading] = useState(false);
- const [pageSize, setPageSize] = useState(25);
- const [currentPage, setCurrentPage] = useState(1);
+  const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
+  const [returns, setReturns] = useState<SalesReturn[]>([]);
+  const [customers, setCustomers] = useState<Record<string, Contact>>({});
+  const [productsMap, setProductsMap] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
- useEffect(() => {
- if (!shift || !isOpen) return;
+  // Sub-modal for Invoice Details
+  const [selectedMovementInvoice, setSelectedMovementInvoice] = useState<SalesInvoice | null>(null);
+  const [selectedMovementItems, setSelectedMovementItems] = useState<{ id: string; product_id: string; productName?: string; quantity: number; unit_price: number; discount_amount?: number; total: number }[]>([]);
+  const [isInvoiceDetailOpen, setIsInvoiceDetailOpen] = useState(false);
+  const [isInvoiceLoading, setIsInvoiceLoading] = useState(false);
 
- let isMounted = true;
- const loadShiftDetails = async () => {
- setIsLoading(true);
- try {
- const [invs, rets, contacts] = await Promise.all([
- db.sales_invoices.where('shift_id').equals(shift.id).reverse().toArray(),
- db.sales_returns.where('shift_id').equals(shift.id).reverse().toArray(),
- db.contacts.toArray(),
- ]);
+  useEffect(() => {
+    if (!shift || !isOpen) return;
 
- if (!isMounted) return;
- setInvoices(invs);
- setReturns(rets);
+    let isMounted = true;
+    const loadShiftDetails = async () => {
+      setIsLoading(true);
+      try {
+        const [invs, rets, contacts, prods] = await Promise.all([
+          db.sales_invoices.where('shift_id').equals(shift.id).reverse().toArray(),
+          db.sales_returns.where('shift_id').equals(shift.id).reverse().toArray(),
+          db.contacts.toArray(),
+          db.products.toArray(),
+        ]);
 
- const cmap: Record<string, Contact> = {};
- for (const c of contacts) cmap[c.id] = c;
- setCustomers(cmap);
- } catch (err) {
- console.error('Error loading shift details:', err);
- } finally {
- if (isMounted) setIsLoading(false);
- }
- };
+        if (!isMounted) return;
+        setInvoices(invs);
+        setReturns(rets);
 
- loadShiftDetails();
- return () => {
- isMounted = false;
- };
- }, [shift, isOpen]);
+        const cmap: Record<string, Contact> = {};
+        for (const c of contacts) cmap[c.id] = c;
+        setCustomers(cmap);
+
+        const pmap: Record<string, string> = {};
+        for (const p of prods) pmap[p.id] = p.name;
+        setProductsMap(pmap);
+      } catch (err) {
+        console.error('Error loading shift details:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadShiftDetails();
+    return () => {
+      isMounted = false;
+    };
+  }, [shift, isOpen]);
+
+  const handleViewInvoiceDetails = async (item: MovementItem) => {
+    try {
+      setIsInvoiceLoading(true);
+      setIsInvoiceDetailOpen(true);
+      const inv = await db.sales_invoices.get(item.id);
+      if (inv) {
+        setSelectedMovementInvoice(inv);
+        const rawItems = await db.sales_invoice_items.where('invoice_id').equals(inv.id).toArray();
+        const itemsWithNames = rawItems.map((it) => ({
+          ...it,
+          productName: productsMap[it.product_id] || 'صنف مباع',
+        }));
+        setSelectedMovementItems(itemsWithNames);
+      } else {
+        toast.error('لم يتم العثور على تفاصيل الفاتورة');
+      }
+    } catch (err) {
+      console.error('Error viewing invoice details:', err);
+      toast.error('تعذر تحميل تفاصيل الفاتورة');
+    } finally {
+      setIsInvoiceLoading(false);
+    }
+  };
 
  const getUserName = (id?: string | null) => {
  if (!id) return'—';
@@ -475,8 +511,8 @@ export function ShiftDetailModal({
  <td className="py-3 px-3 text-center">
  <button
  type="button"
- onClick={() => toast.info(`تفاصيل الحركة #${item.number}`)}
- title="عرض الحركة"
+ onClick={() => handleViewInvoiceDetails(item)}
+ title="عرض تفاصيل الحركة"
  className="w-7 h-7 rounded-full text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 inline-flex items-center justify-center transition-colors cursor-pointer"
  >
  <Eye className="w-4 h-4"/>
@@ -558,6 +594,104 @@ export function ShiftDetailModal({
  </div>
 
  </DialogContent>
+
+ {/* ==============================================================
+ 8. INVOICE DETAIL SUB-MODAL (نافذة عرض تفاصيل الفاتورة عند الضغط على العين)
+ ============================================================== */}
+ <Dialog open={isInvoiceDetailOpen} onOpenChange={setIsInvoiceDetailOpen}>
+ <DialogContent className="max-w-2xl text-right p-6 rounded-2xl bg-surface shadow-2xl border-slate-200 dark:border-slate-800" dir="rtl">
+ <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between gap-4">
+ <DialogTitle className="text-base font-black text-slate-900 dark:text-white">
+ تفاصيل الحركة: #{selectedMovementInvoice?.invoice_number}
+ </DialogTitle>
+ <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full">
+ {selectedMovementInvoice?.payment_type === 'cash' ? 'كاش (نقدي)' : selectedMovementInvoice?.payment_type === 'card' ? 'بطاقة (شبكة)' : 'آجل'}
+ </Badge>
+ </DialogHeader>
+
+ {isInvoiceLoading ? (
+ <div className="py-12 text-center text-xs font-bold text-slate-400">
+ جاري تحميل تفاصيل وبنود الحركة...
+ </div>
+ ) : selectedMovementInvoice ? (
+ <div className="space-y-4 pt-2">
+ {/* Meta info */}
+ <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50/80 dark:bg-slate-900/60 p-3 rounded-xl text-xs font-bold">
+ <div>
+ <span className="text-slate-400 block text-3xs">العميل:</span>
+ <span className="text-slate-800 dark:text-slate-200">
+ {(selectedMovementInvoice.customer_id && customers[selectedMovementInvoice.customer_id]?.name) || 'عميل نقدي'}
+ </span>
+ </div>
+ <div>
+ <span className="text-slate-400 block text-3xs">وقت وتاريخ الإيراد:</span>
+ <span className="text-slate-800 dark:text-slate-200 font-mono">
+ {formatShiftDateTime(selectedMovementInvoice.invoice_date || selectedMovementInvoice.created_at)}
+ </span>
+ </div>
+ <div>
+ <span className="text-slate-400 block text-3xs">طريقة الدفع:</span>
+ <span className="text-emerald-600 font-bold">
+ {selectedMovementInvoice.payment_type === 'cash' ? 'نقدي (الكاش)' : selectedMovementInvoice.payment_type === 'card' ? 'بطاقة (شبكة)' : 'آجل'}
+ </span>
+ </div>
+ </div>
+
+ {/* Items table */}
+ <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+ <table className="w-full text-right text-xs">
+ <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
+ <tr>
+ <th className="p-2.5">اسم الصنف</th>
+ <th className="p-2.5 text-center">الكمية</th>
+ <th className="p-2.5 text-left">السعر</th>
+ <th className="p-2.5 text-left">الخصم</th>
+ <th className="p-2.5 text-left">الإجمالي</th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold">
+ {selectedMovementItems.map((it) => (
+ <tr key={it.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40">
+ <td className="p-2.5 font-bold text-slate-900 dark:text-white">{it.productName}</td>
+ <td className="p-2.5 text-center font-mono font-bold text-slate-800 dark:text-slate-200">{it.quantity}</td>
+ <td className="p-2.5 text-left font-mono">{formatNumber(it.unit_price)} ج.م</td>
+ <td className="p-2.5 text-left font-mono text-rose-500">{formatNumber(it.discount_amount || 0)} ج.م</td>
+ <td className="p-2.5 text-left font-mono font-black text-slate-900 dark:text-white">{formatNumber(it.total)} ج.م</td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
+ </div>
+
+ {/* Totals & Footer */}
+ <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
+ <Button
+ type="button"
+ variant="outline"
+ onClick={() => setIsInvoiceDetailOpen(false)}
+ className="rounded-xl px-5 h-9 text-xs font-bold border-pink-400 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/40 cursor-pointer"
+ >
+ إغلاق
+ </Button>
+
+ <div className="text-left font-mono space-y-0.5">
+ <div className="text-2xs text-slate-500 font-sans">
+ المجموع الفرعي: <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{formatNumber(selectedMovementInvoice.subtotal || selectedMovementInvoice.total)} ج.م</span>
+ </div>
+ {Number(selectedMovementInvoice.discount_amount) > 0 && (
+ <div className="text-2xs text-rose-600 font-sans">
+ إجمالي الخصم: <span className="font-mono font-bold">-{formatNumber(selectedMovementInvoice.discount_amount)} ج.م</span>
+ </div>
+ )}
+ <div className="text-sm font-black text-emerald-600 font-sans">
+ الإجمالي النهائي: <span className="font-mono text-base">{formatNumber(selectedMovementInvoice.total)} ج.م</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ ) : null}
+ </DialogContent>
+ </Dialog>
  </Dialog>
  );
 }
