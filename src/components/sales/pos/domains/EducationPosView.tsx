@@ -81,11 +81,11 @@ export function EducationPosView({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Extract unique categories from products
+  // Extract unique product types / categories from products
   const categories = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => {
-      if (p.category_name) set.add(p.category_name);
+      if (p.product_type) set.add(p.product_type);
     });
     return Array.from(set);
   }, [products]);
@@ -97,10 +97,10 @@ export function EducationPosView({
         !searchQuery.trim() ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.barcode?.includes(searchQuery);
+        p.scientific_name?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchCat =
-        selectedCategory === 'all' || p.category_name === selectedCategory;
+        selectedCategory === 'all' || p.product_type === selectedCategory;
 
       return matchSearch && matchCat;
     });
@@ -201,9 +201,9 @@ export function EducationPosView({
                   <h3 className="font-semibold text-xs text-slate-800 dark:text-slate-200 line-clamp-2 mb-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     {product.name}
                   </h3>
-                  {product.category_name && (
+                  {product.product_type && (
                     <span className="inline-block text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800/60 px-1.5 py-0.5 rounded">
-                      {product.category_name}
+                      {product.product_type}
                     </span>
                   )}
                 </div>
@@ -251,47 +251,50 @@ export function EducationPosView({
 
         {/* Cart Items List */}
         <div className="flex-1 p-3 overflow-y-auto space-y-2 min-h-[220px]">
-          {cart.map((item) => (
-            <div
-              key={item.key}
-              className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 flex items-center justify-between gap-3"
-            >
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">
-                  {item.product.name}
-                </h4>
-                <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
-                  <span>{formatNumber(item.unit_price)} ج.م</span>
-                  <span>×</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">{item.quantity}</span>
-                </div>
-              </div>
-
-              {/* Quantity controls */}
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5">
-                <button
-                  onClick={() => onUpdateQty(item.key, -1)}
-                  className="p-1 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
-                <button
-                  onClick={() => onUpdateQty(item.key, 1)}
-                  className="p-1 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-
-              <button
-                onClick={() => onRemoveLine(item.key)}
-                className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
+          {cart.map((item) => {
+            const prod = products.find((p) => p.id === item.productId);
+            return (
+              <div
+                key={item.key}
+                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 flex items-center justify-between gap-3"
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">
+                    {prod?.name || 'مادة / كورس'}
+                  </h4>
+                  <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                    <span>{formatNumber(item.price)} ج.م</span>
+                    <span>×</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">{item.qty}</span>
+                  </div>
+                </div>
+
+                {/* Quantity controls */}
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5">
+                  <button
+                    onClick={() => onUpdateQty(item.key, -1)}
+                    className="p-1 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="w-6 text-center text-xs font-bold">{item.qty}</span>
+                  <button
+                    onClick={() => onUpdateQty(item.key, 1)}
+                    className="p-1 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => onRemoveLine(item.key)}
+                  className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
 
           {cart.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center py-16 text-slate-400">
