@@ -369,10 +369,6 @@ export async function getBalanceSheet(orgId: string, asOf?: string | null): Prom
     netIncome,
   };
 }
- equityTotal: Math.round(equityTotal * 100) / 100,
- netIncome,
- };
-}
 
 /** General ledger / account statement for a single account with running balance. */
 export async function getGeneralLedger(
