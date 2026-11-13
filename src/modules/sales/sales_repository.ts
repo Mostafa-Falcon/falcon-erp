@@ -252,57 +252,267 @@ export class SalesRepository {
 
  /**
  * Create Sales Invoice with full transaction orchestration:
- * 1. Records invoice & invoice items
- * 2. Decrements warehouse stock
- * 3. Adjusts treasury balance for cash/card
- * 4. Adjusts customer credit balance for deferred payments
- * 5. Updates cashier shift running totals
- * 6. Enqueues all operations to Outbox Sync Queue
- */
- public static async createSalesInvoice(params: CreateSalesInvoiceParams): Promise<SalesInvoice> {
- if (!params.items || params.items.length === 0) {
- throw new Error('الفاتورة يجب أن تحتوي على صنف واحد على الأقل');
- }
+  private static inFlightInvoices = new Map<string, Promise<SalesInvoice>>();
 
- // فحص اشتراك المنشأة وحالتها والتأكد من السماح بالبيع
- const org = await db.organizations.get(params.orgId);
- if (org) {
- if (!org.is_active) {
- throw new Error('حساب المنشأة غير فعال حالياً. يرجى مراجعة الدعم الفني أو الإدارة.');
- }
- const isExpired = org.subscription_expires_at
- ? new Date(org.subscription_expires_at) < new Date()
- : false;
- const perms = getSubscriptionPermissions(org.subscription_tier, isExpired);
- if (!perms.canExecuteSales) {
- throw new Error(
- perms.reasonIfBlocked ||
-'الحساب التجريبي للعرض والاستكشاف فقط (تنفيذ فواتير البيع والكاشير محجوب حتى ترقية الاشتراك).'
- );
- }
- }
+  /**
+   * Create Sales Invoice with full transaction orchestration:
+   * 1. Records invoice & invoice items
+   * 2. Decrements warehouse stock
+   * 3. Adjusts treasury balance for cash/card
+   * 4. Adjusts customer credit balance for deferred payments
+   * 5. Updates cashier shift running totals
+   * 6. Enqueues all operations to Outbox Sync Queue
+   */
+  public static async createSalesInvoice(params: CreateSalesInvoiceParams): Promise<SalesInvoice> {
+    if (!params.items || params.items.length === 0) {
+      throw new Error('الفاتورة يجب أن تحتوي على صنف واحد على الأقل');
+    }
 
-  // ONLINE-FIRST: when the cloud is reachable it processes the ENTIRE sale
-  // atomically (numbering, stock guards, treasury, contact, journal) and the
-  // authoritative answer is mirrored locally as synced. Only when unreachable
-  // (or the online RPC is not deployed yet) do we fall back to the local path.
-  const invoiceIdForAttempt = uuidv4();
-  if (networkListener.getStatus()) {
-    const onlineInvoice = await SalesRepository.createSalesInvoiceOnline(params, invoiceIdForAttempt);
-    if (onlineInvoice) return onlineInvoice;
+    // Idempotency Deduplication Guard (Swallows rapid duplicate clicks within 5s window)
+    const itemSignature = params.items.map((i) => `${i.productId}:${i.quantity}:${i.unitPrice}`).sort().join('|');
+    const idempotencyKey = `${params.orgId}_${params.customerId || 'cash'}_${itemSignature}_${Math.floor(Date.now() / 5000)}`;
+
+    const existingInFlight = SalesRepository.inFlightInvoices.get(idempotencyKey);
+    if (existingInFlight) {
+      console.warn('[SalesRepository] Duplicate sale execution swallowed by Idempotency Guard:', idempotencyKey);
+      return existingInFlight;
+    }
+
+    const executionPromise = (async () => {
+      // فحص اشتراك المنشأة وحالتها والتأكد من السماح بالبيع
+      const org = await db.organizations.get(params.orgId);
+      if (org) {
+        if (!org.is_active) {
+          throw new Error('حساب المنشأة غير فعال حالياً. يرجى مراجعة الدعم الفني أو الإدارة.');
+        }
+        const isExpired = org.subscription_expires_at
+          ? new Date(org.subscription_expires_at) < new Date()
+          : false;
+        const perms = getSubscriptionPermissions(org.subscription_tier, isExpired);
+        if (!perms.canExecuteSales) {
+          throw new Error(
+            perms.reasonIfBlocked ||
+            'الحساب التجريبي للعرض والاستكشاف فقط (تنفيذ فواتير البيع والكاشير محجوب حتى ترقية الاشتراك).'
+          );
+        }
+      }
+
+      const invoiceIdForAttempt = uuidv4();
+      if (networkListener.getStatus()) {
+        const onlineInvoice = await SalesRepository.createSalesInvoiceOnline(params, invoiceIdForAttempt);
+        if (onlineInvoice) return onlineInvoice;
+      }
+
+      const now = new Date().toISOString();
+      const invoiceId = invoiceIdForAttempt;
+      const invoiceNumber = await this.generateInvoiceNumber(params.orgId, params.branchId);
+
+      // Calculate line items
+      let subtotal = 0;
+      let totalItemDiscount = 0;
+      let totalTax = 0;
+
+      const invoiceItems: SalesInvoiceItem[] = params.items.map((item) => {
+        const lineSubtotal = roundMoney(item.quantity * item.unitPrice);
+        const disc = roundMoney(item.discountAmount || 0);
+        const lineNet = roundMoney(Math.max(0, lineSubtotal - disc));
+        const taxRate = item.taxRate || 0;
+        const taxAmount = roundMoney((lineNet * taxRate) / 100);
+        const lineTotal = roundMoney(lineNet + taxAmount);
+
+        subtotal += lineSubtotal;
+        totalItemDiscount += disc;
+        totalTax += taxAmount;
+
+        return {
+          id: uuidv4(),
+          invoice_id: invoiceId,
+          product_id: item.productId,
+          batch_id: item.batchId || null,
+          unit_id: item.unitId,
+          conversion_factor: item.conversionFactor,
+          quantity: item.quantity,
+          base_quantity: item.quantity * item.conversionFactor,
+          unit_price: item.unitPrice,
+          unit_cost: item.unitCost,
+          discount_amount: disc,
+          tax_rate: taxRate,
+          tax_amount: taxAmount,
+          total: lineTotal,
+        };
+      });
+
+      const headerDiscount =
+        params.discountPercent !== undefined && params.discountPercent > 0
+          ? roundMoney((roundMoney(subtotal) * params.discountPercent) / 100)
+          : roundMoney(params.discountAmount || 0);
+
+      const totalDiscount = roundMoney(totalItemDiscount + headerDiscount);
+      const shipping = roundMoney(params.shippingFee || 0);
+      const finalTotal = roundMoney(Math.max(0, roundMoney(subtotal) - totalDiscount + roundMoney(totalTax) + shipping));
+
+      let cashAmt = 0;
+      let cardAmt = 0;
+
+      if (params.paymentType === 'cash') {
+        cashAmt = finalTotal;
+      } else if (params.paymentType === 'card') {
+        cardAmt = finalTotal;
+      } else if (params.paymentType === 'split') {
+        cashAmt = roundMoney(params.cashAmount || 0);
+        cardAmt = roundMoney(params.cardAmount || 0);
+      }
+
+      const paid = roundMoney(cashAmt + cardAmt);
+      const remaining = roundMoney(Math.max(0, finalTotal - paid));
+
+      const invoice: SalesInvoice = {
+        id: invoiceId,
+        org_id: params.orgId,
+        branch_id: params.branchId,
+        warehouse_id: params.warehouseId,
+        shift_id: params.shiftId || null,
+        invoice_number: invoiceNumber,
+        invoice_date: now,
+        customer_id: params.customerId || null,
+        subtotal: roundMoney(subtotal),
+        discount_amount: totalDiscount,
+        discount_percent: params.discountPercent || 0,
+        tax_amount: roundMoney(totalTax),
+        shipping_fee: shipping,
+        total: finalTotal,
+        paid_amount: paid,
+        remaining_amount: remaining,
+        payment_type: params.paymentType,
+        cash_amount: cashAmt,
+        card_amount: cardAmt,
+        treasury_id: params.treasuryId || null,
+        status: 'completed',
+        notes: params.notes,
+        created_by: params.userId,
+        created_at: now,
+        updated_at: now,
+        sync_status: 'pending',
+      };
+
+      await db.transaction(
+        'rw',
+        [
+          db.sales_invoices,
+          db.sales_invoice_items,
+          db.stock_levels,
+          db.inventory_transactions,
+          db.product_batches,
+          db.product_units,
+          db.products,
+          db.treasuries,
+          db.contacts,
+          db.contact_transactions,
+          db.cashier_shifts,
+          db.sync_queue,
+        ],
+        async () => {
+          await db.sales_invoices.add(invoice);
+          await db.sales_invoice_items.bulkAdd(invoiceItems);
+
+          for (const item of invoiceItems) {
+            await InventoryRepository.recordStockMovement({
+              orgId: params.orgId,
+              warehouseId: params.warehouseId,
+              productId: item.product_id,
+              batchId: item.batch_id,
+              transactionType: 'sale',
+              quantity: item.quantity,
+              unitId: item.unit_id,
+              conversionFactor: item.conversion_factor,
+              unitCost: item.unit_cost,
+              referenceType: 'sale',
+              referenceId: invoiceId,
+              userId: params.userId,
+              notes: `مبيعات - فاتورة رقم #${invoiceNumber}`,
+            });
+          }
+
+          if (cashAmt > 0 && params.treasuryId) {
+            await TreasuryRepository.recordTransaction({
+              orgId: params.orgId,
+              treasuryId: params.treasuryId,
+              type: 'income',
+              amount: cashAmt,
+              category: 'sales',
+              referenceType: 'sale',
+              referenceId: invoiceId,
+              userId: params.userId,
+              notes: `مبيعات نقداً - فاتورة رقم #${invoiceNumber}`,
+            });
+          }
+
+          if (remaining > 0 && params.customerId) {
+            await ContactsRepository.recordTransaction({
+              orgId: params.orgId,
+              contactId: params.customerId,
+              type: 'debit',
+              amount: remaining,
+              referenceType: 'sale',
+              referenceId: invoiceId,
+              notes: `مبيعات آجلة - فاتورة رقم #${invoiceNumber}`,
+            });
+          }
+
+          if (params.shiftId) {
+            const shift = await db.cashier_shifts.get(params.shiftId);
+            if (shift) {
+              const currentTotalSalesCash = Number(shift.total_sales_cash) || 0;
+              const currentTotalSalesCard = Number(shift.total_sales_card) || 0;
+              const currentTotalSalesCredit = Number(shift.total_sales_credit) || 0;
+
+              const deltaCash = cashAmt;
+              const deltaCard = cardAmt;
+              const deltaCredit = remaining;
+
+              const updatedShift = {
+                ...shift,
+                total_sales_cash: currentTotalSalesCash + deltaCash,
+                total_sales_card: currentTotalSalesCard + deltaCard,
+                total_sales_credit: currentTotalSalesCredit + deltaCredit,
+                updated_at: now,
+                sync_status: 'pending' as const,
+              };
+
+              await db.cashier_shifts.put(updatedShift);
+
+              if (deltaCash !== 0 || deltaCard !== 0 || deltaCredit !== 0) {
+                await SyncQueueManager.enqueueDelta(
+                  'cashier_shifts',
+                  shift.id,
+                  {
+                    total_sales_cash: deltaCash,
+                    total_sales_card: deltaCard,
+                    total_sales_credit: deltaCredit,
+                  },
+                  { org_id: params.orgId }
+                );
+              }
+            }
+          }
+
+          await SyncQueueManager.enqueue('sales_invoices', invoiceId, 'insert', invoice);
+          for (const item of invoiceItems) {
+            await SyncQueueManager.enqueue('sales_invoice_items', item.id, 'insert', item);
+          }
+        }
+      );
+
+      return invoice;
+    })();
+
+    SalesRepository.inFlightInvoices.set(idempotencyKey, executionPromise);
+    setTimeout(() => {
+      SalesRepository.inFlightInvoices.delete(idempotencyKey);
+    }, 5000);
+
+    return executionPromise;
   }
-
- const now = new Date().toISOString();
- const invoiceId = uuidv4();
- const invoiceNumber = await this.generateInvoiceNumber(params.orgId, params.branchId);
-
- // Calculate line items
- let subtotal = 0;
- let totalItemDiscount = 0;
- let totalTax = 0;
-
-  const invoiceItems: SalesInvoiceItem[] = params.items.map((item) => {
-    const lineSubtotal = roundMoney(item.quantity * item.unitPrice);
     const discount = roundMoney(item.discountAmount || 0);
     const taxableAmount = roundMoney(Math.max(0, lineSubtotal - discount));
     const taxRate = item.taxRate || 0;

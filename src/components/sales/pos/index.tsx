@@ -278,28 +278,31 @@ export function POS() {
  }
  }, [isLoading]);
 
- // Checkout Execution
+  // Checkout Execution
   const executeCheckout = async (
-    payType:'cash'|'card'|'credit'|'split',
+    payType: 'cash' | 'card' | 'credit' | 'split',
     splitDetails?: { cashAmount: number; cardAmount: number }
   ) => {
     if (isSaving || checkoutLockRef.current) {
       return;
     }
-    if (!activeShift) {
-      toast.error('لا يمكن إتمام العملية بدون فتح وردية كاشير أولاً');
-      setIsShiftModalOpen(true);
-      return;
-    }
-    if (cart.length === 0) {
-      toast.error('السلة فارغة! يرجى إضافة أصناف أولاً.');
-      return;
-    }
-    if (!warehouseId || !treasuryId) {
-      toast.error('يرجى تحديد المخزن والخزينة لإتمام العملية.');
-      return;
-    }
     checkoutLockRef.current = true;
+    setIsSaving(true);
+
+    try {
+      if (!activeShift) {
+        toast.error('لا يمكن إتمام العملية بدون فتح وردية كاشير أولاً');
+        setIsShiftModalOpen(true);
+        return;
+      }
+      if (cart.length === 0) {
+        toast.error('السلة فارغة! يرجى إضافة أصناف أولاً.');
+        return;
+      }
+      if (!warehouseId || !treasuryId) {
+        toast.error('يرجى تحديد المخزن والخزينة لإتمام العملية.');
+        return;
+      }
 
   // Return Mode Checkout
   if (activeReturnInvoice) {
