@@ -356,23 +356,46 @@ export class AccountingRepository {
  });
  }
 
- /** Sequential entry numbering (ENTR-YYYY-####) stored in app_settings. */
- private static async nextEntryNo(orgId: string): Promise<string> {
- const nowDate = new Date();
- const prefix =`ENTR-${nowDate.getFullYear()}`;
- const seqKey =`entry_seq_${orgId}`;
- const counter = await db.app_settings.get(seqKey);
- const next = (counter ? parseInt(counter.value ||'0', 10) : 0) + 1;
- await db.app_settings.put({
- id: seqKey,
- org_id: orgId,
- value: String(next),
- description:'Journal entry sequence',
- updated_at: new Date().toISOString(),
- sync_status:'synced',
- });
- return`${prefix}-${String(next).padStart(4,'0')}`;
- }
+  /** Sequential entry numbering (ENTR-YYYY-####) stored in app_settings with max duplicate protection. */
+  private static async nextEntryNo(orgId: string): Promise<string> {
+    const nowDate = new Date();
+    const year = nowDate.getFullYear();
+    const prefix = `ENTR-${year}`;
+
+    // Find highest entry_no in local DB to prevent unique constraint conflicts
+    let maxNum = 0;
+    try {
+      const existingEntries = await db.journal_entries
+        .where('org_id')
+        .equals(orgId)
+        .toArray();
+
+      for (const e of existingEntries) {
+        if (e.entry_no && e.entry_no.startsWith(prefix)) {
+          const parts = e.entry_no.split('-');
+          const num = parseInt(parts[parts.length - 1] || '0', 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    const seqKey = `entry_seq_${orgId}`;
+    const counter = await db.app_settings.get(seqKey);
+    const storedSeq = counter ? parseInt(counter.value || '0', 10) : 0;
+    const nextNum = Math.max(maxNum, storedSeq) + 1;
+
+    await db.app_settings.put({
+      id: seqKey,
+      org_id: orgId,
+      value: String(nextNum),
+      description: 'Journal entry sequence',
+      updated_at: new Date().toISOString(),
+      sync_status: 'synced',
+    });
+    return `${prefix}-${String(nextNum).padStart(4, '0')}`;
+  }
 
  /** Flat list of all leaf accounts for an org (used by UI pickers). */
  public static async listLeafAccounts(orgId: string): Promise<Account[]> {
