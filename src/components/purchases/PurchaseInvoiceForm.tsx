@@ -446,6 +446,8 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
         type: 'supplier',
         name: newSupplierName.trim(),
         phone: newSupplierPhone.trim() || undefined,
+        credit_limit: 0,
+        is_active: true,
       });
       setSuppliers((prev) => [newSup, ...prev]);
       setSupplierId(newSup.id);
