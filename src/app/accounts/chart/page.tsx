@@ -84,7 +84,45 @@ export default function ChartOfAccountsPage() {
       setIsLoading(true);
       const { db } = await import('@/core/db/app_database');
       await AccountingRepository.ensureDefaultChartOfAccounts(orgId);
-      const list = await db.accounts.where('org_id').equals(orgId).toArray();
+      let list = await db.accounts.where('org_id').equals(orgId).toArray();
+
+      // Live Financial Metrics
+      const treasuries = await db.treasuries.where('org_id').equals(orgId).and((t) => t.is_active).toArray();
+      const cashInSafes = treasuries.reduce((sum, t) => sum + (Number(t.current_balance) || 0), 0);
+
+      const invoices = await db.sales_invoices.where('org_id').equals(orgId).filter((inv) => !inv.is_deleted && inv.status !== 'cancelled').toArray();
+      const cardSalesTotal = invoices.reduce((sum, inv) => sum + (Number(inv.card_amount) || 0), 0);
+      const revenueTotal = invoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
+
+      const invoiceItems = await db.sales_invoice_items.toArray();
+      const validInvIds = new Set(invoices.map((i) => i.id));
+      const cogsTotal = invoiceItems
+        .filter((it) => validInvIds.has(it.invoice_id))
+        .reduce((sum, it) => sum + ((Number(it.quantity) || 0) * (Number(it.unit_cost) || 0)), 0);
+
+      const stockLevels = await db.stock_levels.where('org_id').equals(orgId).toArray();
+      const products = await db.products.where('org_id').equals(orgId).toArray();
+      const prodMap = new Map(products.map((p) => [p.id, p.purchase_price || 0]));
+      const inventoryValue = stockLevels.reduce(
+        (sum, s) => sum + ((Number(s.available_quantity) ?? Number(s.quantity) ?? 0) * (prodMap.get(s.product_id) || 0)),
+        0
+      );
+
+      const netIncome = revenueTotal - cogsTotal;
+      const totalAssets = cashInSafes + cardSalesTotal + inventoryValue;
+      const capitalAmount = Math.max(0, totalAssets - netIncome);
+
+      // Reconcile key ledger account balances
+      list = list.map((acc) => {
+        if (acc.code === '1110') return { ...acc, current_balance: Math.round(cashInSafes * 100) / 100 };
+        if (acc.code === '1120') return { ...acc, current_balance: Math.round(cardSalesTotal * 100) / 100 };
+        if (acc.code === '1140') return { ...acc, current_balance: Math.round(inventoryValue * 100) / 100 };
+        if (acc.code === '4100') return { ...acc, current_balance: Math.round(revenueTotal * 100) / 100 };
+        if (acc.code === '5100') return { ...acc, current_balance: Math.round(cogsTotal * 100) / 100 };
+        if (acc.code === '3100') return { ...acc, current_balance: Math.round(capitalAmount * 100) / 100 };
+        return acc;
+      });
+
       setAccounts(list);
 
       // Default expand root nodes
@@ -155,16 +193,19 @@ export default function ChartOfAccountsPage() {
       // Sum only leaf accounts to avoid double-counting with parents
       const isLeaf = a.account_type === 'leaf' || !allParentIds.has(a.id);
       if (isLeaf) {
-        const bal = a.current_balance || 0;
-        if (a.type === 'asset' || a.code.startsWith('1')) assets += bal;
-        else if (a.type === 'liability' || a.code.startsWith('2')) liabilities += bal;
-        else if (a.type === 'equity' || a.code.startsWith('3')) equity += bal;
+        const bal = Math.abs(a.current_balance || 0);
+        if (a.type === 'asset' || a.code.startsWith('1')) assets += (a.current_balance || 0);
+        else if (a.type === 'liability' || a.code.startsWith('2')) liabilities += (a.current_balance || 0);
+        else if (a.type === 'equity' || a.code.startsWith('3')) equity += (a.current_balance || 0);
         else if (a.type === 'revenue' || a.code.startsWith('4')) revenue += bal;
         else if (a.type === 'expense' || a.code.startsWith('5')) expense += bal;
       }
     });
 
-    return { assets, liabilities, equity, revenue, expense };
+    const netIncome = Math.max(0, revenue - expense);
+    const finalEquity = equity + netIncome;
+
+    return { assets, liabilities, equity: finalEquity, revenue, expense };
   }, [accounts, allParentIds]);
 
   // Toggle single node
