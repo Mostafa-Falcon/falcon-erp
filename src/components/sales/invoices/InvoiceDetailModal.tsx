@@ -25,10 +25,11 @@ import {
  ChevronRight,
  Share2,
 } from'lucide-react';
-import { db } from'@/core/db/app_database';
-import { formatNumber, formatDateTime } from'@/lib/format';
-import type { SalesInvoice, SalesInvoiceItem, Product, Unit, Contact, Treasury, User as UserType, Warehouse } from'@/types';
-import { toast } from'sonner';
+import { db } from '@/core/db/app_database';
+import { formatNumber, formatDateTime } from '@/lib/format';
+import type { SalesInvoice, SalesInvoiceItem, Product, Unit, Contact, Treasury, User as UserType, Warehouse } from '@/types';
+import { toast } from 'sonner';
+import { ThermalReceiptPrintLayout } from '@/components/sales/invoices/ThermalReceiptPrintLayout';
 
 interface InvoiceDetailModalProps {
  invoice: SalesInvoice | null;
@@ -114,6 +115,7 @@ export function InvoiceDetailModal({
  };
 
  return (
+ <>
  <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
  <DialogContent
  className="max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border-slate-200 dark:border-slate-800 bg-surface shadow-2xl text-right"
@@ -308,40 +310,49 @@ export function InvoiceDetailModal({
  </div>
  </div>
 
- {/* Modal Footer actions */}
- <div className="pt-2 flex items-center justify-between gap-3">
- <div className="flex items-center gap-2">
- <Button
- type="button"
- onClick={handlePrintReceipt}
- className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer"
- >
- <Printer className="w-4 h-4"/>
- <span>طباعة إيصال</span>
- </Button>
+          {/* Modal Footer actions */}
+          <div className="pt-2 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={handlePrintReceipt}
+                className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>طباعة إيصال حراري</span>
+              </Button>
 
- <Button
- type="button"
- variant="outline"
- onClick={handleShareInvoice}
- className="h-9 px-4 rounded-xl border-slate-200 dark:border-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
- >
- <Share2 className="w-4 h-4 text-emerald-600"/>
- <span>مشاركة الفاتورة</span>
- </Button>
- </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleShareInvoice}
+                className="h-9 px-4 rounded-xl border-slate-200 dark:border-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-emerald-600" />
+                <span>مشاركة الفاتورة</span>
+              </Button>
+            </div>
 
- <Button
- type="button"
- variant="outline"
- onClick={onClose}
- className="h-9 px-6 rounded-xl border-pink-400 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/40 font-bold text-xs cursor-pointer"
- >
- إغلاق
- </Button>
- </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="h-9 px-6 rounded-xl border-pink-400 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/40 font-bold text-xs cursor-pointer"
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
- </DialogContent>
- </Dialog>
- );
+      <ThermalReceiptPrintLayout
+        invoice={invoice}
+        items={items}
+        orgName="شركة الكميلي للتوريدات العمومية"
+        phone="01100957180"
+        address="أبيس 3 / 11"
+        footerNote="نرجو من عملائنا الكرام مراجعة البضاعة والفاتورة خلال اسبوع من تاريخ الاستلام وتطبقا بالنواقص ولسنا مسئولين عن اى شئ بعد ذلك - لا يوجد لدينا مرتجع للبطارية وأدوات الكهرباء\n📲 01100957180 خط طحيمر | 📍 أبيس 3 / 11"
+      />
+    </>
+  );
 }

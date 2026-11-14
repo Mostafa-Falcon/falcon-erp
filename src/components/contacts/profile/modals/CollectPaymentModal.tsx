@@ -9,6 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Receipt } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 import type { Contact, Treasury } from '@/types';
@@ -117,17 +124,21 @@ export function CollectPaymentModal({
                         <label className="text-xs font-bold text-slate-500 block mb-1.5">
                             إيداع في خزينة *
                         </label>
-                        <select
+                        <Select
                             value={selectedTreasuryId}
-                            onChange={(e) => setSelectedTreasuryId(e.target.value)}
-                            className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-surface text-xs font-bold"
+                            onValueChange={setSelectedTreasuryId}
                         >
-                            {treasuries.map((t) => (
-                                <option key={t.id} value={t.id}>
-                                    {t.name} (رصيدها: {formatNumber(t.current_balance)} ج.م)
-                                </option>
-                            ))}
-                        </select>
+                            <SelectTrigger className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-surface text-xs font-bold">
+                                <SelectValue placeholder="اختر الخزينة" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50 bg-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl">
+                                {treasuries.map((t) => (
+                                    <SelectItem key={t.id} value={t.id} className="text-xs font-bold">
+                                        {t.name} (رصيدها: {formatNumber(t.current_balance)} ج.م)
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div>

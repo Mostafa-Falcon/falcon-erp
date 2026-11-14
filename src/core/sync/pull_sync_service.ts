@@ -158,97 +158,124 @@ export class PullSyncService {
  return results;
  }
 
- private static async pullTable(
- tableName: string,
- orgId: string,
- deltaColumn: string
- ): Promise<{ count: number; ids: string[] }> {
- const localTable = (db as unknown as Record<string, { bulkGet: (keys: string[]) => Promise<unknown[]>; bulkPut: (records: unknown[]) => Promise<unknown> }>)[tableName];
- if (!localTable) {
- return { count: 0, ids: [] };
- }
+  private static async getAppSettingSafe(id: string): Promise<{ value?: string } | undefined> {
+    try {
+      if (!db.isOpen()) {
+        await db.open().catch(() => {});
+      }
+      return await db.app_settings.get(id);
+    } catch {
+      return undefined;
+    }
+  }
 
- const localSettingKey =`last_pull_${tableName}_${orgId}`;
- const migrationKey =`pull_engine_v2_reset_${tableName}_${orgId}`;
- const migrationDone = await db.app_settings.get(migrationKey);
+  private static async putAppSettingSafe(id: string, orgId: string, value: string): Promise<void> {
+    try {
+      if (!db.isOpen()) {
+        await db.open().catch(() => {});
+      }
+      await db.app_settings.put({
+        id,
+        org_id: orgId,
+        value,
+        updated_at: new Date().toISOString(),
+        sync_status: 'synced',
+      });
+    } catch {
+      // Ignore
+    }
+  }
 
- let lastPullTimestamp ='1970-01-01T00:00:00.000Z';
- if (!migrationDone && (tableName ==='products'|| CHILD_TABLES[tableName])) {
- await db.app_settings.delete(localSettingKey);
- await db.app_settings.put({
- id: migrationKey,
- org_id: orgId,
- value:'true',
- updated_at: new Date().toISOString(),
- sync_status:'synced',
- });
- } else {
- const lastPullSetting = await db.app_settings.get(localSettingKey);
- lastPullTimestamp = lastPullSetting?.value ||'1970-01-01T00:00:00.000Z';
- }
+  private static async deleteAppSettingSafe(id: string): Promise<void> {
+    try {
+      if (!db.isOpen()) {
+        await db.open().catch(() => {});
+      }
+      await db.app_settings.delete(id);
+    } catch {
+      // Ignore
+    }
+  }
 
- const collected: Record<string, unknown>[] = [];
- let newestDate: string | null = null;
- let from = 0;
+  private static async pullTable(
+    tableName: string,
+    orgId: string,
+    deltaColumn: string
+  ): Promise<{ count: number; ids: string[] }> {
+    const localTable = (db as unknown as Record<string, { bulkGet: (keys: string[]) => Promise<unknown[]>; bulkPut: (records: unknown[]) => Promise<unknown> }>)[tableName];
+    if (!localTable) {
+      return { count: 0, ids: [] };
+    }
 
- for (;;) {
- let query = supabase
- .from(tableName)
- .select('*')
- .eq(tableName ==='organizations'?'id':'org_id', orgId);
+    const localSettingKey = `last_pull_${tableName}_${orgId}`;
+    const migrationKey = `pull_engine_v2_reset_${tableName}_${orgId}`;
+    const migrationDone = await this.getAppSettingSafe(migrationKey);
 
- if (tableName !=='organizations') {
- query = query.gt(deltaColumn, lastPullTimestamp);
- }
+    let lastPullTimestamp = '1970-01-01T00:00:00.000Z';
+    if (!migrationDone && (tableName === 'products' || CHILD_TABLES[tableName])) {
+      await this.deleteAppSettingSafe(localSettingKey);
+      await this.putAppSettingSafe(migrationKey, orgId, 'true');
+    } else {
+      const lastPullSetting = await this.getAppSettingSafe(localSettingKey);
+      lastPullTimestamp = lastPullSetting?.value || '1970-01-01T00:00:00.000Z';
+    }
 
- const { data, error } = await query
- .order(deltaColumn, { ascending: true })
- .order('id', { ascending: true })
- .range(from, from + PAGE_SIZE - 1);
- if (error || !data || data.length === 0) {
- break;
- }
- collected.push(...data);
- newestDate = (data[data.length - 1][deltaColumn] as string) ?? newestDate;
- if (data.length < PAGE_SIZE) {
- break;
- }
- from += PAGE_SIZE;
- }
+    const collected: Record<string, unknown>[] = [];
+    let newestDate: string | null = null;
+    let from = 0;
 
- if (collected.length === 0) {
- return { count: 0, ids: [] };
- }
+    for (;;) {
+      let query = supabase
+        .from(tableName)
+        .select('*')
+        .eq(tableName === 'organizations' ? 'id' : 'org_id', orgId);
 
- await this.mergeIntoLocal(tableName, collected);
+      if (tableName !== 'organizations') {
+        query = query.gt(deltaColumn, lastPullTimestamp);
+      }
 
- // إذا كانت التحديثات تخص app_settings، نفك تشفير أنواع المنتجات المخصصة إن وجدت
- if (tableName ==='app_settings') {
- const typesSetting = collected.find((d) => d.id ==='custom_product_types');
- if (typesSetting && typeof typesSetting.value ==='string'&& typesSetting.value) {
- try {
- const types = JSON.parse(typesSetting.value);
- if (Array.isArray(types) && types.length > 0) {
- await db.product_types.bulkPut(
- types.map((t) => ({ ...t, sync_status:'synced'}))
- );
- }
- } catch (e) {
- console.warn('[PullSync] Error unpacking custom_product_types:', e);
- }
- }
- }
+      const { data, error } = await query
+        .order(deltaColumn, { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error || !data || data.length === 0) {
+        break;
+      }
+      collected.push(...data);
+      newestDate = (data[data.length - 1][deltaColumn] as string) ?? newestDate;
+      if (data.length < PAGE_SIZE) {
+        break;
+      }
+      from += PAGE_SIZE;
+    }
 
- // Save newest delta timestamp (boundary-safe: كامل الصفحات سُحبت قبل رفع الخرزة)
- if (newestDate) {
- await db.app_settings.put({
- id: localSettingKey,
- org_id: orgId,
- value: newestDate,
- updated_at: new Date().toISOString(),
- sync_status:'synced',
- });
- }
+    if (collected.length === 0) {
+      return { count: 0, ids: [] };
+    }
+
+    await this.mergeIntoLocal(tableName, collected);
+
+    // إذا كانت التحديثات تخص app_settings، نفك تشفير أنواع المنتجات المخصصة إن وجدت
+    if (tableName === 'app_settings') {
+      const typesSetting = collected.find((d) => d.id === 'custom_product_types');
+      if (typesSetting && typeof typesSetting.value === 'string' && typesSetting.value) {
+        try {
+          const types = JSON.parse(typesSetting.value);
+          if (Array.isArray(types) && types.length > 0) {
+            await db.product_types.bulkPut(
+              types.map((t) => ({ ...t, sync_status: 'synced' }))
+            );
+          }
+        } catch (e) {
+          console.warn('[PullSync] Error unpacking custom_product_types:', e);
+        }
+      }
+    }
+
+    // Save newest delta timestamp (boundary-safe: كامل الصفحات سُحبت قبل رفع الخرزة)
+    if (newestDate) {
+      await this.putAppSettingSafe(localSettingKey, orgId, newestDate);
+    }
 
  return {
  count: collected.length,

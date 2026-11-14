@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { PurchaseInvoiceForm } from '@/components/purchases/PurchaseInvoiceForm';
 
-export default function NewPurchaseInvoicePage() {
+function NewPurchaseInvoiceContent() {
   const router = useRouter();
 
   return (
@@ -15,7 +15,7 @@ export default function NewPurchaseInvoicePage() {
       actions={
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium transition cursor-pointer"
         >
           رجوع
         </button>
@@ -27,5 +27,13 @@ export default function NewPurchaseInvoicePage() {
         }}
       />
     </AppShell>
+  );
+}
+
+export default function NewPurchaseInvoicePage() {
+  return (
+    <Suspense fallback={<div className="py-20 text-center text-sm font-bold text-slate-400">جاري تحميل صفحة المشتريات...</div>}>
+      <NewPurchaseInvoiceContent />
+    </Suspense>
   );
 }
