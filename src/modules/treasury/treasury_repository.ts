@@ -1,28 +1,55 @@
-import { v4 as uuidv4 } from'uuid';
-import { db } from'@/core/db/app_database';
-import { SyncQueueManager } from'@/core/sync/sync_queue_manager';
-import { AccountingRepository } from'@/modules/accounting/accounting_repository';
-import { roundMoney } from'@/lib/decimal';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '@/core/db/app_database';
+import { supabase } from '@/core/supabase/supabase_client';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { AccountingRepository } from '@/modules/accounting/accounting_repository';
+import { roundMoney } from '@/lib/decimal';
 import type {
- Treasury,
- Expense,
- ExpenseCategory,
- FinancialVoucher,
- TreasuryType,
- VoucherType,
-} from'@/types';
+  Treasury,
+  Expense,
+  ExpenseCategory,
+  FinancialVoucher,
+  TreasuryType,
+  VoucherType,
+} from '@/types';
 
 export class TreasuryRepository {
- /**
- * Get all active treasuries for organization
- */
- public static async getTreasuries(orgId: string): Promise<Treasury[]> {
- return await db.treasuries
- .where('org_id')
- .equals(orgId)
- .and((t) => t.is_active)
- .toArray();
- }
+  /**
+   * Get all active treasuries for organization (reconciled with cloud)
+   */
+  public static async getTreasuries(orgId: string): Promise<Treasury[]> {
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      try {
+        const { data: cloudTreasuries } = await supabase
+          .from('treasuries')
+          .select('*')
+          .eq('org_id', orgId);
+
+        if (Array.isArray(cloudTreasuries)) {
+          const cloudIds = new Set(cloudTreasuries.map((t) => t.id));
+          const localTreasuries = await db.treasuries.where('org_id').equals(orgId).toArray();
+
+          for (const lt of localTreasuries) {
+            if (!cloudIds.has(lt.id) && lt.sync_status !== 'pending') {
+              await db.treasuries.delete(lt.id);
+            }
+          }
+
+          if (cloudTreasuries.length > 0) {
+            await db.treasuries.bulkPut(cloudTreasuries.map((ct) => ({ ...ct, sync_status: 'synced' })));
+          }
+        }
+      } catch (e) {
+        console.warn('[TreasuryRepository] Cloud treasuries sync notice:', e);
+      }
+    }
+
+    return await db.treasuries
+      .where('org_id')
+      .equals(orgId)
+      .and((t) => t.is_active)
+      .toArray();
+  }
 
  /**
  * إنشاء خزينة رئيسية افتراضية عند عدم وجود أي خزينة فعلية
