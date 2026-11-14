@@ -27,17 +27,20 @@ import {
  Loader2,
  X,
 } from'lucide-react';
-import { db } from'@/core/db/app_database';
-import { formatNumber, formatDateTime } from'@/lib/format';
+import { db } from '@/core/db/app_database';
+import { formatNumber, formatDateTime } from '@/lib/format';
+import { toast } from 'sonner';
+import { A4InvoicePrintLayout } from '@/components/sales/invoices/A4InvoicePrintLayout';
 import type {
- SalesInvoice,
- CashierShift,
- User as UserType,
- Product,
- Unit,
- Contact,
- Treasury,
- Warehouse,
+  SalesInvoice,
+  SalesInvoiceItem,
+  CashierShift,
+  User as UserType,
+  Product,
+  Unit,
+  Contact,
+  Treasury,
+  Warehouse,
 } from'@/types';
 import { toast } from'sonner';
 
@@ -80,11 +83,36 @@ export function PosRecentOperationsModal({
  const [isLoading, setIsLoading] = useState(false);
  const [searchQuery, setSearchQuery] = useState('');
 
- // Selected invoice for action submodals
- const [selectedForReturn, setSelectedForReturn] = useState<SalesInvoice | null>(null);
- const [selectedForEdit, setSelectedForEdit] = useState<SalesInvoice | null>(null);
- const [selectedForDelete, setSelectedForDelete] = useState<SalesInvoice | null>(null);
- const [selectedForDetail, setSelectedForDetail] = useState<SalesInvoice | null>(null);
+  // Selected invoice for action submodals
+  const [selectedForReturn, setSelectedForReturn] = useState<SalesInvoice | null>(null);
+  const [selectedForEdit, setSelectedForEdit] = useState<SalesInvoice | null>(null);
+  const [selectedForDelete, setSelectedForDelete] = useState<SalesInvoice | null>(null);
+  const [selectedForDetail, setSelectedForDetail] = useState<SalesInvoice | null>(null);
+
+  // A4 PDF Print State
+  const [printPdfInvoice, setPrintPdfInvoice] = useState<SalesInvoice | null>(null);
+  const [printPdfItems, setPrintPdfItems] = useState<SalesInvoiceItem[]>([]);
+  const [printPdfCustomer, setPrintPdfCustomer] = useState<Contact | null>(null);
+
+  const handlePrintPdfInvoice = async (inv: SalesInvoice) => {
+    try {
+      toast.info(`جاري تجهيز طباعة PDF الفاتورة #${inv.invoice_number}...`);
+      const { db } = await import('@/core/db/app_database');
+      const [items, cust] = await Promise.all([
+        db.sales_invoice_items.where('invoice_id').equals(inv.id).toArray(),
+        inv.customer_id ? db.contacts.get(inv.customer_id) : Promise.resolve(null),
+      ]);
+      setPrintPdfItems(items);
+      setPrintPdfCustomer(cust || null);
+      setPrintPdfInvoice(inv);
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    } catch (err) {
+      console.error('Error preparing PDF print:', err);
+      toast.error('حدث خطأ أثناء تجهيز طباعة PDF الفاتورة');
+    }
+  };
 
  // Load Invoices for the active shift
  const loadShiftInvoices = async () => {
@@ -323,15 +351,15 @@ export function PosRecentOperationsModal({
 
  {/* Left Actions Toolbar (4 Action Buttons from the UI Screenshot) */}
  <div className="flex items-center gap-1.5 shrink-0">
- {/* 1. Print Button */}
- <button
- type="button"
- onClick={() => onPrintInvoice(inv)}
- title="طباعة الفاتورة"
- className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center transition-colors cursor-pointer"
- >
- <Printer className="w-4 h-4"/>
- </button>
+                {/* 1. Print A4 / PDF Button */}
+                <button
+                  type="button"
+                  onClick={() => handlePrintPdfInvoice(inv)}
+                  title="طباعة فاتورة A4 / تصدير PDF"
+                  className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
 
  {/* 2. Return Button */}
  <button
@@ -434,18 +462,25 @@ export function PosRecentOperationsModal({
  }}
  />
 
- {/* 4. Invoice Detail Modal */}
- <InvoiceDetailModal
- invoice={selectedForDetail}
- isOpen={Boolean(selectedForDetail)}
- onClose={() => setSelectedForDetail(null)}
- products={products}
- units={Object.values(unitsById)}
- customers={customers}
- treasuries={treasuries}
- users={users}
- warehouses={warehouses}
- />
- </>
- );
+      {/* 4. Invoice Detail Modal */}
+      <InvoiceDetailModal
+        invoice={selectedForDetail}
+        isOpen={Boolean(selectedForDetail)}
+        onClose={() => setSelectedForDetail(null)}
+        products={products}
+        units={Object.values(unitsById)}
+        customers={customers}
+        treasuries={treasuries}
+        users={users}
+        warehouses={warehouses}
+      />
+
+      {/* 5. A4 PDF Printable Invoice Layout */}
+      <A4InvoicePrintLayout
+        invoice={printPdfInvoice}
+        items={printPdfItems}
+        customer={printPdfCustomer}
+      />
+    </>
+  );
 }
