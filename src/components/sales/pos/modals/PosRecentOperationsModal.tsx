@@ -41,8 +41,7 @@ import type {
   Contact,
   Treasury,
   Warehouse,
-} from'@/types';
-import { toast } from'sonner';
+} from '@/types';
 
 // Sub-modals for actions
 import { PosInvoiceReturnModal } from'./PosInvoiceReturnModal';
