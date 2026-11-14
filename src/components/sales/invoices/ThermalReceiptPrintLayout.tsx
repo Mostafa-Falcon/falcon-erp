@@ -51,6 +51,9 @@ export function ThermalReceiptPrintLayout({
             size: ${is58mm ? '58mm' : '80mm'} auto;
             margin: 0;
           }
+          [data-sonner-toaster], [data-sonner-toast], div[role="status"], div[aria-live="polite"] {
+            display: none !important;
+          }
           body {
             background: #fff !important;
             color: #000 !important;

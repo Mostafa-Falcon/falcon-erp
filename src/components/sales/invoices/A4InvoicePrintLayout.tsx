@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatNumber } from '@/lib/format';
 import { renderCode128Svg } from '@/lib/code128';
 import type { SalesInvoice, SalesInvoiceItem, Contact, Organization } from '@/types';
@@ -18,15 +18,39 @@ export function A4InvoicePrintLayout({
   customer,
   org,
 }: A4InvoicePrintLayoutProps) {
+  const [productsMap, setProductsMap] = useState<Map<string, string>>(new Map());
+  const [orgRec, setOrgRec] = useState<Organization | null>(org || null);
+
+  useEffect(() => {
+    if (!items.length) return;
+    import('@/core/db/app_database').then(({ db }) => {
+      const productIds = Array.from(new Set(items.map((it) => it.product_id)));
+      db.products.where('id').anyOf(productIds).toArray().then((prods) => {
+        setProductsMap(new Map(prods.map((p) => [p.id, p.name])));
+      }).catch(() => {});
+    });
+  }, [items]);
+
+  useEffect(() => {
+    if (org) {
+      setOrgRec(org);
+      return;
+    }
+    if (!invoice?.org_id) return;
+    import('@/core/db/app_database').then(({ db }) => {
+      db.organizations.get(invoice.org_id).then((o) => o && setOrgRec(o)).catch(() => {});
+    });
+  }, [org, invoice?.org_id]);
+
   if (!invoice) return null;
 
-  const orgName = org?.name || 'شركة الكميلي للتوريدات العمومية';
-  const logoUrl = org?.logo_url;
-  const phone = org?.phone || '01100957180';
-  const address = org?.address || 'أبيس 3 / 11';
-  const taxNumber = org?.tax_number || '123-456-789';
+  const orgName = orgRec?.name || 'شركة الكميلي للتوريدات العمومية';
+  const logoUrl = orgRec?.logo_url;
+  const phone = orgRec?.phone || '01100957180';
+  const address = orgRec?.address || 'أبيس 3 / 11';
+  const taxNumber = orgRec?.tax_number || '123-456-789';
   const footerNote =
-    org?.invoice_footer ||
+    orgRec?.invoice_footer ||
     'نرجو من عملائنا الكرام مراجعة البضاعة والفاتورة خلال اسبوع من تاريخ الاستلام وتطبقا بالنواقص ولسنا مسئولين عن اى شئ بعد ذلك - لا يوجد لدينا مرتجع للبطارية وأدوات الكهرباء\n📲 01100957180 خط طحيمر | 📍 أبيس 3 / 11';
 
   return (
@@ -36,6 +60,9 @@ export function A4InvoicePrintLayout({
           @page {
             size: A4 portrait;
             margin: 10mm;
+          }
+          [data-sonner-toaster], [data-sonner-toast], div[role="status"], div[aria-live="polite"] {
+            display: none !important;
           }
           body {
             background: #fff !important;
@@ -53,7 +80,7 @@ export function A4InvoicePrintLayout({
           <div className="flex items-center gap-4">
             {logoUrl && (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={logoUrl} alt="Logo" className="w-20 h-20 object-contain rounded-lg border border-slate-200 p-1" />
+              <img src={logoUrl} alt="Logo" className="w-20 h-20 object-contain rounded-lg border border-slate-200 p-1 bg-white" />
             )}
             <div>
               <h1 className="text-xl font-black text-slate-900 leading-tight">{orgName}</h1>
@@ -135,7 +162,7 @@ export function A4InvoicePrintLayout({
             {items.map((it, idx) => (
               <tr key={it.id || idx} className="hover:bg-slate-50">
                 <td className="py-2.5 px-3 text-center font-mono text-slate-400">{idx + 1}</td>
-                <td className="py-2.5 px-3 font-black text-slate-900">{it.product_id?.slice(0, 15) || 'صنف مباع'}</td>
+                <td className="py-2.5 px-3 font-black text-slate-900">{productsMap.get(it.product_id) || it.notes || 'صنف مباع'}</td>
                 <td className="py-2.5 px-3 text-center font-mono">{it.quantity}</td>
                 <td className="py-2.5 px-3 text-left font-mono" dir="ltr">{formatNumber(it.unit_price)}</td>
                 <td className="py-2.5 px-3 text-left font-mono text-rose-600" dir="ltr">{formatNumber(it.discount_amount || 0)}</td>
