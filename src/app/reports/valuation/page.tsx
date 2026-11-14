@@ -60,6 +60,15 @@ function ValuationContent() {
     setIsLoading(true);
     const { db } = await import('@/core/db/app_database');
     try {
+      if (typeof window !== 'undefined' && navigator.onLine) {
+        try {
+          const { PullSyncService } = await import('@/core/sync/pull_sync_service');
+          await PullSyncService.pullAll(orgId);
+        } catch {
+          // Ignore
+        }
+      }
+
       const [prods, whs, cats, unts, levels] = await Promise.all([
         ProductRepository.getAll(orgId),
         InventoryRepository.getWarehouses(orgId),
@@ -69,7 +78,7 @@ function ValuationContent() {
       ]);
       const umap: Record<string, Unit> = {};
       for (const u of unts) umap[u.id] = u;
-      setProducts(prods.filter((p) => p.item_type === 'storable'));
+      setProducts(prods.filter((p) => p.is_active !== false));
       setWarehouses(whs);
       setCategories(cats.filter((c) => c.is_active));
       setUnitsById(umap);
@@ -92,7 +101,7 @@ function ValuationContent() {
       .map((lvl) => ({ level: lvl, product: productById.get(lvl.product_id) }))
       .filter(
         (r): r is { level: StockLevel; product: Product } =>
-          !!r.product && r.level.quantity !== 0
+          !!r.product && (r.level.available_quantity ?? r.level.quantity ?? 0) !== 0
       )
       .filter(({ level, product }) => {
         if (warehouseFilter !== 'all' && level.warehouse_id !== warehouseFilter) return false;
@@ -109,15 +118,17 @@ function ValuationContent() {
     const whSet = new Set<string>();
     const byCategory: Record<string, number> = {};
     for (const { level, product } of rows) {
-      const v = level.quantity * (product.purchase_price || 0);
+      const lineQty = typeof level.available_quantity === 'number' ? level.available_quantity : (level.quantity || 0);
+      const linePrice = Number(product.purchase_price || product.cost_price || 0);
+      const v = lineQty * linePrice;
       value += v;
-      qty += Math.abs(level.quantity);
+      qty += Math.abs(lineQty);
       whSet.add(level.warehouse_id);
       const cat = product.category_id || '';
       byCategory[cat] = (byCategory[cat] || 0) + v;
     }
-    return { value, qty, warehouseCount: whSet.size, byCategory };
-  }, [rows]);
+    return { value, qty, warehouseCount: warehouses.length || whSet.size, byCategory };
+  }, [rows, warehouses]);
 
   const catName = (id?: string | null) => categories.find((c) => c.id === id)?.name || 'بدون فئة';
   const warehouseName = (id?: string) => warehouses.find((w) => w.id === id)?.name || id?.slice(0, 8) || '—';
