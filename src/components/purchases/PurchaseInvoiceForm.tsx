@@ -442,7 +442,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
     }
     try {
       const newSup = await ContactsRepository.createContact({
-        orgId,
+        org_id: orgId,
         type: 'supplier',
         name: newSupplierName.trim(),
         phone: newSupplierPhone.trim() || undefined,
@@ -498,7 +498,8 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
       // Update product sale_price if salePrice was edited
       const newSalePrice = Number(line.salePrice) || 0;
       if (newSalePrice > 0 && newSalePrice !== p.sale_price) {
-        ProductRepository.update(p.id, { sale_price: newSalePrice }).catch(() => {});
+        const { db } = await import('@/core/db/app_database');
+        db.products.update(p.id, { sale_price: newSalePrice, updated_at: new Date().toISOString(), sync_status: 'pending' }).catch(() => {});
       }
 
       items.push({

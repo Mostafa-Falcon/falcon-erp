@@ -25,6 +25,8 @@ export interface Organization {
  email?: string;
  address?: string;
  logo_url?: string;
+ invoice_header?: string;
+ invoice_footer?: string;
  transport_token?: string;
  created_at: ISODateString;
  updated_at: ISODateString;
