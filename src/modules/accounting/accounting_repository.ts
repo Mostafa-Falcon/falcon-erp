@@ -1,7 +1,8 @@
-import { db } from'@/core/db/app_database';
-import { SyncQueueManager } from'@/core/sync/sync_queue_manager';
-import { v4 as uuidv4 } from'uuid';
-import type { Account, JournalEntry, JournalEntryLine, JournalEntryType, Treasury } from'@/types';
+import { db } from '@/core/db/app_database';
+import { supabase } from '@/core/supabase/supabase_client';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { v4 as uuidv4 } from 'uuid';
+import type { Account, JournalEntry, JournalEntryLine, JournalEntryType, Treasury } from '@/types';
 
 /**
  * 🦅 FALCON UNIVERSAL ERP - ACCOUNTING REPOSITORY
