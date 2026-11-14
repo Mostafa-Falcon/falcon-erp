@@ -82,38 +82,38 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  }
  }, [orgId, draftKey]);
 
- // 2. Auto-save form draft to localStorage whenever fields/lines change
- useEffect(() => {
- if (!orgId || typeof window ==='undefined'|| isLoading) return;
- if (lines.length > 0 || supplierId || supplierInvoiceNumber || notes) {
- const payload = {
- supplierId,
- warehouseId,
- treasuryId,
- supplierInvoiceNumber,
- paymentType,
- customPaidAmount,
- discount,
- discountMode,
- discountPercent,
- notes,
- lines,
- };
- localStorage.setItem(draftKey, JSON.stringify(payload));
- }
- }, [orgId, draftKey, isLoading, supplierId, warehouseId, treasuryId, supplierInvoiceNumber, paymentType, customPaidAmount, discount, discountMode, discountPercent, notes, lines]);
+  // 2. Auto-save form draft to localStorage whenever lines/fields change
+  useEffect(() => {
+    if (!orgId || typeof window === 'undefined' || isLoading || hasDraftNotice) return;
+    if (lines.length > 0) {
+      const payload = {
+        supplierId,
+        warehouseId,
+        treasuryId,
+        supplierInvoiceNumber,
+        paymentType,
+        customPaidAmount,
+        discount,
+        discountMode,
+        discountPercent,
+        notes,
+        lines,
+      };
+      localStorage.setItem(draftKey, JSON.stringify(payload));
+    }
+  }, [orgId, draftKey, isLoading, hasDraftNotice, supplierId, warehouseId, treasuryId, supplierInvoiceNumber, paymentType, customPaidAmount, discount, discountMode, discountPercent, notes, lines]);
 
- // 3. BeforeUnload browser warning when leaving page with unsaved items
- useEffect(() => {
- const handleBeforeUnload = (e: BeforeUnloadEvent) => {
- if (lines.length > 0 || supplierInvoiceNumber || notes) {
- e.preventDefault();
- e.returnValue ='هل تريد الخروج؟ هناك أصناف في فاتورة الشراء لم يتم حفظها بعد.';
- }
- };
- window.addEventListener('beforeunload', handleBeforeUnload);
- return () => window.removeEventListener('beforeunload', handleBeforeUnload);
- }, [lines, supplierInvoiceNumber, notes]);
+  // 3. BeforeUnload browser warning when leaving page with unsaved items
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (lines.length > 0 || supplierInvoiceNumber || notes) {
+        e.preventDefault();
+        e.returnValue = 'هل تريد الخروج؟ هناك أصناف في فاتورة الشراء لم يتم حفظها بعد.';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [lines, supplierInvoiceNumber, notes]);
 
   // Restore draft handler
   const restoreDraft = () => {
