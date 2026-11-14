@@ -93,8 +93,7 @@ export default function JournalEntriesPage() {
     try {
       setIsLoading(true);
       await AccountingRepository.ensureDefaultChartOfAccounts(orgId);
-      const { db } = await import('@/core/db/app_database');
-      const journalList = await db.journal_entries.where('org_id').equals(orgId).reverse().sortBy('entry_date');
+      const journalList = await AccountingRepository.getJournalEntries(orgId);
       setEntries(journalList);
     } catch (err) {
       console.error('Load journal error:', err);

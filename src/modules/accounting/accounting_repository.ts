@@ -997,22 +997,60 @@ export class AccountingRepository {
  });
  }
 
- /** Reverses the journal entry of a source document (used on delete/cancel). */
- public static async reverseDocument(
- orgId: string,
- referenceType: string,
- referenceId: string,
- reason: string,
- createdBy?: string
- ): Promise<void> {
- const entry = await db.journal_entries
- .where('org_id')
- .equals(orgId)
- .filter((e) => e.reference_type === referenceType && e.reference_id === referenceId && !e.is_reversed && e.type !=='reversal')
- .first();
- if (!entry) return;
- await this.reverseEntry(orgId, entry.id, reason, createdBy);
- }
+  /** Reverses the journal entry of a source document (used on delete/cancel). */
+  public static async reverseDocument(
+    orgId: string,
+    referenceType: string,
+    referenceId: string,
+    reason: string,
+    createdBy?: string
+  ): Promise<void> {
+    const entry = await db.journal_entries
+      .where('org_id')
+      .equals(orgId)
+      .filter((e) => e.reference_type === referenceType && e.reference_id === referenceId && !e.is_reversed && e.type !== 'reversal')
+      .first();
+    if (!entry) return;
+    await this.reverseEntry(orgId, entry.id, reason, createdBy);
+  }
+
+  /**
+   * Get all journal entries for organization (reconciled with cloud)
+   */
+  public static async getJournalEntries(orgId: string): Promise<JournalEntry[]> {
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      try {
+        const { data: cloudEntries } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('org_id', orgId);
+
+        if (Array.isArray(cloudEntries)) {
+          const cloudIds = new Set(cloudEntries.map((e) => e.id));
+          const localEntries = await db.journal_entries.where('org_id').equals(orgId).toArray();
+
+          for (const le of localEntries) {
+            if (!cloudIds.has(le.id) && le.sync_status !== 'pending') {
+              await db.journal_entries.delete(le.id);
+              await db.journal_entry_lines.where('entry_id').equals(le.id).delete();
+            }
+          }
+
+          if (cloudEntries.length > 0) {
+            await db.journal_entries.bulkPut(cloudEntries.map((ce) => ({ ...ce, sync_status: 'synced' })));
+          }
+        }
+      } catch (e) {
+        console.warn('[AccountingRepository] Cloud journal entries sync notice:', e);
+      }
+    }
+
+    return await db.journal_entries
+      .where('org_id')
+      .equals(orgId)
+      .reverse()
+      .sortBy('entry_date');
+  }
 }
 
 export const accountingRepository = AccountingRepository;
