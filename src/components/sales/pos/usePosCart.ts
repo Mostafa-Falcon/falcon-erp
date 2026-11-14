@@ -119,125 +119,131 @@ export function usePosCart({
  .slice(0, 8);
  }, [products, searchQuery]);
 
- // Add Product to Cart
- const addToCart = (
- product: Product,
- options?: {
- unitId?: string;
- price?: number;
- factor?: number;
- qty?: number;
- batchId?: string;
- serialNumber?: string;
- priceTier?: 'default' | 'old' | 'wholesale';
- selectedModifiers?: CartModifier[];
- kitchenNotes?: string;
- orderType?: 'dine_in' | 'takeaway' | 'delivery';
- tableId?: string;
- tableNumber?: string;
- deviceCondition?: 'new' | 'like_new' | 'used';
- deviceImei?: string;
- warrantyDays?: number;
- }
- ) => {
- if (!activeShift) {
- toast.error('يرجى فتح وردية كاشير أولاً للبدء بالبيع وإضافة الأصناف');
- setIsShiftModalOpen(true);
- return;
- }
+  // Add Product to Cart
+  const addToCart = (
+    product?: Product | null,
+    options?: {
+      unitId?: string;
+      price?: number;
+      factor?: number;
+      qty?: number;
+      batchId?: string;
+      serialNumber?: string;
+      priceTier?: 'default' | 'old' | 'wholesale';
+      selectedModifiers?: CartModifier[];
+      kitchenNotes?: string;
+      orderType?: 'dine_in' | 'takeaway' | 'delivery';
+      tableId?: string;
+      tableNumber?: string;
+      deviceCondition?: 'new' | 'like_new' | 'used';
+      deviceImei?: string;
+      warrantyDays?: number;
+    }
+  ) => {
+    if (!product || !product.id) {
+      toast.error('الصنف غير صالح أو غير موجود');
+      return;
+    }
 
- const opt = options?.unitId
- ? (unitOptions[product.id] || []).find((u) => u.unitId === options.unitId)
- : (unitOptions[product.id] || [])[0];
+    if (!activeShift) {
+      toast.error('يرجى فتح وردية كاشير أولاً للبدء بالبيع وإضافة الأصناف');
+      setIsShiftModalOpen(true);
+      return;
+    }
 
- const targetUnitId = options?.unitId || opt?.unitId || product.base_unit_id;
- const factor = options?.factor || opt?.factor || 1;
- const qtyToAdd = options?.qty !== undefined ? options.qty : 1;
+    const safeUnitOptions = unitOptions && product.id ? (unitOptions[product.id] || []) : [];
+    const opt = options?.unitId
+      ? safeUnitOptions.find((u) => u.unitId === options.unitId)
+      : safeUnitOptions[0];
 
- // Determine batch (FEFO - pick first batch with current_quantity > 0)
- let batchId = options?.batchId ||'';
- if (product.tracks_batch && !batchId) {
- const cands = (batches[product.id] || []).filter((b) => b.current_quantity > 0);
- batchId = cands[0]?.id ||'';
- }
+    const targetUnitId = options?.unitId || opt?.unitId || product.base_unit_id || '';
+    const factor = options?.factor || opt?.factor || 1;
+    const qtyToAdd = options?.qty !== undefined ? Math.max(0.001, Number(options.qty) || 1) : 1;
+    const isStorable = product.item_type === 'storable' || (!product.item_type && product.item_type !== 'service');
 
- // Check maximum available stock
- const maxAvail = getMaxAvailableForLine(product.id, targetUnitId, factor, batchId);
+    // Determine batch (FEFO - pick first batch with current_quantity > 0)
+    let batchId = options?.batchId || '';
+    if (product.tracks_batch && !batchId) {
+      const safeBatches = batches && product.id ? (batches[product.id] || []) : [];
+      const cands = safeBatches.filter((b) => b && (b.current_quantity || 0) > 0);
+      batchId = cands[0]?.id || '';
+    }
 
- if (product.item_type ==='storable'&& maxAvail <= 0) {
- toast.error(`⚠️ الصنف «${product.name}» غير متوفر بالمخزن حالياً (الرصيد: 0)`);
- return;
- }
+    // Check maximum available stock
+    const maxAvail = getMaxAvailableForLine(product.id, targetUnitId, factor, batchId);
 
- // Check if line already exists in cart with same product, unit, and batch
- const hasCustomization = Boolean(
- options?.selectedModifiers?.length ||
- options?.kitchenNotes ||
- options?.serialNumber ||
- options?.deviceImei
- );
- const existingIndex = !hasCustomization
- ? cart.findIndex(
- (l) => l.productId === product.id && l.unitId === targetUnitId && l.batchId === batchId && !l.selectedModifiers?.length && !l.kitchenNotes
- )
- : -1;
+    if (isStorable && maxAvail <= 0) {
+      toast.error(`⚠️ الصنف «${product.name || 'المحدد'}» غير متوفر بالمخزن حالياً (الرصيد: 0)`);
+      return;
+    }
 
- if (existingIndex > -1) {
- const updated = [...cart];
- const currentQty = updated[existingIndex].qty;
- const targetQty = currentQty + qtyToAdd;
+    // Check if line already exists in cart with same product, unit, and batch
+    const hasCustomization = Boolean(
+      options?.selectedModifiers?.length ||
+      options?.kitchenNotes ||
+      options?.serialNumber ||
+      options?.deviceImei
+    );
+    const existingIndex = !hasCustomization
+      ? cart.findIndex(
+          (l) => l && l.productId === product.id && l.unitId === targetUnitId && l.batchId === batchId && !l.selectedModifiers?.length && !l.kitchenNotes
+        )
+      : -1;
 
- if (product.item_type ==='storable'&& targetQty > maxAvail) {
- updated[existingIndex].qty = maxAvail;
- toast.warning(
-`⚠️ الكمية المطلوبة تتجاوز الرصيد المتاح بالمخزن (${maxAvail}) - تم ضبط الكمية إلى ${maxAvail}`
- );
- } else {
- updated[existingIndex].qty = Number(targetQty.toFixed(3));
- toast.success(`تم تحديث كمية «${product.name}» إلى ${updated[existingIndex].qty}`);
- }
+    if (existingIndex > -1) {
+      const updated = [...cart];
+      const currentQty = updated[existingIndex].qty || 0;
+      const targetQty = currentQty + qtyToAdd;
 
- setCart(updated);
- setLastAddedKey(updated[existingIndex].key);
- setSearchQuery('');
- setIsSearchOpen(false);
- return;
- }
+      if (isStorable && targetQty > maxAvail) {
+        updated[existingIndex].qty = maxAvail;
+        toast.warning(
+          `⚠️ الكمية المطلوبة تتجاوز الرصيد المتاح بالمخزن (${maxAvail}) - تم ضبط الكمية إلى ${maxAvail}`
+        );
+      } else {
+        updated[existingIndex].qty = Number(targetQty.toFixed(3));
+        toast.success(`تم تحديث كمية «${product.name || 'الصنف'}» إلى ${updated[existingIndex].qty}`);
+      }
 
- // New item line
- const key =`${product.id}_${targetUnitId}_${batchId ||'nobatch'}_${Date.now()}`;
- const clampedQty = product.item_type ==='storable'? Math.min(qtyToAdd, maxAvail) : qtyToAdd;
+      setCart(updated);
+      setLastAddedKey(updated[existingIndex].key);
+      setSearchQuery('');
+      setIsSearchOpen(false);
+      return;
+    }
 
- if (product.item_type ==='storable'&& qtyToAdd > maxAvail) {
- toast.warning(
-`⚠️ الكمية المطلوبة (${qtyToAdd}) تتجاوز الرصيد المتاح (${maxAvail}) - تم ضبط الكمية إلى ${maxAvail}`
- );
- }
+    // New item line
+    const key = `${product.id}_${targetUnitId}_${batchId || 'nobatch'}_${Date.now()}`;
+    const clampedQty = isStorable ? Math.min(qtyToAdd, maxAvail) : qtyToAdd;
 
- let itemPrice = Number(options?.price ?? opt?.price ?? product.sale_price ?? 0);
- const modifierSum = (options?.selectedModifiers || []).reduce((sum, m) => sum + (m.price || 0), 0);
- itemPrice += modifierSum;
- let lineTier:'default'|'old'|'wholesale'= options?.priceTier ||'default';
- if (priceTier ==='wholesale'&& product.wholesale_price) {
- itemPrice = product.wholesale_price * factor;
- lineTier ='wholesale';
- } else if (options?.priceTier ==='old'&& product.has_dual_pricing && product.old_sale_price) {
- itemPrice = product.old_sale_price * factor;
- lineTier ='old';
- }
+    if (isStorable && qtyToAdd > maxAvail) {
+      toast.warning(
+        `⚠️ الكمية المطلوبة (${qtyToAdd}) تتجاوز الرصيد المتاح (${maxAvail}) - تم ضبط الكمية إلى ${maxAvail}`
+      );
+    }
 
- // Tax rate is strictly 0 if enableTax is false (tax is optional!).
- // If enableTax is true and product is taxable, use product's tax_rate or organization default vatRate.
- const resolvedTaxRate = enableTax && product.is_taxable !== false
- ? (product.tax_rate !== undefined && product.tax_rate !== null ? product.tax_rate : vatRate)
- : 0;
+    let itemPrice = Number(options?.price ?? opt?.price ?? product.sale_price ?? 0);
+    const modifierSum = (options?.selectedModifiers || []).reduce((sum, m) => sum + (m.price || 0), 0);
+    itemPrice += modifierSum;
+    let lineTier: 'default' | 'old' | 'wholesale' = options?.priceTier || 'default';
+    if (priceTier === 'wholesale' && product.wholesale_price) {
+      itemPrice = product.wholesale_price * factor;
+      lineTier = 'wholesale';
+    } else if (options?.priceTier === 'old' && product.has_dual_pricing && product.old_sale_price) {
+      itemPrice = product.old_sale_price * factor;
+      lineTier = 'old';
+    }
 
- // FIFO cost: when a specific batch/lot is picked (FEFO-first), the line cost
- // follows the ACTUAL batch cost (per base unit) instead of the card cost,
- // so stock valuation, COGS and the profit report stay consistent with the
- // lot actually consumed (same intent as FifoValuationService).
- const chosenBatch = batchId ? (batches[product.id] || []).find((b) => b.id === batchId) : undefined;
- const lineCost =
+    const resolvedTaxRate = enableTax && product.is_taxable !== false
+      ? (product.tax_rate !== undefined && product.tax_rate !== null ? product.tax_rate : vatRate)
+      : 0;
+
+    const safeBatchesList = batches && product.id ? (batches[product.id] || []) : [];
+    const chosenBatch = batchId ? safeBatchesList.find((b) => b && b.id === batchId) : undefined;
+    const lineCost =
+      chosenBatch?.purchase_price !== undefined && chosenBatch.purchase_price > 0
+        ? chosenBatch.purchase_price
+        : product.purchase_price || 0;
  chosenBatch?.purchase_price !== undefined && chosenBatch.purchase_price > 0
  ? chosenBatch.purchase_price
  : product.purchase_price || 0;
