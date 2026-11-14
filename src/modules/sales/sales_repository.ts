@@ -170,74 +170,70 @@ export class SalesRepository {
  return shift;
  }
 
- /**
- * Close an open cashier shift with cash reconciliation and optional treasury transfer
- */
- public static async closeShift(
- shiftId: string,
- actualClosingBalance: number,
- notes?: string,
- closedByUserId?: string,
- destinationTreasuryId?: string,
- actualCardBalance?: number
- ): Promise<CashierShift> {
- const shift = await db.cashier_shifts.get(shiftId);
- if (!shift || shift.status ==='closed') {
- throw new Error('الوردية غير موجودة أو تم إغلاقها مسبقاً');
- }
+  /**
+   * Close an open cashier shift with cash & card reconciliation and treasury transfer
+   */
+  public static async closeShift(
+    shiftId: string,
+    actualClosingBalance: number,
+    notes?: string,
+    closedByUserId?: string,
+    destinationTreasuryId?: string,
+    actualCardBalance?: number
+  ): Promise<CashierShift> {
+    const shift = await db.cashier_shifts.get(shiftId);
+    if (!shift || shift.status === 'closed') {
+      throw new Error('الوردية غير موجودة أو تم إغلاقها مسبقاً');
+    }
 
- const now = new Date().toISOString();
- const difference = actualClosingBalance - shift.expected_closing_balance;
+    const now = new Date().toISOString();
+    const difference = actualClosingBalance - shift.expected_closing_balance;
+    const cardAmt = actualCardBalance !== undefined ? actualCardBalance : (shift.total_sales_card || 0);
+    const totalShiftAmount = actualClosingBalance + cardAmt;
 
- const updatedShift: CashierShift = {
- ...shift,
- actual_closing_balance: actualClosingBalance,
- actual_card_balance: actualCardBalance !== undefined ? actualCardBalance : shift.total_sales_card,
- destination_treasury_id: destinationTreasuryId || shift.treasury_id,
- difference,
- closed_at: now,
- closed_by_user_id: closedByUserId || shift.user_id,
- status:'closed',
- notes,
- sync_status:'pending',
- };
+    const targetTreasuryId = destinationTreasuryId || shift.treasury_id;
 
- const tablesToLock: Array<typeof db.cashier_shifts | typeof db.sync_queue | typeof db.treasuries> = [db.cashier_shifts, db.sync_queue];
- const shouldTransfer = destinationTreasuryId && destinationTreasuryId !== shift.treasury_id && actualClosingBalance > 0;
- if (shouldTransfer) {
- tablesToLock.push(db.treasuries);
- }
+    const updatedShift: CashierShift = {
+      ...shift,
+      actual_closing_balance: actualClosingBalance,
+      actual_card_balance: cardAmt,
+      destination_treasury_id: targetTreasuryId,
+      difference,
+      closed_at: now,
+      closed_by_user_id: closedByUserId || shift.user_id,
+      status: 'closed',
+      notes,
+      sync_status: 'pending',
+    };
 
- await db.transaction('rw', tablesToLock, async () => {
- await db.cashier_shifts.put(updatedShift);
- await SyncQueueManager.enqueue('cashier_shifts', shiftId,'update', updatedShift);
+    const tablesToLock: Array<typeof db.cashier_shifts | typeof db.sync_queue | typeof db.treasuries> = [
+      db.cashier_shifts,
+      db.sync_queue,
+      db.treasuries,
+    ];
 
- if (shouldTransfer) {
- const sourceTreasury = await db.treasuries.get(shift.treasury_id);
- const destTreasury = await db.treasuries.get(destinationTreasuryId);
- if (sourceTreasury && destTreasury) {
- const sourceUpdated: Treasury = {
- ...sourceTreasury,
- current_balance: Math.max(0, (sourceTreasury.current_balance || 0) - actualClosingBalance),
- updated_at: now,
- sync_status:'pending',
- };
- const destUpdated: Treasury = {
- ...destTreasury,
- current_balance: (destTreasury.current_balance || 0) + actualClosingBalance,
- updated_at: now,
- sync_status:'pending',
- };
- await db.treasuries.put(sourceUpdated);
- await SyncQueueManager.enqueueDelta('treasuries', shift.treasury_id, { current_balance: -actualClosingBalance }, {});
- await db.treasuries.put(destUpdated);
- await SyncQueueManager.enqueueDelta('treasuries', destinationTreasuryId, { current_balance: actualClosingBalance }, {});
- }
- }
- });
+    await db.transaction('rw', tablesToLock, async () => {
+      await db.cashier_shifts.put(updatedShift);
+      await SyncQueueManager.enqueue('cashier_shifts', shiftId, 'update', updatedShift);
 
- return updatedShift;
- }
+      if (targetTreasuryId && totalShiftAmount > 0) {
+        const destTreasury = await db.treasuries.get(targetTreasuryId);
+        if (destTreasury) {
+          const newBalance = (destTreasury.current_balance || 0) + totalShiftAmount;
+          const destUpdated: Treasury = {
+            ...destTreasury,
+            current_balance: newBalance,
+            updated_at: now,
+            sync_status: 'pending',
+          };
+          await db.treasuries.put(destUpdated);
+          await SyncQueueManager.enqueueDelta('treasuries', targetTreasuryId, { current_balance: totalShiftAmount }, {});
+        }
+      }
+    });
+
+    return updatedShift;
+  }
 
  // ==========================================
  // SALES INVOICES
