@@ -384,7 +384,7 @@ export class SalesRepository {
         payment_type: params.paymentType,
         cash_amount: cashAmt,
         card_amount: cardAmt,
-        treasury_id: params.treasuryId || undefined,
+        treasury_id: params.treasuryId || null,
         status: 'completed',
         notes: params.notes,
         created_by: params.userId,

@@ -57,7 +57,7 @@ export interface SalesInvoice {
  cash_amount: number;
  card_amount: number;
  
- treasury_id: EntityId;
+ treasury_id?: EntityId | null;
  status: InvoiceStatus;
  notes?: string;
  is_deleted?: boolean;
