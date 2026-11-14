@@ -78,8 +78,10 @@ export interface FalconSalesInvoiceResult {
 }
 
 export class SalesRepository {
- // ==========================================
- // CASHIER SHIFTS
+  private static inFlightInvoices = new Map<string, Promise<SalesInvoice>>();
+
+  // ==========================================
+  // CASHIER SHIFTS
  // ==========================================
 
  /**
@@ -241,18 +243,14 @@ export class SalesRepository {
  // SALES INVOICES
  // ==========================================
 
- /**
- * Generate the next invoice number:
- * - Online: authority counter via the cloud (falcon_next_document_number).
- * - Offline: device-scoped temporary number (INV-P{device}-######).
- */
- public static async generateInvoiceNumber(orgId: string, branchId: string): Promise<string> {
- return DocumentNumberService.nextSalesInvoiceNumber(orgId, branchId);
- }
-
- /**
- * Create Sales Invoice with full transaction orchestration:
-  private static inFlightInvoices = new Map<string, Promise<SalesInvoice>>();
+  /**
+   * Generate the next invoice number:
+   * - Online: authority counter via the cloud (falcon_next_document_number).
+   * - Offline: device-scoped temporary number (INV-P{device}-######).
+   */
+  public static async generateInvoiceNumber(orgId: string, branchId: string): Promise<string> {
+    return DocumentNumberService.nextSalesInvoiceNumber(orgId, branchId);
+  }
 
   /**
    * Create Sales Invoice with full transaction orchestration:
@@ -386,7 +384,7 @@ export class SalesRepository {
         payment_type: params.paymentType,
         cash_amount: cashAmt,
         card_amount: cardAmt,
-        treasury_id: params.treasuryId || null,
+        treasury_id: params.treasuryId || undefined,
         status: 'completed',
         notes: params.notes,
         created_by: params.userId,
@@ -426,7 +424,7 @@ export class SalesRepository {
               unitId: item.unit_id,
               conversionFactor: item.conversion_factor,
               unitCost: item.unit_cost,
-              referenceType: 'sale',
+              referenceType: 'sale_invoice',
               referenceId: invoiceId,
               userId: params.userId,
               notes: `مبيعات - فاتورة رقم #${invoiceNumber}`,
@@ -434,27 +432,17 @@ export class SalesRepository {
           }
 
           if (cashAmt > 0 && params.treasuryId) {
-            await TreasuryRepository.recordTransaction({
-              orgId: params.orgId,
-              treasuryId: params.treasuryId,
-              type: 'income',
-              amount: cashAmt,
-              category: 'sales',
-              referenceType: 'sale',
-              referenceId: invoiceId,
-              userId: params.userId,
-              notes: `مبيعات نقداً - فاتورة رقم #${invoiceNumber}`,
-            });
+            await TreasuryRepository.adjustBalance(params.treasuryId, cashAmt);
           }
 
           if (remaining > 0 && params.customerId) {
-            await ContactsRepository.recordTransaction({
+            await ContactsRepository.adjustBalance({
               orgId: params.orgId,
               contactId: params.customerId,
-              type: 'debit',
-              amount: remaining,
-              referenceType: 'sale',
+              referenceType: 'sale_invoice',
               referenceId: invoiceId,
+              debit: remaining,
+              credit: 0,
               notes: `مبيعات آجلة - فاتورة رقم #${invoiceNumber}`,
             });
           }
