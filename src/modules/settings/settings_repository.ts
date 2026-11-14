@@ -1,8 +1,9 @@
-import { v4 as uuidv4 } from'uuid';
-import { db } from'@/core/db/app_database';
-import { SyncQueueManager } from'@/core/sync/sync_queue_manager';
-import { getSubscriptionPermissions } from'@/core/constants/subscription_profiles';
-import type { AppSetting, Branch, Organization } from'@/types';
+import { v4 as uuidv4 } from 'uuid';
+import { db } from '@/core/db/app_database';
+import { supabase } from '@/core/supabase/supabase_client';
+import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
+import { getSubscriptionPermissions } from '@/core/constants/subscription_profiles';
+import type { AppSetting, Branch, Organization } from '@/types';
 
 export class SettingsRepository {
  /**

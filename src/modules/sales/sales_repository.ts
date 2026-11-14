@@ -1574,25 +1574,51 @@ export class SalesRepository {
  .sortBy('created_at');
  }
 
- /**
- * Get cashier shifts for a branch or organization (newest first)
- */
- public static async getShifts(branchId?: string, orgId?: string): Promise<CashierShift[]> {
- if (branchId) {
- return await db.cashier_shifts
- .where('branch_id')
- .equals(branchId)
- .and((s) => !orgId || s.org_id === orgId)
- .reverse()
- .sortBy('opened_at');
- }
- if (orgId) {
- return await db.cashier_shifts
- .where('org_id')
- .equals(orgId)
- .reverse()
- .sortBy('opened_at');
- }
- return await db.cashier_shifts.reverse().sortBy('opened_at');
- }
+  /**
+   * Get cashier shifts for a branch or organization (newest first, reconciled with cloud)
+   */
+  public static async getShifts(branchId?: string, orgId?: string): Promise<CashierShift[]> {
+    if (typeof window !== 'undefined' && navigator.onLine && orgId) {
+      try {
+        const { data: cloudShifts } = await supabase
+          .from('cashier_shifts')
+          .select('*')
+          .eq('org_id', orgId);
+
+        if (Array.isArray(cloudShifts)) {
+          const cloudIds = new Set(cloudShifts.map((s) => s.id));
+          const localShifts = await db.cashier_shifts.where('org_id').equals(orgId).toArray();
+
+          for (const ls of localShifts) {
+            if (!cloudIds.has(ls.id) && ls.sync_status !== 'pending') {
+              await db.cashier_shifts.delete(ls.id);
+            }
+          }
+
+          if (cloudShifts.length > 0) {
+            await db.cashier_shifts.bulkPut(cloudShifts.map((cs) => ({ ...cs, sync_status: 'synced' })));
+          }
+        }
+      } catch (e) {
+        console.warn('[SalesRepository] Cloud shifts sync notice:', e);
+      }
+    }
+
+    if (branchId) {
+      return await db.cashier_shifts
+        .where('branch_id')
+        .equals(branchId)
+        .and((s) => !orgId || s.org_id === orgId)
+        .reverse()
+        .sortBy('opened_at');
+    }
+    if (orgId) {
+      return await db.cashier_shifts
+        .where('org_id')
+        .equals(orgId)
+        .reverse()
+        .sortBy('opened_at');
+    }
+    return await db.cashier_shifts.reverse().sortBy('opened_at');
+  }
 }
