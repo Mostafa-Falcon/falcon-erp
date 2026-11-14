@@ -112,13 +112,10 @@ export default function ProfitsReportPage() {
 
   // Financial Calculations
   const fin = useMemo(() => {
-    const invoiceGrossSales = filteredInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0);
-    const itemsGrossSales = filteredItems.reduce((acc, it) => acc + (Number(it.total) || (Number(it.quantity) * Number(it.unit_price)) || 0), 0);
-    const grossSales = invoiceGrossSales > 0 ? invoiceGrossSales : itemsGrossSales;
-
+    const grossSales = filteredInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0);
     const returnsTotal = filteredReturns.reduce((acc, r) => acc + (Number(r.total) || 0), 0);
-    const totalDiscounts = filteredInvoices.reduce((acc, inv) => acc + (Number(inv.discount_amount) || 0), 0);
-    const netRevenue = Math.max(0, grossSales - returnsTotal - totalDiscounts);
+    const totalDiscounts = 0; // Invoice total is ALREADY net after item discounts (520 LE)
+    const netRevenue = Math.max(0, grossSales - returnsTotal);
 
     const cogs = filteredItems.reduce((acc, it) => acc + (Number(it.quantity) * (Number(it.unit_cost) || 0)), 0);
     const grossProfit = netRevenue - cogs;
