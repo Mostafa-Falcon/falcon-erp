@@ -115,37 +115,43 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
  }, [lines, supplierInvoiceNumber, notes]);
 
- // Restore draft handler
- const restoreDraft = () => {
- try {
- const saved = localStorage.getItem(draftKey);
- if (saved) {
- const parsed = JSON.parse(saved);
- if (parsed.supplierId) setSupplierId(parsed.supplierId);
- if (parsed.warehouseId) setWarehouseId(parsed.warehouseId);
- if (parsed.treasuryId) setTreasuryId(parsed.treasuryId);
- if (parsed.supplierInvoiceNumber) setSupplierInvoiceNumber(parsed.supplierInvoiceNumber);
- if (parsed.paymentType) setPaymentType(parsed.paymentType);
- if (parsed.customPaidAmount) setCustomPaidAmount(parsed.customPaidAmount);
- if (parsed.discount) setDiscount(parsed.discount);
- if (parsed.discountMode) setDiscountMode(parsed.discountMode);
- if (parsed.discountPercent) setDiscountPercent(parsed.discountPercent);
- if (parsed.notes) setNotes(parsed.notes);
- if (Array.isArray(parsed.lines)) {
- // Ensure each restored line has a unique ID
- const restoredLines = parsed.lines.map((l: Partial<Line>) => ({
- ...l,
- id: l.id || uuidv4(),
- }));
- setLines(restoredLines);
- }
- }
- } catch {
- // Ignore
- } finally {
- setHasDraftNotice(false);
- }
- };
+  // Restore draft handler
+  const restoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.supplierId) setSupplierId(parsed.supplierId);
+        if (parsed.warehouseId) setWarehouseId(parsed.warehouseId);
+        if (parsed.treasuryId) setTreasuryId(parsed.treasuryId);
+        if (parsed.supplierInvoiceNumber) setSupplierInvoiceNumber(parsed.supplierInvoiceNumber);
+        if (parsed.paymentType) setPaymentType(parsed.paymentType);
+        if (parsed.customPaidAmount) setCustomPaidAmount(parsed.customPaidAmount);
+        if (parsed.discount) setDiscount(parsed.discount);
+        if (parsed.discountMode) setDiscountMode(parsed.discountMode);
+        if (parsed.discountPercent) setDiscountPercent(parsed.discountPercent);
+        if (parsed.notes) setNotes(parsed.notes);
+        if (Array.isArray(parsed.lines) && parsed.lines.length > 0) {
+          const restoredLines = parsed.lines.map((l: Partial<Line>) => ({
+            id: l.id || uuidv4(),
+            productId: l.productId || '',
+            batchNumber: l.batchNumber || '',
+            expiryDate: l.expiryDate || '',
+            unitId: l.unitId || '',
+            conversionFactor: l.conversionFactor || 1,
+            qty: String(l.qty ?? '1'),
+            cost: String(l.cost ?? '0'),
+            taxRate: String(l.taxRate ?? '0'),
+          }));
+          setLines(restoredLines);
+        }
+      }
+    } catch (err) {
+      console.error('Error restoring draft:', err);
+    } finally {
+      setHasDraftNotice(false);
+    }
+  };
 
  // Clear draft handler
  const clearDraft = () => {
@@ -218,23 +224,28 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [orgId, branchId]);
 
- const addLine = () => {
- setLines((prev) => [
- ...prev,
- {
- id: uuidv4(),
- productId:'',
- batchNumber:'',
- expiryDate:'',
- unitId:'',
- conversionFactor: 1,
- qty:'1',
- cost:'0',
- taxRate:'0',
- },
- ]);
- setFormError('');
- };
+  const addLine = () => {
+    const firstProduct = products[0];
+    const defaultProdId = firstProduct?.id || '';
+    const opts = defaultProdId ? (unitOptions[defaultProdId] || []) : [];
+    const defUnit = opts.find((o) => o.factor === 1) || opts[0];
+
+    setLines((prev) => [
+      ...prev,
+      {
+        id: uuidv4(),
+        productId: defaultProdId,
+        batchNumber: '',
+        expiryDate: '',
+        unitId: defUnit?.unitId || firstProduct?.base_unit_id || '',
+        conversionFactor: defUnit?.factor || 1,
+        qty: '1',
+        cost: String(defUnit?.cost ?? firstProduct?.purchase_price ?? 0),
+        taxRate: String(firstProduct?.tax_rate ?? 0),
+      },
+    ]);
+    setFormError('');
+  };
 
  const updateLine = (idx: number, patch: Partial<Line>) => {
  setLines((prev) => prev.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
