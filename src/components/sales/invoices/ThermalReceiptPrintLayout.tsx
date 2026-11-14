@@ -31,13 +31,41 @@ export function ThermalReceiptPrintLayout({
   phone = '01100957180',
   address = 'أبيس 3 / 11',
   headerNote,
-  footerNote = 'نرجو من عملائنا الكرام مراجعة البضاعة والفاتورة خلال اسبوع من تاريخ الاستلام وتطبقا بالنواقص ولسنا مسئولين عن اى شئ بعد ذلك - لا يوجد لدينا مرتجع للبطارية وأدوات الكهرباء\n📲 01100957180 خط طحيمر | 📍 أبيس 3 / 11',
+  footerNote: propFooterNote,
   currencySymbol = 'ج.م',
   showLogo = true,
   showBarcode = true,
   showCustomer = true,
   paperSize = '80mm',
 }: ThermalReceiptPrintLayoutProps) {
+  const [footerNote, setFooterNote] = React.useState<string>(propFooterNote || '');
+
+  React.useEffect(() => {
+    const DEFAULT_NOTE = `نرجو من عملائنا الكرام مراجعة البضاعة والفاتورة خلال اسبوع من تاريخ الاستلام وتطبقا بالنواقص ولسنا مسئولين عن اى شئ بعد ذلك - لا يوجد لدينا مرتجع للبطارية وأدوات الكهرباء\n📲 01100957180 خط طحيمر | 📍 أبيس 3 / 11`;
+
+    if (!invoice?.org_id) return;
+    import('@/core/db/app_database').then(async ({ db }) => {
+      const savedCfg = await db.app_settings.get('invoice_page_config');
+      if (savedCfg?.value) {
+        try {
+          const parsed = JSON.parse(savedCfg.value);
+          if (parsed.invoiceFooter) {
+            setFooterNote(parsed.invoiceFooter);
+            return;
+          }
+        } catch {
+          // Ignore
+        }
+      }
+      const o = await db.organizations.get(invoice.org_id);
+      if (o?.invoice_footer) {
+        setFooterNote(o.invoice_footer);
+      } else {
+        setFooterNote(DEFAULT_NOTE);
+      }
+    });
+  }, [invoice?.org_id, propFooterNote]);
+
   if (!invoice) return null;
 
   const is58mm = paperSize.includes('58mm');

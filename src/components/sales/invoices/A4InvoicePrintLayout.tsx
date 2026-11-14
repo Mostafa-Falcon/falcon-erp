@@ -20,6 +20,7 @@ export function A4InvoicePrintLayout({
 }: A4InvoicePrintLayoutProps) {
   const [productsMap, setProductsMap] = useState<Map<string, string>>(new Map());
   const [orgRec, setOrgRec] = useState<Organization | null>(org || null);
+  const [footerNote, setFooterNote] = useState<string>('');
 
   useEffect(() => {
     if (!items.length) return;
@@ -32,13 +33,32 @@ export function A4InvoicePrintLayout({
   }, [items]);
 
   useEffect(() => {
-    if (org) {
-      setOrgRec(org);
-      return;
-    }
+    const DEFAULT_NOTE = `نرجو من عملائنا الكرام مراجعة البضاعة والفاتورة خلال اسبوع من تاريخ الاستلام وتطبقا بالنواقص ولسنا مسئولين عن اى شئ بعد ذلك - لا يوجد لدينا مرتجع للبطارية وأدوات الكهرباء\n📲 01100957180 خط طحيمر | 📍 أبيس 3 / 11`;
+
     if (!invoice?.org_id) return;
-    import('@/core/db/app_database').then(({ db }) => {
-      db.organizations.get(invoice.org_id).then((o) => o && setOrgRec(o)).catch(() => {});
+    import('@/core/db/app_database').then(async ({ db }) => {
+      if (!org) {
+        const o = await db.organizations.get(invoice.org_id);
+        if (o) setOrgRec(o);
+      }
+      const savedCfg = await db.app_settings.get('invoice_page_config');
+      if (savedCfg?.value) {
+        try {
+          const parsed = JSON.parse(savedCfg.value);
+          if (parsed.invoiceFooter) {
+            setFooterNote(parsed.invoiceFooter);
+            return;
+          }
+        } catch {
+          // Ignore
+        }
+      }
+      const o = await db.organizations.get(invoice.org_id);
+      if (o?.invoice_footer) {
+        setFooterNote(o.invoice_footer);
+      } else {
+        setFooterNote(DEFAULT_NOTE);
+      }
     });
   }, [org, invoice?.org_id]);
 
@@ -49,9 +69,6 @@ export function A4InvoicePrintLayout({
   const phone = orgRec?.phone || '01100957180';
   const address = orgRec?.address || 'أبيس 3 / 11';
   const taxNumber = orgRec?.tax_number || '123-456-789';
-  const footerNote =
-    orgRec?.invoice_footer ||
-    'نرجو من عملائنا الكرام مراجعة البضاعة والفاتورة خلال اسبوع من تاريخ الاستلام وتطبقا بالنواقص ولسنا مسئولين عن اى شئ بعد ذلك - لا يوجد لدينا مرتجع للبطارية وأدوات الكهرباء\n📲 01100957180 خط طحيمر | 📍 أبيس 3 / 11';
 
   return (
     <div className="hidden print:block print:fixed print:inset-0 print:z-[99999] print:bg-white print:p-0 print:m-0" dir="rtl">
