@@ -71,12 +71,38 @@ export class SettingsRepository {
  });
  }
 
- /**
- * Get organization branches
- */
- public static async getBranches(orgId: string): Promise<Branch[]> {
- return await db.branches.where('org_id').equals(orgId).toArray();
- }
+  /**
+   * Get organization branches (reconciled with cloud)
+   */
+  public static async getBranches(orgId: string): Promise<Branch[]> {
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      try {
+        const { data: cloudBranches } = await supabase
+          .from('branches')
+          .select('*')
+          .eq('org_id', orgId);
+
+        if (Array.isArray(cloudBranches)) {
+          const cloudIds = new Set(cloudBranches.map((b) => b.id));
+          const localBranches = await db.branches.where('org_id').equals(orgId).toArray();
+
+          for (const lb of localBranches) {
+            if (!cloudIds.has(lb.id) && lb.sync_status !== 'pending') {
+              await db.branches.delete(lb.id);
+            }
+          }
+
+          if (cloudBranches.length > 0) {
+            await db.branches.bulkPut(cloudBranches.map((cb) => ({ ...cb, sync_status: 'synced' })));
+          }
+        }
+      } catch (e) {
+        console.warn('[SettingsRepository] Cloud branches sync notice:', e);
+      }
+    }
+
+    return await db.branches.where('org_id').equals(orgId).toArray();
+  }
 
  /**
  * Create a new branch with an auto-generated code
