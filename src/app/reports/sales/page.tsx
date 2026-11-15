@@ -125,15 +125,18 @@ export default function SalesReportPage() {
  const stats = useMemo(() => {
  let total = 0;
  let cash = 0;
+ let card = 0;
  let credit = 0;
  for (const inv of filteredInvoices) {
- total += inv.total;
- cash += inv.cash_amount;
- credit += inv.remaining_amount;
+ total += Number(inv.total) || 0;
+ cash += Number(inv.cash_amount) || 0;
+ card += Number(inv.card_amount) || 0;
+ credit += Number(inv.remaining_amount) || 0;
  }
  return {
  totalSales: total,
  cashCollection: cash,
+ cardCollection: card,
  creditSales: credit,
  invoiceCount: filteredInvoices.length
  };
@@ -160,7 +163,7 @@ export default function SalesReportPage() {
  <div className="space-y-6 text-right"dir="rtl">
 
  {/* ==================== SUMMARY CARDS — Linear Style ==================== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <KpiCard
             label="إجمالي المبيعات"
             value={formatNumber(stats.totalSales)}
@@ -169,11 +172,18 @@ export default function SalesReportPage() {
             icon={<ShoppingCart className="w-5 h-5" />}
           />
           <KpiCard
-            label="التحصيل النقدي"
+            label="التحصيل النقدي (كاش)"
             value={formatNumber(stats.cashCollection)}
             unit="ج.م"
             variant="emerald"
             icon={<Wallet className="w-5 h-5" />}
+          />
+          <KpiCard
+            label="تحصيل الشبكة (فيزا)"
+            value={formatNumber(stats.cardCollection)}
+            unit="ج.م"
+            variant="indigo"
+            icon={<CreditCard className="w-5 h-5" />}
           />
           <KpiCard
             label="المبيعات الآجلة"
