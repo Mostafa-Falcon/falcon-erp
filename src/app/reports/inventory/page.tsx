@@ -83,7 +83,23 @@ function InventoryReportContent() {
         db.warehouses.where('org_id').equals(orgId).toArray(),
         db.units.where('org_id').equals(orgId).toArray(),
       ]);
-      setTransactions(trans);
+      const validProdIds = new Set(prods.map((p) => p.id));
+      const cleanTrans = trans.filter((t) => validProdIds.has(t.product_id) && !(t.product_name && t.product_name.includes('تجربة')));
+
+      // Asynchronous cleanup of orphaned/deleted test transactions in local Dexie IndexedDB
+      db.inventory_transactions
+        .where('org_id')
+        .equals(orgId)
+        .filter((t) => !validProdIds.has(t.product_id) || (Boolean(t.product_name) && t.product_name!.includes('تجربة')))
+        .toArray()
+        .then((orphans) => {
+          if (orphans.length > 0) {
+            db.inventory_transactions.bulkDelete(orphans.map((o) => o.id)).catch(() => {});
+          }
+        })
+        .catch(() => {});
+
+      setTransactions(cleanTrans);
       setProducts(prods);
       setWarehouses(whs);
       const umap: Record<string, Unit> = {};
