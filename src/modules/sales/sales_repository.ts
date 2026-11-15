@@ -1393,7 +1393,7 @@ export class SalesRepository {
  productId: newIt.product_id,
  batchId: newIt.batch_id,
  transactionType:'sale',
- quantity: -newIt.quantity,
+ quantity: newIt.quantity,
  unitId: newIt.unit_id,
  conversionFactor: newIt.conversion_factor,
  unitCost: newIt.unit_cost,

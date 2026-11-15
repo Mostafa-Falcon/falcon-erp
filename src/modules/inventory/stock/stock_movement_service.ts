@@ -163,8 +163,20 @@ export class StockMovementService {
 
  const now = new Date().toISOString();
  const stockId =`${params.warehouseId}_${params.productId}`;
+
+ const isOutbound = [
+ 'sale',
+ 'purchase_return',
+ 'transfer_out',
+ 'adjustment_out',
+ 'damaged',
+ ].includes(params.transactionType);
+
+ const absQty = Math.abs(params.quantity);
+ const effectiveQuantity = isOutbound ? -absQty : absQty;
+
  const factor = params.conversionFactor > 0 ? params.conversionFactor : 1;
- const baseQuantity = factor > 1 ? params.quantity / factor : params.quantity * factor;
+ const baseQuantity = factor > 1 ? effectiveQuantity / factor : effectiveQuantity * factor;
 
  return await db.transaction(
       'rw',
@@ -268,18 +280,18 @@ export class StockMovementService {
  transaction_type: params.transactionType,
  reference_type: params.referenceType,
  reference_id: params.referenceId,
- quantity: params.quantity,
+ quantity: effectiveQuantity,
  unit_id: params.unitId,
  unit_conversion_factor: params.conversionFactor,
  base_quantity: baseQuantity,
  unit_cost: params.unitCost,
  // Valuation: entered amount = enteredQty x per-entered-unit cost.
  // (baseQty x unitCost would square the conversion factor.)
- total_cost: roundMoney(Math.abs(params.quantity * params.unitCost)),
+ total_cost: roundMoney(Math.abs(effectiveQuantity * params.unitCost)),
  balance_after: newBalance,
  product_name: product?.name,
  unit_name: unitName || undefined,
- level_quantity: params.quantity,
+ level_quantity: effectiveQuantity,
  batch_number:
  params.batchNumber?.trim() ||
  (movementBatchId ? (await db.product_batches.get(movementBatchId))?.batch_number : undefined),
