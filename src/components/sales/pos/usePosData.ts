@@ -205,68 +205,87 @@ export function usePosData() {
    }).catch(console.error);
  }
       if (currentBranch) {
- setBranchName(currentBranch.name);
- }
+        setBranchName(currentBranch.name);
+      }
 
- if (whs.length > 0) setWarehouseId(whs[0].id);
- if (activeTreasuries.length > 0) setTreasuryId(activeTreasuries.find((t) => t.is_default)?.id || activeTreasuries[0].id);
+      if (whs.length > 0) setWarehouseId(whs[0].id);
+      if (activeTreasuries.length > 0) setTreasuryId(activeTreasuries.find((t) => t.is_default)?.id || activeTreasuries[0].id);
 
- const defW = whs[0]?.id ||'';
- const stockMap: Record<string, number> = {};
- for (const l of levels) {
- if (l.warehouse_id === defW) stockMap[l.product_id] = l.quantity;
- }
- setStock(stockMap);
+      const activeWhIds = new Set(whs.map((w) => w.id));
+      const stockMap: Record<string, number> = {};
+      for (const l of levels) {
+        if (activeWhIds.size > 0 && !activeWhIds.has(l.warehouse_id)) continue;
+        const qty = typeof l.available_quantity === 'number' ? l.available_quantity : (l.quantity || 0);
+        stockMap[l.product_id] = (stockMap[l.product_id] || 0) + qty;
+      }
+      setStock(stockMap);
 
- const batchMap: Record<string, ProductBatch[]> = {};
- for (const b of bchs) {
- if (b.warehouse_id !== defW) continue;
- if (b.current_quantity <= 0) continue; // Filter out zero/exhausted batches
- (batchMap[b.product_id] = batchMap[b.product_id] || []).push(b);
- }
- // Sort batches by FEFO (First-Expired, First-Out)
- for (const pId in batchMap) {
- batchMap[pId].sort((a, b) => {
- if (!a.expiry_date) return 1;
- if (!b.expiry_date) return -1;
- return a.expiry_date.localeCompare(b.expiry_date);
- });
- }
- setBatches(batchMap);
+      const batchMap: Record<string, ProductBatch[]> = {};
+      for (const b of bchs) {
+        if (activeWhIds.size > 0 && !activeWhIds.has(b.warehouse_id)) continue;
+        if (b.current_quantity <= 0) continue;
+        (batchMap[b.product_id] = batchMap[b.product_id] || []).push(b);
+      }
+      // Sort batches by FEFO (First-Expired, First-Out)
+      for (const pId in batchMap) {
+        batchMap[pId].sort((a, b) => {
+          if (!a.expiry_date) return 1;
+          if (!b.expiry_date) return -1;
+          return a.expiry_date.localeCompare(b.expiry_date);
+        });
+      }
+      setBatches(batchMap);
 
- // Scale config
- try {
- const sc = await ScaleManager.getConfig(orgId);
- setScaleConfig(sc);
- } catch (scErr) {
- console.warn('Could not load scale config:', scErr);
- }
+      // Scale config
+      try {
+        const sc = await ScaleManager.getConfig(orgId);
+        setScaleConfig(sc);
+      } catch (scErr) {
+        console.warn('Could not load scale config:', scErr);
+      }
 
- // Check current open shift
- if (currentUser?.id) {
- const currentOpen = await SalesRepository.getCurrentOpenShift(currentUser.id, effectiveBranchId, orgId);
- if (currentOpen) {
- setActiveShift(currentOpen);
- } else {
- setActiveShift(null);
- }
- }
- } catch (err) {
- console.error('POS Load err:', err);
- toast.error('حدث خطأ أثناء تحميل بيانات نقطة البيع.');
- } finally {
- setIsLoading(false);
- }
- };
+      // Check current open shift
+      if (currentUser?.id) {
+        const currentOpen = await SalesRepository.getCurrentOpenShift(currentUser.id, effectiveBranchId, orgId);
+        if (currentOpen) {
+          setActiveShift(currentOpen);
+        } else {
+          setActiveShift(null);
+        }
+      }
+    } catch (err) {
+      console.error('POS Load err:', err);
+      toast.error('حدث خطأ أثناء تحميل بيانات نقطة البيع.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
- useEffect(() => {
-   loadData();
-   if (orgId) {
-     import('@/core/sync/realtime_sync_listener').then(({ realtimeSyncListener }) => {
-       realtimeSyncListener.start(orgId);
-     }).catch(() => {});
-   }
- }, [orgId, branchId]);
+  useEffect(() => {
+    loadData();
+
+    if (!orgId) return;
+
+    // Listen for local cloud data change events (opening stock, new product, pull reconcile)
+    const { CLOUD_DATA_CHANGED_EVENT } = require('@/core/sync/sync_events');
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onCloudDataChanged = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        loadData();
+      }, 200);
+    };
+
+    window.addEventListener(CLOUD_DATA_CHANGED_EVENT, onCloudDataChanged);
+
+    import('@/core/sync/realtime_sync_listener').then(({ realtimeSyncListener }) => {
+      realtimeSyncListener.start(orgId);
+    }).catch(() => {});
+
+    return () => {
+      window.removeEventListener(CLOUD_DATA_CHANGED_EVENT, onCloudDataChanged);
+    };
+  }, [orgId, branchId]);
 
  return {
  currentUser,
