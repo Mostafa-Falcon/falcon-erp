@@ -74,15 +74,20 @@ export function useMonitoringDashboard() {
  try {
  const { db } = await import('@/core/db/app_database');
 
- // 1. Fetch Real Invoices, Returns, Expenses, and Treasuries
- const [allSales, allPurchases, allSalesReturns, allPurchReturns, allExpenses, allTreasuries] = await Promise.all([
+ // 1. Fetch Real Invoices, Returns, Expenses, Treasuries, and Sales Items
+ const [allSalesRaw, allPurchasesRaw, allSalesReturns, allPurchReturns, allExpenses, allTreasuries, allSalesItems] = await Promise.all([
  db.sales_invoices.where('org_id').equals(orgId).toArray(),
  db.purchase_invoices.where('org_id').equals(orgId).toArray(),
  db.sales_returns.where('org_id').equals(orgId).toArray(),
  db.purchase_returns.where('org_id').equals(orgId).toArray(),
  db.expenses.where('org_id').equals(orgId).toArray(),
  db.treasuries.where('org_id').equals(orgId).toArray(),
+ db.sales_invoice_items.toArray(),
  ]);
+
+ // Exclude cancelled / voided invoices for accurate financial reporting
+ const allSales = allSalesRaw.filter((s) => s.status !== 'cancelled' && s.status !== 'void');
+ const allPurchases = allPurchasesRaw.filter((p) => p.status !== 'cancelled' && p.status !== 'void');
 
  // Filter by Date Range
  const filteredSales = allSales.filter((s) => checkDateMatch(s.invoice_date || s.created_at));
@@ -100,9 +105,14 @@ export function useMonitoringDashboard() {
  const expenseTotal = filteredExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
  const cashBalance = allTreasuries.reduce((acc, t) => acc + (Number(t.current_balance) || 0), 0);
 
+ const validSalesIds = new Set(filteredSales.map((s) => s.id));
+ const cogsTotal = allSalesItems
+ .filter((it) => validSalesIds.has(it.invoice_id))
+ .reduce((acc, it) => acc + (Number(it.quantity) * (Number(it.unit_cost) || 0)), 0);
+
  const netSales = salesTotal - salesReturnTotal;
- const netPurchases = purchaseTotal - purchReturnTotal;
- const realNetProfit = netSales - netPurchases - expenseTotal;
+ const grossProfit = netSales - cogsTotal;
+ const realNetProfit = grossProfit - expenseTotal;
 
  // 2. Real Daily Trend Data (Last 30 Days)
  const dailyPoints: DailySalesPoint[] = [];
