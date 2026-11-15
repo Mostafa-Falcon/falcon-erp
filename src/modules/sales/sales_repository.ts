@@ -216,7 +216,9 @@ export class SalesRepository {
       await db.cashier_shifts.put(updatedShift);
       await SyncQueueManager.enqueue('cashier_shifts', shiftId, 'update', updatedShift);
 
-      if (targetTreasuryId && totalShiftAmount > 0) {
+      // Only add to destination treasury if transferring cash to a DIFFERENT treasury upon closing.
+      // (Sales invoices already add cash to shift.treasury_id in real-time during POS transactions).
+      if (targetTreasuryId && targetTreasuryId !== shift.treasury_id && totalShiftAmount > 0) {
         const destTreasury = await db.treasuries.get(targetTreasuryId);
         if (destTreasury) {
           const newBalance = (destTreasury.current_balance || 0) + totalShiftAmount;
