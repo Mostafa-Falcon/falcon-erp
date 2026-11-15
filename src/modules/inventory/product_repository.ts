@@ -87,6 +87,10 @@ export class ProductRepository {
  return CoreProductRepo.deleteProduct(id);
  }
 
+ public static async permanentlyDeleteProduct(id: string): Promise<void> {
+ return CoreProductRepo.permanentlyDeleteProduct(id);
+ }
+
  public static async getAllWarehouses(orgId: string): Promise<Warehouse[]> {
  return CoreProductRepo.getAllWarehouses(orgId);
  }

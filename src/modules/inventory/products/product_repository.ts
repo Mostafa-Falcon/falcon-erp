@@ -265,6 +265,36 @@ export class ProductRepository {
  }
 
  /**
+ * Permanently delete a product from local database (IndexedDB) and Supabase cloud.
+ * Deletes associated product units, batches, stock levels, and enqueues a sync operation.
+ */
+ public static async permanentlyDeleteProduct(id: string): Promise<void> {
+ const existing = await db.products.get(id);
+ if (!existing) return;
+
+ await db.transaction('rw', [db.products, db.product_units, db.product_batches, db.stock_levels, db.sync_queue], async () => {
+ await db.products.delete(id);
+ await db.product_units.where('product_id').equals(id).delete();
+ await db.product_batches.where('product_id').equals(id).delete();
+ await db.stock_levels.where('product_id').equals(id).delete();
+
+ await SyncQueueManager.enqueue('products', id,'delete', { id });
+ });
+
+ try {
+ const { supabase } = await import('@/core/supabase/supabase_client');
+ const { error } = await supabase.from('products').delete().eq('id', id);
+ if (error) {
+ console.warn('[ProductRepository] Direct Supabase delete error (SyncQueue will handle):', error.message);
+ }
+ } catch (err) {
+ console.warn('[ProductRepository] Direct Supabase delete exception (SyncQueue will handle):', err);
+ }
+
+ syncCoordinator.triggerSync().catch(console.error);
+ }
+
+ /**
  * Get all active warehouses for organization
  */
  public static async getAllWarehouses(orgId: string): Promise<Warehouse[]> {
