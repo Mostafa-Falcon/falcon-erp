@@ -9,30 +9,10 @@ export class ProductRepository {
  * Get all active products for organization, excluding legacy dummy/test items
  */
  public static async getAll(orgId: string): Promise<Product[]> {
- const isDummyName = (name: string) =>
- /^([0-9]+(\.[0-9]+)?|0[0-9]+|تجرب[ةه].*|test.*)$/i.test(name?.trim() ||'');
-
- // Asynchronous purge of any legacy dummy items from local Dexie
- db.products
- .where('org_id')
- .equals(orgId)
- .and((item) => isDummyName(item.name))
- .toArray()
- .then((dummies) => {
- if (dummies.length > 0) {
- const ids = dummies.map((d) => d.id);
- db.products.bulkDelete(ids);
- db.product_units.where('product_id').anyOf(ids).delete();
- db.stock_levels.where('product_id').anyOf(ids).delete();
- db.product_batches.where('product_id').anyOf(ids).delete();
- }
- })
- .catch(() => {});
-
  return await db.products
  .where('org_id')
  .equals(orgId)
- .and((item) => item.is_active && !isDummyName(item.name))
+ .and((item) => item.is_active)
  .toArray();
  }
 

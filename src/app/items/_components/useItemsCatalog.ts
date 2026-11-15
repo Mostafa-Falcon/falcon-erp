@@ -102,11 +102,7 @@ export function useItemsCatalog() {
  setIsPharmacy(true);
  }
 
- const isDummyName = (name: string) =>
- /^([0-9]+(\.[0-9]+)?|0[0-9]+|تجرب[ةه].*|test.*)$/i.test(name?.trim() ||'');
-
- const allProds = [...prods, ...inactives.filter((p) => !prods.some((x) => x.id === p.id))]
- .filter((p) => !isDummyName(p.name));
+ const allProds = [...prods, ...inactives.filter((p) => !prods.some((x) => x.id === p.id))];
 
  const unitMap: Record<string, Unit> = {};
  for (const u of unts) unitMap[u.id] = u;
