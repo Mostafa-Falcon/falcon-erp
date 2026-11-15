@@ -127,12 +127,13 @@ export function PosSupplierPaymentModal({
  if (!q) return eligibleContacts.slice(0, 15);
 
  return eligibleContacts
- .filter(
- (c) =>
- c.name.toLowerCase().includes(q) ||
- (c.phone && c.phone.includes(q)) ||
- (c.code && c.code.toLowerCase().includes(q))
- )
+ .filter((c) => {
+ if (!c) return false;
+ const name = (c.name || '').toLowerCase();
+ const phone = c.phone || '';
+ const code = (c.code || '').toLowerCase();
+ return name.includes(q) || phone.includes(q) || code.includes(q);
+ })
  .slice(0, 15);
  }, [eligibleContacts, searchQuery]);
 

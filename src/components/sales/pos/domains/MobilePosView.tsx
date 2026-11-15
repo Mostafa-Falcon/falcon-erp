@@ -184,7 +184,7 @@ export function MobilePosView({
         }
       }
 
-      const prodBySku = products.find((p) => p.sku.toLowerCase() === clean.toLowerCase());
+      const prodBySku = products.find((p) => p && p.sku && p.sku.toLowerCase() === clean.toLowerCase());
       if (prodBySku) {
         onAddToCart(prodBySku, {
           serialNumber: clean,
@@ -203,9 +203,12 @@ export function MobilePosView({
   };
 
   const filteredProducts = products.filter((p) => {
+    if (!p) return false;
     if (!searchProduct) return true;
     const q = searchProduct.toLowerCase();
-    return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+    const nameMatch = (p.name || '').toLowerCase().includes(q);
+    const skuMatch = (p.sku || '').toLowerCase().includes(q);
+    return nameMatch || skuMatch;
   });
 
   return (

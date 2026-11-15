@@ -111,12 +111,14 @@ export function usePosCart({
  const q = searchQuery.trim().toLowerCase();
  if (!q) return [];
  return products
- .filter(
- (p) =>
- p.name.toLowerCase().includes(q) ||
- p.sku.toLowerCase().includes(q)
- )
- .slice(0, 8);
+ .filter((p) => {
+ if (!p) return false;
+ const name = (p.name || '').toLowerCase();
+ const sku = (p.sku || '').toLowerCase();
+ const scientific = ((p as any).scientific_name || '').toLowerCase();
+ return name.includes(q) || sku.includes(q) || scientific.includes(q);
+ })
+ .slice(0, 15);
  }, [products, searchQuery]);
 
   // Add Product to Cart
@@ -325,9 +327,10 @@ export function usePosCart({
  const rawPluStr = parsedScale.rawPlu ||'';
  const scaleProduct = products.find(
  (p) =>
- (p.scale_code && p.scale_code.trim() === pluStr) ||
- p.sku.toLowerCase() === pluStr.toLowerCase() ||
- (rawPluStr && p.sku === rawPluStr)
+ p &&
+ ((p.scale_code && p.scale_code.trim() === pluStr) ||
+ (p.sku && p.sku.toLowerCase() === pluStr.toLowerCase()) ||
+ (rawPluStr && p.sku === rawPluStr))
  );
 
  if (scaleProduct) {
@@ -347,6 +350,7 @@ export function usePosCart({
  }
 
  // 1. Check if scanned barcode matches an IMEI / Serial number in product_serials
+ try {
  const serialMatch = await db.product_serials
  .where('serial_number')
  .equals(q)
@@ -354,17 +358,20 @@ export function usePosCart({
  .first();
 
  if (serialMatch) {
- const serialProd = products.find((p) => p.id === serialMatch.product_id);
+ const serialProd = products.find((p) => p && p.id === serialMatch.product_id);
  if (serialProd) {
  addToCart(serialProd, { serialNumber: serialMatch.serial_number });
  toast.success(`📱 تم إيجاد الجهاز بالـ IMEI: «${serialProd.name}» (سيريال: ${serialMatch.serial_number})`);
  return;
  }
  }
+ } catch {
+ // Ignore serial DB query errors gracefully in offline mode
+ }
 
  // Exact barcode or SKU match
  const exact = products.find(
- (p) => p.sku.toLowerCase() === q.toLowerCase()
+ (p) => p && p.sku && p.sku.toLowerCase() === q.toLowerCase()
  );
 
  if (exact) {

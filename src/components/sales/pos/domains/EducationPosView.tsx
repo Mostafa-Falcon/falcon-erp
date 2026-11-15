@@ -93,11 +93,13 @@ export function EducationPosView({
   // Filter products by search and category
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      if (!p) return false;
+      const q = searchQuery.trim().toLowerCase();
       const matchSearch =
-        !searchQuery.trim() ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.scientific_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.sku || '').toLowerCase().includes(q) ||
+        (p.scientific_name || '').toLowerCase().includes(q);
 
       const matchCat =
         selectedCategory === 'all' || p.product_type === selectedCategory;

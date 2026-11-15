@@ -1288,7 +1288,7 @@ return (
  onScanCode={(code) => {
  setSearchQuery(code);
  const clean = code.trim().toLowerCase();
- const match = products.find((p) => p.sku.toLowerCase() === clean || p.scale_code === clean);
+ const match = products.find((p) => p && ((p.sku && p.sku.toLowerCase() === clean) || p.scale_code === clean));
  if (match) {
  addToCart(match);
  toast.success(`📱 مسح باركود الكاميرا: «${match.name}»`);

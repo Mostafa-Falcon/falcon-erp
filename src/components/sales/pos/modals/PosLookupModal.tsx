@@ -24,11 +24,12 @@ export function PosLookupModal({
  const q = filterQuery.trim().toLowerCase();
  if (!q) return products.slice(0, 50);
  return products
- .filter(
- (p) =>
- p.name.toLowerCase().includes(q) ||
- p.sku.toLowerCase().includes(q)
- )
+ .filter((p) => {
+ if (!p) return false;
+ const name = (p.name || '').toLowerCase();
+ const sku = (p.sku || '').toLowerCase();
+ return name.includes(q) || sku.includes(q);
+ })
  .slice(0, 50);
  }, [products, filterQuery]);
 

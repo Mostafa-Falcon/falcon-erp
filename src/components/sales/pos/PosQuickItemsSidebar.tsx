@@ -79,12 +79,13 @@ export function PosQuickItemsSidebar({
  const q = searchQuery.trim().toLowerCase();
  if (!q) return pool;
 
- return pool.filter(
- (p) =>
- p.name.toLowerCase().includes(q) ||
- p.sku.toLowerCase().includes(q) ||
- (p.scientific_name && p.scientific_name.toLowerCase().includes(q))
- );
+ return pool.filter((p) => {
+ if (!p) return false;
+ const name = (p.name || '').toLowerCase();
+ const sku = (p.sku || '').toLowerCase();
+ const sci = (p.scientific_name || '').toLowerCase();
+ return name.includes(q) || sku.includes(q) || sci.includes(q);
+ });
  }, [activeTab, quickItems, products, searchQuery]);
 
  return (

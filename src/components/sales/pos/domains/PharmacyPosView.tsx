@@ -96,9 +96,10 @@ export function PharmacyPosView({
     if (!q) return [];
     return products
       .filter((p) => {
-        const nameMatch = p.name.toLowerCase().includes(q);
-        const skuMatch = p.sku.toLowerCase().includes(q);
-        const activeIngredientMatch = (p as any).active_ingredient?.toLowerCase().includes(q);
+        if (!p) return false;
+        const nameMatch = (p.name || '').toLowerCase().includes(q);
+        const skuMatch = (p.sku || '').toLowerCase().includes(q);
+        const activeIngredientMatch = ((p as any).active_ingredient || '').toLowerCase().includes(q);
         return nameMatch || skuMatch || activeIngredientMatch;
       })
       .slice(0, 15);

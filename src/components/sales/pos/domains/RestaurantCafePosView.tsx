@@ -185,10 +185,13 @@ export function RestaurantCafePosView({
   // Products Categories & Filtering
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      if (!p) return false;
       if (selectedCategory !== 'all' && p.category_id !== selectedCategory) return false;
       if (searchItem) {
         const q = searchItem.toLowerCase();
-        return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+        const nameMatch = (p.name || '').toLowerCase().includes(q);
+        const skuMatch = (p.sku || '').toLowerCase().includes(q);
+        return nameMatch || skuMatch;
       }
       return true;
     });
