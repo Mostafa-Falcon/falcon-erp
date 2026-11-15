@@ -38,7 +38,7 @@ function CategoriesContent() {
  db.product_categories.where('org_id').equals(orgId).toArray(),
  db.products.where('org_id').equals(orgId).toArray(),
  ]);
- setCategories(catList.sort((a, b) => a.name.localeCompare(b.name,'ar')));
+ setCategories(catList.sort((a, b) => (a?.name || '').localeCompare(b?.name || '','ar')));
  setProducts(prodList);
  } catch (err) {
  console.error('Error loading categories:', err);

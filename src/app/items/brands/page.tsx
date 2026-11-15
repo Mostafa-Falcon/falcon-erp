@@ -37,7 +37,7 @@ function BrandsContent() {
  db.product_brands.where('org_id').equals(orgId).toArray(),
  db.products.where('org_id').equals(orgId).toArray(),
  ]);
- setBrands(brandList.sort((a, b) => a.name.localeCompare(b.name,'ar')));
+ setBrands(brandList.sort((a, b) => (a?.name || '').localeCompare(b?.name || '','ar')));
  setProducts(prodList);
  } catch (err) {
  console.error('Error loading brands:', err);

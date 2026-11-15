@@ -123,7 +123,7 @@ export function useItemsCatalog() {
  (batchMap[b.product_id] = batchMap[b.product_id] || []).push(b);
  }
 
- setProducts(allProds.sort((a, b) => a.name.localeCompare(b.name,'ar')));
+ setProducts(allProds.sort((a, b) => (a?.name || '').localeCompare(b?.name || '','ar')));
  setCategories(cats.filter((c) => c.is_active));
  setBrands(brs);
  setUnits(unts);
@@ -368,9 +368,11 @@ export function useItemsCatalog() {
 
  switch (sortField) {
  case'name':
+ const nameA = a?.name || '';
+ const nameB = b?.name || '';
  return sortDirection ==='asc'
- ? a.name.localeCompare(b.name,'ar')
- : b.name.localeCompare(a.name,'ar');
+ ? nameA.localeCompare(nameB,'ar')
+ : nameB.localeCompare(nameA,'ar');
  case'name_en':
  return sortDirection ==='asc'
  ? (a.name_en ||'').localeCompare(b.name_en ||'','en')

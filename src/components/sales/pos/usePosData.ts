@@ -229,9 +229,9 @@ export function usePosData() {
       // Sort batches by FEFO (First-Expired, First-Out)
       for (const pId in batchMap) {
         batchMap[pId].sort((a, b) => {
-          if (!a.expiry_date) return 1;
-          if (!b.expiry_date) return -1;
-          return a.expiry_date.localeCompare(b.expiry_date);
+          if (!a?.expiry_date) return 1;
+          if (!b?.expiry_date) return -1;
+          return (a.expiry_date || '').localeCompare(b.expiry_date || '');
         });
       }
       setBatches(batchMap);

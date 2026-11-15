@@ -48,9 +48,9 @@ function ReferencesContent() {
  ProductRepository.getAllUnits(orgId),
  ProductRepository.getAll(orgId),
  ]);
- setCategories(cats.sort((a, b) => a.name.localeCompare(b.name,'ar')));
- setBrands(brs.sort((a, b) => a.name.localeCompare(b.name,'ar')));
- setUnits(unts.sort((a, b) => a.name.localeCompare(b.name,'ar')));
+ setCategories(cats.sort((a, b) => (a?.name || '').localeCompare(b?.name || '','ar')));
+ setBrands(brs.sort((a, b) => (a?.name || '').localeCompare(b?.name || '','ar')));
+ setUnits(unts.sort((a, b) => (a?.name || '').localeCompare(b?.name || '','ar')));
  setProducts(prods);
  } catch (err) {
  console.error('Load references error:', err);
