@@ -161,12 +161,19 @@ export class ProductRepository {
  }
  }
 
- for (const [wId, totalQty] of warehouseTotals.entries()) {
- const stockId =`${wId}_${productId}`;
+ const warehouses = await db.warehouses
+ .where('org_id')
+ .equals(productData.org_id)
+ .and((w) => w.is_active)
+ .toArray();
+
+ for (const w of warehouses) {
+ const totalQty = warehouseTotals.get(w.id) || 0;
+ const stockId =`${w.id}_${productId}`;
  const stockLevel: StockLevel = {
  id: stockId,
  org_id: productData.org_id,
- warehouse_id: wId,
+ warehouse_id: w.id,
  product_id: productId,
  quantity: totalQty,
  reserved_quantity: 0,
