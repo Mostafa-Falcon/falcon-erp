@@ -85,9 +85,9 @@ export function useMonitoringDashboard() {
  db.sales_invoice_items.toArray(),
  ]);
 
- // Exclude cancelled / voided invoices for accurate financial reporting
- const allSales = allSalesRaw.filter((s) => s.status !== 'cancelled' && s.status !== 'void');
- const allPurchases = allPurchasesRaw.filter((p) => p.status !== 'cancelled' && p.status !== 'void');
+ // Exclude cancelled / non-completed invoices for accurate financial reporting
+ const allSales = allSalesRaw.filter((s) => s.status === 'completed');
+ const allPurchases = allPurchasesRaw.filter((p) => p.status === 'completed');
 
  // Filter by Date Range
  const filteredSales = allSales.filter((s) => checkDateMatch(s.invoice_date || s.created_at));
