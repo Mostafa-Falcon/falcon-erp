@@ -29,6 +29,14 @@ export default function ErrorBoundary({
           <p className="text-xs text-slate-400">
             يمكنك إعادة المحاولة لمتابعة العمل أوفلاين أو العودة للرئيسية.
           </p>
+          {error?.message ? (
+            <p
+              dir="ltr"
+              className="mt-2 max-w-full break-words rounded-lg bg-slate-900/60 border border-slate-700 px-3 py-1.5 font-mono text-[10px] text-rose-300/90 text-left"
+            >
+              {error.message}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2 w-full pt-2">

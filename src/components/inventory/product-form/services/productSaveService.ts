@@ -12,7 +12,8 @@ import type {
  FormBatchEntry,
  ItemTypeMode,
 } from'../types';
-import { generateSku, calculatePriceDetails } from'../utils';
+import { calculatePriceDetails } from'../utils';
+import { DocumentNumberService } from'@/core/sync/document_number_service';
 
 export interface SaveProductPayload {
  orgId: string;
@@ -181,9 +182,13 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  ? (weightDiscount.trim() ? weightDiscountType : undefined)
  : (unitLevels[0]?.discountValue?.trim() ? unitLevels[0].discountType : undefined);
 
+ // Serial SKU/barcode: org-scoped atomic sequence (online) or a marked offline
+ // temp serial — never the old random "فص-XXXX" format.
+ const resolvedSku = sku.trim() || (await DocumentNumberService.nextProductSku(orgId));
+
  const baseProductData: Omit<Product,'id'|'created_at'|'updated_at'|'sync_status'> = {
  org_id: orgId,
- sku: sku.trim() || generateSku(name),
+ sku: resolvedSku,
  name: name.trim(),
  name_en: nameEn.trim() ? nameEn.trim() : undefined,
  scientific_name: scientificName.trim() ? scientificName.trim() : undefined,

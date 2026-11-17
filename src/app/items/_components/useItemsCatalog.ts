@@ -296,6 +296,7 @@ export function useItemsCatalog() {
  const q = searchQuery.trim().toLowerCase();
 
  let list = products.filter((p) => {
+  if (!p) return false;
  // Activity filter
  if (!p.is_active && !showInactive) return false;
  if (showInactive && p.is_active) return false;
@@ -328,11 +329,13 @@ export function useItemsCatalog() {
 
  // Search query
  if (q) {
- const matchName = p.name.toLowerCase().includes(q);
- const matchSku = p.sku.toLowerCase().includes(q);
- const matchEn = p.name_en?.toLowerCase().includes(q);
- const matchAlt = p.alternate_barcodes?.some((b) => b.toLowerCase().includes(q));
- if (!matchName && !matchSku && !matchEn && !matchAlt) return false;
+  const safeLower = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v)).toLowerCase();
+  const matchName = safeLower(p.name).includes(q);
+  const matchSku = safeLower(p.sku).includes(q);
+  const matchEn = p.name_en != null ? safeLower(p.name_en).includes(q) : false;
+  const altBarcodes = Array.isArray(p.alternate_barcodes) ? p.alternate_barcodes : [];
+  const matchAlt = altBarcodes.some((b) => safeLower(b).includes(q));
+  if (!matchName && !matchSku && !matchEn && !matchAlt) return false;
  }
 
  // Quick filter tabs
@@ -375,8 +378,8 @@ export function useItemsCatalog() {
  : nameB.localeCompare(nameA,'ar');
  case'name_en':
  return sortDirection ==='asc'
- ? (a.name_en ||'').localeCompare(b.name_en ||'','en')
- : (b.name_en ||'').localeCompare(a.name_en ||'','en');
+ ? String(a.name_en ?? '').localeCompare(String(b.name_en ?? ''),'en')
+ : String(b.name_en ?? '').localeCompare(String(a.name_en ?? ''),'en');
  case'purchase_price':
  valA = a.purchase_price || 0;
  valB = b.purchase_price || 0;

@@ -1,7 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Product, ProductUnit, Unit } from '@/types';
 import type { UnitLevelItem } from '../types';
+
+// null-safe number -> string for form inputs (String(null) would render the literal "null" into number inputs)
+const numToStr = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
 
 interface UseProductPricingProps {
     initial?: Product;
@@ -22,12 +25,8 @@ export function useProductPricing({
     const [unitLevels, setUnitLevels] = useState<UnitLevelItem[]>(() => {
         if (initial) {
             const baseUnitName = units.find((u) => u.id === initial.base_unit_id)?.name || '';
-            const initialPurchase = initial.raw_purchase_price !== undefined
-                ? String(initial.raw_purchase_price)
-                : (initial.purchase_price !== undefined ? String(initial.purchase_price) : '');
-            const initialDiscount = initial.purchase_discount_value !== undefined
-                ? String(initial.purchase_discount_value)
-                : '';
+            const initialPurchase = numToStr(initial.raw_purchase_price ?? initial.purchase_price);
+            const initialDiscount = numToStr(initial.purchase_discount_value);
             const initialDiscType = initial.purchase_discount_type || 'percent';
 
             const level1: UnitLevelItem = {
@@ -40,9 +39,9 @@ export function useProductPricing({
                 discountValue: initialDiscount,
                 discountType: initialDiscType,
                 dualPricing: initial.has_dual_pricing ?? !!initial.old_sale_price,
-                salePrice: initial.sale_price !== undefined ? String(initial.sale_price) : '',
-                oldSalePrice: initial.old_sale_price !== undefined ? String(initial.old_sale_price) : '',
-                newSalePrice: initial.sale_price !== undefined ? String(initial.sale_price) : '',
+                salePrice: numToStr(initial.sale_price),
+                oldSalePrice: numToStr(initial.old_sale_price),
+                newSalePrice: numToStr(initial.sale_price),
             };
 
             if (initialUnits && initialUnits.length > 0) {
@@ -55,17 +54,13 @@ export function useProductPricing({
                         conversionFactor: String(u.conversion_factor || ''),
                         openingStock: '',
                         allowSale: u.is_default_sale ?? true,
-                        purchasePrice: u.raw_purchase_price !== undefined
-                            ? String(u.raw_purchase_price)
-                            : (u.purchase_price !== undefined ? String(u.purchase_price) : ''),
-                        discountValue: u.purchase_discount_value !== undefined
-                            ? String(u.purchase_discount_value)
-                            : '',
+                        purchasePrice: numToStr(u.raw_purchase_price ?? u.purchase_price),
+                        discountValue: numToStr(u.purchase_discount_value),
                         discountType: (u.purchase_discount_type || 'percent') as 'percent' | 'amount',
                         dualPricing: u.has_dual_pricing ?? !!u.old_sale_price,
-                        salePrice: u.sale_price !== undefined ? String(u.sale_price) : '',
-                        oldSalePrice: u.old_sale_price !== undefined ? String(u.old_sale_price) : '',
-                        newSalePrice: u.sale_price !== undefined ? String(u.sale_price) : '',
+                        salePrice: numToStr(u.sale_price),
+                        oldSalePrice: numToStr(u.old_sale_price),
+                        newSalePrice: numToStr(u.sale_price),
                     })),
                 ];
             }
@@ -96,24 +91,22 @@ export function useProductPricing({
     const [scaleCode, setScaleCode] = useState(initial?.scale_code || '');
     const [weightOpeningStock, setWeightOpeningStock] = useState('');
     const [weightPurchasePrice, setWeightPurchasePrice] = useState(
-        initial?.raw_purchase_price !== undefined
-            ? String(initial.raw_purchase_price)
-            : (initial?.purchase_price !== undefined ? String(initial.purchase_price) : '')
+        numToStr(initial?.raw_purchase_price ?? initial?.purchase_price)
     );
     const [weightDiscount, setWeightDiscount] = useState(
-        initial?.purchase_discount_value !== undefined ? String(initial.purchase_discount_value) : ''
+        numToStr(initial?.purchase_discount_value)
     );
     const [weightDiscountType, setWeightDiscountType] = useState<'percent' | 'amount'>(
         initial?.purchase_discount_type || 'percent'
     );
     const [weightSalePrice, setWeightSalePrice] = useState(
-        initial?.sale_price !== undefined ? String(initial.sale_price) : ''
+        numToStr(initial?.sale_price)
     );
     const [weightOldSalePrice, setWeightOldSalePrice] = useState(
-        initial?.old_sale_price !== undefined ? String(initial.old_sale_price) : ''
+        numToStr(initial?.old_sale_price)
     );
     const [weightNewSalePrice, setWeightNewSalePrice] = useState(
-        initial?.sale_price !== undefined ? String(initial.sale_price) : ''
+        numToStr(initial?.sale_price)
     );
     const [weightDualPricing, setWeightDualPricing] = useState(
         initial?.has_dual_pricing ?? !!initial?.old_sale_price

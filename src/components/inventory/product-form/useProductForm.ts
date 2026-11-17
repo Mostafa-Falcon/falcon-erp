@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { db } from '@/core/db/app_database';
 import { ProductRepository } from '@/modules/inventory/product_repository';
@@ -14,6 +14,9 @@ import { useProductLookups } from './hooks/useProductLookups';
 import { useProductPricing } from './hooks/useProductPricing';
 import { useProductBatches } from './hooks/useProductBatches';
 import { saveProductData } from './services/productSaveService';
+
+// null-safe number -> string for form inputs (String(null) would render the literal "null" into number inputs)
+const numToStr = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
 
 export function useProductForm({
     orgId,
@@ -273,27 +276,21 @@ export function useProductForm({
 
         // 5. بيانات تسعير الوزن
         setScaleCode(initial.scale_code || '');
-        const wPurchase = initial.raw_purchase_price !== undefined
-            ? String(initial.raw_purchase_price)
-            : (initial.purchase_price !== undefined ? String(initial.purchase_price) : '');
-        const wDisc = initial.purchase_discount_value !== undefined ? String(initial.purchase_discount_value) : '';
+        const wPurchase = numToStr(initial.raw_purchase_price ?? initial.purchase_price);
+        const wDisc = numToStr(initial.purchase_discount_value);
         const wDiscType = initial.purchase_discount_type || 'percent';
 
         setWeightPurchasePrice(wPurchase);
         setWeightDiscount(wDisc);
         setWeightDiscountType(wDiscType);
-        setWeightSalePrice(initial.sale_price !== undefined ? String(initial.sale_price) : '');
-        setWeightOldSalePrice(initial.old_sale_price !== undefined ? String(initial.old_sale_price) : '');
-        setWeightNewSalePrice(initial.sale_price !== undefined ? String(initial.sale_price) : '');
+        setWeightSalePrice(numToStr(initial.sale_price));
+        setWeightOldSalePrice(numToStr(initial.old_sale_price));
+        setWeightNewSalePrice(numToStr(initial.sale_price));
         setWeightDualPricing(initial.has_dual_pricing ?? !!initial.old_sale_price);
 
         // 6. بيانات وحدات القطع (الوحدة الأساسية والمستويات الفرعية) الفعلية المُدخلة من صاحب المنشأة
-        const initialPurchase = initial.raw_purchase_price !== undefined
-            ? String(initial.raw_purchase_price)
-            : (initial.purchase_price !== undefined ? String(initial.purchase_price) : '');
-        const initialDiscount = initial.purchase_discount_value !== undefined
-            ? String(initial.purchase_discount_value)
-            : '';
+        const initialPurchase = numToStr(initial.raw_purchase_price ?? initial.purchase_price);
+        const initialDiscount = numToStr(initial.purchase_discount_value);
         const initialDiscType = initial.purchase_discount_type || 'percent';
 
         const sortedInitialUnits = [...(initialUnits || [])].sort(
@@ -317,9 +314,9 @@ export function useProductForm({
                 discountValue: initialDiscount,
                 discountType: initialDiscType,
                 dualPricing: initial.has_dual_pricing ?? !!initial.old_sale_price,
-                salePrice: initial.sale_price !== undefined ? String(initial.sale_price) : '',
-                oldSalePrice: initial.old_sale_price !== undefined ? String(initial.old_sale_price) : '',
-                newSalePrice: initial.sale_price !== undefined ? String(initial.sale_price) : '',
+                salePrice: numToStr(initial.sale_price),
+                oldSalePrice: numToStr(initial.old_sale_price),
+                newSalePrice: numToStr(initial.sale_price),
             };
 
             const secondaryLevels: UnitLevelItem[] = await Promise.all(
@@ -336,17 +333,13 @@ export function useProductForm({
                         conversionFactor: String(u.conversion_factor || ''),
                         openingStock: '',
                         allowSale: u.is_default_sale ?? true,
-                        purchasePrice: u.raw_purchase_price !== undefined
-                            ? String(u.raw_purchase_price)
-                            : (u.purchase_price !== undefined ? String(u.purchase_price) : ''),
-                        discountValue: u.purchase_discount_value !== undefined
-                            ? String(u.purchase_discount_value)
-                            : '',
+                        purchasePrice: numToStr(u.raw_purchase_price ?? u.purchase_price),
+                        discountValue: numToStr(u.purchase_discount_value),
                         discountType: (u.purchase_discount_type || 'percent') as 'percent' | 'amount',
                         dualPricing: u.has_dual_pricing ?? !!u.old_sale_price,
-                        salePrice: u.sale_price !== undefined ? String(u.sale_price) : '',
-                        oldSalePrice: u.old_sale_price !== undefined ? String(u.old_sale_price) : '',
-                        newSalePrice: u.sale_price !== undefined ? String(u.sale_price) : '',
+                        salePrice: numToStr(u.sale_price),
+                        oldSalePrice: numToStr(u.old_sale_price),
+                        newSalePrice: numToStr(u.sale_price),
                     };
                 })
             );

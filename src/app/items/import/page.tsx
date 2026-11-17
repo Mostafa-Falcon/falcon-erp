@@ -11,6 +11,7 @@ import { formatNumber } from'@/lib/format';
 import type { Product } from'@/types';
 import { FileUp, Download, CheckCircle2, AlertCircle, FileSpreadsheet, Layers } from'lucide-react';
 import { v4 as uuidv4 } from'uuid';
+import { DocumentNumberService } from'@/core/sync/document_number_service';
 
 interface ImportRow {
  name: string;
@@ -61,7 +62,7 @@ function ImportContent() {
 
  parsedRows.push({
  name: cols[0] ||`صنف ${i}`,
- sku: cols[1] ||`SKU-${Date.now()}-${i}`,
+ sku: cols[1] ||'',
  cost_price: parseFloat(cols[2]) || 0,
  sale_price: parseFloat(cols[3]) || 0,
  barcode: cols[4] ||'',
@@ -110,14 +111,27 @@ function ImportContent() {
  setErrorMessage(null);
  const now = new Date().toISOString();
 
- await db.transaction('rw', [db.products, db.stock_levels, db.product_units, db.sync_queue], async () => {
+ // Pre-mint a serial SKU for every row without one (org-scoped atomic counter,
+ // or the marked offline serial when offline).
+ const resolvedSkus: string[] = [];
  for (const row of rows) {
+ const given = row.sku?.trim();
+ if (given) {
+ resolvedSkus.push(given);
+ } else {
+ resolvedSkus.push(await DocumentNumberService.nextProductSku(orgId));
+ }
+ }
+
+ await db.transaction('rw', [db.products, db.stock_levels, db.product_units, db.sync_queue], async () => {
+ for (let i = 0; i < rows.length; i++) {
+ const row = rows[i];
  const prodId = uuidv4();
  const newProduct: Product = {
  id: prodId,
  org_id: orgId,
  name: row.name,
- sku: row.sku ||`SKU-${Date.now().toString().slice(-6)}`,
+ sku: resolvedSkus[i],
  cost_price: row.cost_price,
  purchase_price: row.cost_price || 0,
  sale_price: row.sale_price,

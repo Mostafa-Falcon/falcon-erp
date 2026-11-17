@@ -133,12 +133,15 @@ export default function NewStocktakePage() {
  const searchResults = useMemo(() => {
  if (!searchQuery.trim()) return [];
  const q = searchQuery.toLowerCase().trim();
+ const safeLower = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v)).toLowerCase();
  return allProducts
  .filter((p) => {
- const matchName = p.name.toLowerCase().includes(q);
- const matchSku = p.sku.toLowerCase().includes(q);
- const matchAlt = p.alternate_barcodes?.some((b) => b.toLowerCase().includes(q));
- const matchShelf = p.shelf_location?.toLowerCase().includes(q);
+ if (!p) return false;
+ const altBarcodes = Array.isArray(p.alternate_barcodes) ? p.alternate_barcodes : [];
+ const matchName = safeLower(p.name).includes(q);
+ const matchSku = safeLower(p.sku).includes(q);
+ const matchAlt = altBarcodes.some((b) => safeLower(b).includes(q));
+ const matchShelf = p.shelf_location != null ? safeLower(p.shelf_location).includes(q) : false;
  return matchName || matchSku || matchAlt || matchShelf;
  })
  .slice(0, 7);
@@ -237,11 +240,15 @@ export default function NewStocktakePage() {
  }
 
  // 2. فحص الباركود البديل أو المباشر في المنتجات المحملة
- const found = allProducts.find(
- (p) =>
- p.sku.toLowerCase() === query.toLowerCase() ||
- p.alternate_barcodes?.some((b) => b.toLowerCase() === query.toLowerCase())
- );
+ const queryLower = (typeof query === 'string' ? query : String(query ?? '')).toLowerCase();
+ const found = allProducts.find((p) => {
+ if (!p) return false;
+ const skuMatch = typeof p.sku === 'string' && p.sku.toLowerCase() === queryLower;
+ const altMatch =
+ Array.isArray(p.alternate_barcodes) &&
+ p.alternate_barcodes.some((b) => typeof b === 'string' && b.toLowerCase() === queryLower);
+ return skuMatch || altMatch;
+ });
 
  if (found) {
  await addItem(found, true);

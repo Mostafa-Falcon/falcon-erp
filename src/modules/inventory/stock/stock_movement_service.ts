@@ -176,7 +176,9 @@ export class StockMovementService {
  const effectiveQuantity = isOutbound ? -absQty : absQty;
 
  const factor = params.conversionFactor > 0 ? params.conversionFactor : 1;
- const baseQuantity = factor > 1 ? effectiveQuantity / factor : effectiveQuantity * factor;
+ // Base quantity = units × conversion factor (same convention as server-side
+ // falcon_create_sales_invoice, which does round(qty * factor, 2)).
+ const baseQuantity = effectiveQuantity * factor;
 
  return await db.transaction(
       'rw',

@@ -293,9 +293,14 @@ export class SalesRepository {
         }
       }
 
+      // Pre-generate item ids ONCE. The online RPC path embeds them in the payload
+      // and stores them server-side; if the response is then lost and the offline
+      // path runs instead, the queued local items carry the SAME ids, so the sync
+      // upsert converges instead of duplicating invoice lines in the cloud.
+      const itemIds = params.items.map(() => uuidv4());
       const invoiceIdForAttempt = uuidv4();
       if (networkListener.getStatus()) {
-        const onlineInvoice = await SalesRepository.createSalesInvoiceOnline(params, invoiceIdForAttempt);
+        const onlineInvoice = await SalesRepository.createSalesInvoiceOnline(params, invoiceIdForAttempt, itemIds);
         if (onlineInvoice) return onlineInvoice;
       }
 
@@ -308,7 +313,7 @@ export class SalesRepository {
       let totalItemDiscount = 0;
       let totalTax = 0;
 
-      const invoiceItems: SalesInvoiceItem[] = params.items.map((item) => {
+      const invoiceItems: SalesInvoiceItem[] = params.items.map((item, index) => {
         const lineSubtotal = roundMoney(item.quantity * item.unitPrice);
         const disc = roundMoney(item.discountAmount || 0);
         const lineNet = roundMoney(Math.max(0, lineSubtotal - disc));
@@ -321,7 +326,7 @@ export class SalesRepository {
         totalTax += taxAmount;
 
         return {
-          id: uuidv4(),
+          id: itemIds[index] ?? uuidv4(),
           invoice_id: invoiceId,
           product_id: item.productId,
           batch_id: item.batchId || null,
@@ -536,7 +541,7 @@ export class SalesRepository {
  return entry ||'تعذر تنفيذ الفاتورة على السحابة';
  }
 
-  private static async createSalesInvoiceOnline(params: CreateSalesInvoiceParams, invoiceId: string): Promise<SalesInvoice | null> {
+  private static async createSalesInvoiceOnline(params: CreateSalesInvoiceParams, invoiceId: string, itemIds: string[] = []): Promise<SalesInvoice | null> {
     const payload = {
       p_invoice_id: invoiceId,
       p_org_id: params.orgId,
@@ -554,8 +559,8 @@ export class SalesRepository {
       p_discount_percent: params.discountPercent || 0,
       p_shipping_fee: params.shippingFee || 0,
       p_notes: params.notes || null,
-      p_items: params.items.map((item) => ({
-        id: uuidv4(),
+      p_items: params.items.map((item, index) => ({
+        id: itemIds[index] ?? uuidv4(),
         product_id: item.productId,
         batch_id: item.batchId || null,
         unit_id: item.unitId,

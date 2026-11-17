@@ -40,6 +40,7 @@ const PAD_BY_DOC: Record<string, number> = {
   voucher: 6,
   stocktake: 6,
   stock_transfer: 6,
+  product_sku: 6,
 };
 
 const PREFIX_BY_DOC: Record<string, (orgId: string, branchId: string) => string> = {
@@ -52,6 +53,7 @@ const PREFIX_BY_DOC: Record<string, (orgId: string, branchId: string) => string>
   voucher: () => 'PAY',
   stocktake: () => 'STK',
   stock_transfer: () => 'TRF',
+  product_sku: () => 'SKU',
 };
 
 type DocType = keyof typeof PREFIX_BY_DOC;
@@ -179,6 +181,13 @@ async function getMaxOfflineSeqFromDexie(docType: DocType, dev: string): Promise
         const seqs = rows.map((r) => Math.abs(r.shift_number));
         return seqs.length > 0 ? Math.max(...seqs) : 0;
       }
+      case 'product_sku': {
+        const rows = await db.products
+          .filter((row) => typeof row.sku === 'string' && row.sku.includes(prefixDev))
+          .toArray();
+        numbers = rows.map((r) => r.sku);
+        break;
+      }
     }
 
     let maxSeq = 0;
@@ -287,6 +296,10 @@ export class DocumentNumberService {
 
   public static async nextStockTransferNumber(orgId: string, branchId: string): Promise<string> {
     return (await mint(orgId, branchId, 'stock_transfer')).number;
+  }
+
+  public static async nextProductSku(orgId: string): Promise<string> {
+    return (await mint(orgId, orgId, 'product_sku')).number;
   }
 
   /**

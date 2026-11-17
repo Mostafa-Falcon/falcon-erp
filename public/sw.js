@@ -1,4 +1,4 @@
-const CACHE_NAME = 'falcon-erp-v3';
+const CACHE_NAME = 'falcon-erp-v4';
 
 // Core routes to pre-cache on install
 const PRECACHE_URLS = [
@@ -74,6 +74,10 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
           }
           return networkResponse;
+        }).catch(async () => {
+          // Offline and nothing cached -> valid empty response instead of an unhandled rejection
+          const cachedRoute = await caches.match(event.request);
+          return cachedRoute || new Response('', { status: 504, statusText: 'Offline' });
         });
       })
     );
@@ -92,16 +96,19 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          // Offline -> Try exact cached route
-          const cachedRoute = await caches.match(event.request);
-          if (cachedRoute) return cachedRoute;
+          // Offline -> Try cached route/shell, never throw (a throw here kills the navigation)
+          try {
+            const cachedRoute = await caches.match(event.request);
+            if (cachedRoute) return cachedRoute;
 
-          // Try cached POS or Home App Shell
-          const cachedPos = await caches.match('/sales/pos');
-          if (cachedPos) return cachedPos;
+            const cachedPos = await caches.match('/sales/pos');
+            if (cachedPos) return cachedPos;
 
-          const cachedHome = await caches.match('/');
-          if (cachedHome) return cachedHome;
+            const cachedHome = await caches.match('/');
+            if (cachedHome) return cachedHome;
+          } catch (_) {
+            // Cache storage failed - fall through to the offline page
+          }
 
           // Ultimate offline HTML response
           return new Response(
@@ -126,7 +133,10 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => cachedResponse);
 
-      return cachedResponse || fetchPromise;
+      // Never resolve with undefined - always a valid Response
+      return cachedResponse || fetchPromise.then(
+        (res) => res || new Response('', { status: 504, statusText: 'Offline' })
+      );
     })
   );
 });
