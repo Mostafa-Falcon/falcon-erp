@@ -105,6 +105,16 @@ const DELTA_ROUTES: Record<string, DeltaRoute> = {
  rpc:'falcon_adjust_contact',
  toArgs: (id, delta) => ({ p_contact_id: id, p_delta_balance: (delta.current_balance as number) ?? 0 }),
  },
+ cashier_shifts: {
+ rpc:'falcon_adjust_shift',
+ toArgs: (id, delta) => ({
+   p_shift_id: id,
+   p_delta_total_sales_cash: (delta.total_sales_cash as number) ?? 0,
+   p_delta_total_sales_card: (delta.total_sales_card as number) ?? 0,
+   p_delta_total_sales_credit: (delta.total_sales_credit as number) ?? 0,
+   p_delta_expected_closing_balance: (delta.expected_closing_balance as number) ?? 0,
+ }),
+ },
  accounts: {
  rpc:'falcon_adjust_account',
  toArgs: (id, delta) => ({ p_account_id: id, p_delta_balance: (delta.current_balance as number) ?? 0 }),

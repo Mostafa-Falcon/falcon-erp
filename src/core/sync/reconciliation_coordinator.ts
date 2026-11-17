@@ -7,6 +7,9 @@
  * before anything else; stock/ledger truths live server-side).
  * 2. RENUMBER - falcon_reassign_offline_document_numbers: convert device-scoped
  * temp numbers (INV-P<dev>-###### ...) to authoritative numbers.
+ * 2.5 JOURNAL + SHIFT BACKFILL - falcon_backfill_missing_sales_journals /
+ * falcon_backfill_shift_totals: reconstruct offline-only journals and recompute
+ * shift totals from their invoices. Idempotent safety net for the offline path.
  * 3. LEDGER - falcon_reconcile_stock_ledger: rebuild stock_levels and
  * product_batches from the inventory_transactions ledger.
  * 4. PULL - full authoritative re-pull so every local table matches the
@@ -79,6 +82,38 @@ export class ReconciliationCoordinator {
  }
  } catch (err) {
  console.warn('[Reconcile] Document renumber error:', err);
+ }
+
+ // 2.5 Backfill missing sales journals + shift totals (idempotent safety net for
+ // the offline path, which doesn't emit journal entries or shift deltas with routes)
+ try {
+ const { data, error } = await supabase.rpc('falcon_backfill_missing_sales_journals', {
+ p_org_id: orgId,
+ });
+ if (error) {
+ console.warn('[Reconcile] Journal backfill unavailable:', error.message);
+ } else if (data?.ok) {
+ steps.push('journal-backfill');
+ } else {
+ console.warn('[Reconcile] Journal backfill skipped:', data ?? 'unknown');
+ }
+ } catch (err) {
+ console.warn('[Reconcile] Journal backfill error:', err);
+ }
+
+ try {
+ const { data, error } = await supabase.rpc('falcon_backfill_shift_totals', {
+ p_org_id: orgId,
+ });
+ if (error) {
+ console.warn('[Reconcile] Shift totals backfill unavailable:', error.message);
+ } else if (data?.ok) {
+ steps.push('shift-backfill');
+ } else {
+ console.warn('[Reconcile] Shift totals backfill skipped:', data ?? 'unknown');
+ }
+ } catch (err) {
+ console.warn('[Reconcile] Shift totals backfill error:', err);
  }
 
  // 3. Rebuild the authoritative stock ledger server-side.
