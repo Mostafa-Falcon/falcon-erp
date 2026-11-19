@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import { syncCoordinator } from '@/core/sync/sync_coordinator';
+import { useSessionStore } from '@/core/state/useSessionStore';
 import type { Product, ProductUnit, ProductBatch, Warehouse, StockLevel } from '@/types';
 
 export class ProductRepository {
@@ -126,7 +127,7 @@ export class ProductRepository {
 
 		await db.transaction(
 			'rw',
-			[db.products, db.product_units, db.product_batches, db.stock_levels, db.warehouses, db.sync_queue],
+			[db.products, db.product_units, db.product_batches, db.stock_levels, db.warehouses, db.inventory_transactions, db.sync_queue],
 			async () => {
 				await db.products.add(product);
 				await SyncQueueManager.enqueue('products', productId, 'insert', product);
@@ -190,6 +191,38 @@ export class ProductRepository {
 					};
 					await db.stock_levels.put(stockLevel);
 					await SyncQueueManager.enqueue('stock_levels', stockId, 'insert', stockLevel);
+					if (totalQty > 0) {
+						const baseUnit = await db.units.get(productData.base_unit_id);
+						const txId = uuidv4();
+						const movement: import('@/types').InventoryTransaction = {
+							id: txId,
+							org_id: productData.org_id,
+							warehouse_id: w.id,
+							product_id: productId,
+							batch_id: null,
+							transaction_type: 'opening_stock',
+							reference_type: 'manual',
+							reference_id: null,
+							quantity: totalQty,
+							unit_id: productData.base_unit_id,
+							unit_conversion_factor: 1,
+							base_quantity: totalQty,
+							unit_cost: productData.purchase_price || 0,
+							total_cost: totalQty * (productData.purchase_price || 0),
+							balance_after: totalQty,
+							product_name: productData.name,
+							unit_name: baseUnit?.name,
+							level_quantity: totalQty,
+							prev_quantity: 0,
+							new_quantity: totalQty,
+							notes: 'رصيد افتتاحي من إنشاء الصنف',
+							created_by: (useSessionStore.getState().currentUser?.id as string | undefined) ?? productData.org_id,
+							created_at: now,
+							sync_status: 'pending'
+						};
+						await db.inventory_transactions.add(movement);
+						await SyncQueueManager.enqueue('inventory_transactions', txId, 'insert', movement);
+					}
 				}
 			}
 		);
