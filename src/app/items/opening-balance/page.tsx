@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useRef, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -232,8 +233,8 @@ function OpeningBalanceContent() {
 
  const filteredProducts = products.filter(
  (p) =>
- p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+ safeLower(p.name).includes(searchQuery.toLowerCase()) ||
+ (p.sku && safeLower(p.sku).includes(searchQuery.toLowerCase()))
  );
 
  return (

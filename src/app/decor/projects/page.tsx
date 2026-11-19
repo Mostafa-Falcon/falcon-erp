@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -26,7 +26,7 @@ import {
   X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import { toast } from 'sonner';
 
 export interface DecorProject {
@@ -143,7 +143,7 @@ export default function DecorProjectsPage() {
       const matchSearch =
         !searchQuery.trim() ||
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeLower(p.code).includes(searchQuery.toLowerCase()) ||
         p.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.shopType.toLowerCase().includes(searchQuery.toLowerCase());

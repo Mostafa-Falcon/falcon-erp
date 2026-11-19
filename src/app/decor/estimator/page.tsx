@@ -243,11 +243,10 @@ export default function DecorEstimatorPage() {
                     key={idx}
                     type="button"
                     onClick={() => handlePresetSelect(idx)}
-                    className={`p-2 rounded-lg text-right text-3xs font-bold transition-all cursor-pointer ${
-                      selectedPresetIndex === idx
-                        ? 'bg-amber-600 text-white shadow-2xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-amber-50'
-                    }`}
+                    className={`p-2 rounded-lg text-right text-3xs font-bold transition-all cursor-pointer ${selectedPresetIndex === idx
+                      ? 'bg-amber-600 text-white shadow-2xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-amber-50'
+                      }`}
                   >
                     <span className="block truncate">{p.name}</span>
                     <span className="text-3xs opacity-80 block mt-0.5">{p.unit}</span>

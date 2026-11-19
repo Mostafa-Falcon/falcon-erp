@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useMemo, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -101,7 +102,7 @@ function ExpiryAlertsContent() {
  const q = searchQuery.toLowerCase();
  const matchSearch =
  !q ||
- (it.product?.name && it.product.name.toLowerCase().includes(q)) ||
+ (it.product?.name && safeLower(it.product.name).includes(q)) ||
  (it.batch.batch_number && it.batch.batch_number.toLowerCase().includes(q));
 
  const matchUrgency =

@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -121,8 +122,8 @@ function CategoriesContent() {
   };
 
  const filteredCategories = categories.filter((c) =>
- c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (c.code && c.code.toLowerCase().includes(searchQuery.toLowerCase()))
+ safeLower(c.name).includes(searchQuery.toLowerCase()) ||
+ (c.code && safeLower(c.code).includes(searchQuery.toLowerCase()))
  );
 
  return (

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import { db } from '@/core/db/app_database';
 import type { Product, Unit, ProductSerial, MaintenanceTicket } from '@/types';
 import type { CartLine, UnitOption } from '../types';
@@ -184,7 +184,7 @@ export function MobilePosView({
         }
       }
 
-      const prodBySku = products.find((p) => p && p.sku && p.sku.toLowerCase() === clean.toLowerCase());
+      const prodBySku = products.find((p) => p && p.sku && safeLower(p.sku) === clean.toLowerCase());
       if (prodBySku) {
         onAddToCart(prodBySku, {
           serialNumber: clean,

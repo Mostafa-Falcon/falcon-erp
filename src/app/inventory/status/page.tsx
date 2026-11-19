@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useMemo, useState } from'react';
 import { useSearchParams } from'next/navigation';
 import { Suspense } from'react';
@@ -125,7 +126,7 @@ function InventoryStatusContent() {
  if (!selectedWarehouse && p.item_type !=='service') return true;
  if (typeFilter !=='all'&& p.item_type !== typeFilter) return false;
  if (q) {
- const nameMatch = p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+ const nameMatch = safeLower(p.name).includes(q) || safeLower(p.sku).includes(q);
  const batchMatch = batches.some(
  (b) =>
  b.product_id === p.id &&

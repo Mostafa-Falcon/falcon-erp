@@ -121,6 +121,8 @@ export class StocktakeRepository {
 'rw',
  [
  db.products,
+ db.units,
+ db.product_units,
  db.app_settings,
  db.stock_levels,
  db.inventory_transactions,

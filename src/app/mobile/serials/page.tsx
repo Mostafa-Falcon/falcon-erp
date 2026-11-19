@@ -185,229 +185,229 @@ export default function SerialsPage() {
     >
       <div className="space-y-6 text-right" dir="rtl">
 
-      {/* Toolbar Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div className="relative sm:col-span-2">
-          <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث برقم الـ IMEI 1، IMEI 2، أو اسم موديل الجهاز..."
-            className="pr-10 h-11 rounded-2xl bg-surface text-xs font-semibold border-slate-200 dark:border-slate-800"
-          />
-        </div>
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
-            <SelectValue placeholder="تصفية بالحالة..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كافة الحالات</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([key, st]) => (
-              <SelectItem key={key} value={key}>
-                {st.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={conditionFilter} onValueChange={setConditionFilter}>
-          <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
-            <SelectValue placeholder="تصفية بحالة الجهاز..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كافة حالات الأجهزة</SelectItem>
-            {Object.entries(CONDITION_LABELS).map(([key, cd]) => (
-              <SelectItem key={key} value={key}>
-                {cd.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table List */}
-      {isLoading ? (
-        <div className="py-20 text-center text-xs font-bold text-slate-400 flex flex-col items-center gap-2">
-          <Loader2 className="w-7 h-7 animate-spin text-sky-500" />
-          <span>جاري تحميل سجل السيريالات والـ IMEI...</span>
-        </div>
-      ) : filteredSerials.length === 0 ? (
-        <div className="py-16 text-center text-xs font-bold text-slate-400 bg-surface rounded-3xl border border-slate-200 dark:border-slate-800">
-          لا توجد أرقام IMEI مطابقة لبيانات البحث
-        </div>
-      ) : (
-        <div className="border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden bg-surface shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-2xs font-bold text-slate-500">
-                <tr>
-                  <th className="py-3 px-4">اسم الجهاز / الموديل</th>
-                  <th className="py-3 px-3">رقم IMEI 1 / Serial</th>
-                  <th className="py-3 px-3">رقم IMEI 2</th>
-                  <th className="py-3 px-3 text-center">الحالة</th>
-                  <th className="py-3 px-3 text-center">حالة الجهاز</th>
-                  <th className="py-3 px-3 text-center">الضمان</th>
-                  <th className="py-3 px-4 text-left">التكلفة / سعر البيع</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                {filteredSerials.map((s) => {
-                  const st = STATUS_LABELS[s.status];
-                  const cd = CONDITION_LABELS[s.condition];
-
-                  return (
-                    <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-sky-500 shrink-0" />
-                        <span>{s.product_name || 'جهاز ذكي'}</span>
-                      </td>
-                      <td className="py-3 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
-                        {s.serial_number}
-                      </td>
-                      <td className="py-3 px-3 font-mono text-slate-400">
-                        {s.imei2 || '—'}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-3xs font-bold border ${st.color}`}>
-                          {st.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-3xs font-bold border ${cd.color}`}>
-                          {cd.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-600 dark:text-slate-400">
-                        {s.warranty_months} شهر
-                      </td>
-                      <td className="py-3 px-4 text-left font-mono">
-                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                          {formatNumber(s.selling_price || 0)} ج.م
-                        </span>
-                        <span className="block text-3xs text-slate-400">
-                          تكلفتها: {formatNumber(s.cost_price || 0)} ج.م
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* Toolbar Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="relative sm:col-span-2">
+            <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث برقم الـ IMEI 1، IMEI 2، أو اسم موديل الجهاز..."
+              className="pr-10 h-11 rounded-2xl bg-surface text-xs font-semibold border-slate-200 dark:border-slate-800"
+            />
           </div>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
+              <SelectValue placeholder="تصفية بالحالة..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كافة الحالات</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([key, st]) => (
+                <SelectItem key={key} value={key}>
+                  {st.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={conditionFilter} onValueChange={setConditionFilter}>
+            <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
+              <SelectValue placeholder="تصفية بحالة الجهاز..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كافة حالات الأجهزة</SelectItem>
+              {Object.entries(CONDITION_LABELS).map(([key, cd]) => (
+                <SelectItem key={key} value={key}>
+                  {cd.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
 
-      {/* Modal: Register Serial */}
-      <Dialog open={isNewSerialOpen} onOpenChange={setIsNewSerialOpen}>
-        <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto p-6 rounded-3xl bg-surface text-right" dir="rtl">
-          <DialogHeader className="pb-2 border-b border-slate-100 dark:border-slate-800">
-            <DialogTitle className="text-base font-black flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-sky-500" />
-              <span>تسجيل جهاز / IMEI جديد في المخزن</span>
-            </DialogTitle>
-          </DialogHeader>
+        {/* Table List */}
+        {isLoading ? (
+          <div className="py-20 text-center text-xs font-bold text-slate-400 flex flex-col items-center gap-2">
+            <Loader2 className="w-7 h-7 animate-spin text-sky-500" />
+            <span>جاري تحميل سجل السيريالات والـ IMEI...</span>
+          </div>
+        ) : filteredSerials.length === 0 ? (
+          <div className="py-16 text-center text-xs font-bold text-slate-400 bg-surface rounded-3xl border border-slate-200 dark:border-slate-800">
+            لا توجد أرقام IMEI مطابقة لبيانات البحث
+          </div>
+        ) : (
+          <div className="border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden bg-surface shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-2xs font-bold text-slate-500">
+                  <tr>
+                    <th className="py-3 px-4">اسم الجهاز / الموديل</th>
+                    <th className="py-3 px-3">رقم IMEI 1 / Serial</th>
+                    <th className="py-3 px-3">رقم IMEI 2</th>
+                    <th className="py-3 px-3 text-center">الحالة</th>
+                    <th className="py-3 px-3 text-center">حالة الجهاز</th>
+                    <th className="py-3 px-3 text-center">الضمان</th>
+                    <th className="py-3 px-4 text-left">التكلفة / سعر البيع</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                  {filteredSerials.map((s) => {
+                    const st = STATUS_LABELS[s.status];
+                    const cd = CONDITION_LABELS[s.condition];
 
-          <form onSubmit={handleRegisterSerial} className="space-y-3 text-xs pt-2">
-            <div className="space-y-1">
-              <Label className="font-bold">اختر موديل الجهاز *</Label>
-              <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-bold">
-                  <SelectValue placeholder="اختر الموديل..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-56">
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} — سعر البيع: {formatNumber(p.sale_price)} ج.م
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    return (
+                      <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Smartphone className="w-4 h-4 text-sky-500 shrink-0" />
+                          <span>{s.product_name || 'جهاز ذكي'}</span>
+                        </td>
+                        <td className="py-3 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                          {s.serial_number}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-slate-400">
+                          {s.imei2 || '—'}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-3xs font-bold border ${st.color}`}>
+                            {st.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-3xs font-bold border ${cd.color}`}>
+                            {cd.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-600 dark:text-slate-400">
+                          {s.warranty_months} شهر
+                        </td>
+                        <td className="py-3 px-4 text-left font-mono">
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                            {formatNumber(s.selling_price || 0)} ج.م
+                          </span>
+                          <span className="block text-3xs text-slate-400">
+                            تكلفتها: {formatNumber(s.cost_price || 0)} ج.م
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          </div>
+        )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="font-bold">رقم IMEI 1 / Serial *</Label>
-                <Input
-                  required
-                  value={serialNumber}
-                  onChange={(e) => setSerialNumber(e.target.value)}
-                  placeholder="35xxxxxxxxxxxxx..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
-                />
-              </div>
+        {/* Modal: Register Serial */}
+        <Dialog open={isNewSerialOpen} onOpenChange={setIsNewSerialOpen}>
+          <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto p-6 rounded-3xl bg-surface text-right" dir="rtl">
+            <DialogHeader className="pb-2 border-b border-slate-100 dark:border-slate-800">
+              <DialogTitle className="text-base font-black flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-sky-500" />
+                <span>تسجيل جهاز / IMEI جديد في المخزن</span>
+              </DialogTitle>
+            </DialogHeader>
 
+            <form onSubmit={handleRegisterSerial} className="space-y-3 text-xs pt-2">
               <div className="space-y-1">
-                <Label className="font-bold">رقم IMEI 2 (اختياري)</Label>
-                <Input
-                  value={imei2}
-                  onChange={(e) => setImei2(e.target.value)}
-                  placeholder="35xxxxxxxxxxxxx..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="font-bold">حالة الجهاز</Label>
-                <Select value={condition} onValueChange={(val) => setCondition(val as DeviceCondition)}>
+                <Label className="font-bold">اختر موديل الجهاز *</Label>
+                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                   <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-bold">
-                    <SelectValue />
+                    <SelectValue placeholder="اختر الموديل..." />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">جديد (زيرو)</SelectItem>
-                    <SelectItem value="used">مستعمل (كسر زيرو)</SelectItem>
-                    <SelectItem value="refurbished">مجدد / صيانة مصنع</SelectItem>
+                  <SelectContent className="max-h-56">
+                    {products.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} — سعر البيع: {formatNumber(p.sale_price)} ج.م
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1">
-                <Label className="font-bold">مدة الضمان (شهور)</Label>
-                <Input
-                  type="number"
-                  value={warrantyMonths}
-                  onChange={(e) => setWarrantyMonths(e.target.value)}
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-center font-bold"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="font-bold">رقم IMEI 1 / Serial *</Label>
+                  <Input
+                    required
+                    value={serialNumber}
+                    onChange={(e) => setSerialNumber(e.target.value)}
+                    placeholder="35xxxxxxxxxxxxx..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold">رقم IMEI 2 (اختياري)</Label>
+                  <Input
+                    value={imei2}
+                    onChange={(e) => setImei2(e.target.value)}
+                    placeholder="35xxxxxxxxxxxxx..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold">حالة الجهاز</Label>
+                  <Select value={condition} onValueChange={(val) => setCondition(val as DeviceCondition)}>
+                    <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">جديد (زيرو)</SelectItem>
+                      <SelectItem value="used">مستعمل (كسر زيرو)</SelectItem>
+                      <SelectItem value="refurbished">مجدد / صيانة مصنع</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold">مدة الضمان (شهور)</Label>
+                  <Input
+                    type="number"
+                    value={warrantyMonths}
+                    onChange={(e) => setWarrantyMonths(e.target.value)}
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-center font-bold"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold">تكلفة الشراء (ج.م)</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={costPrice}
+                    onChange={(e) => setCostPrice(e.target.value)}
+                    placeholder="افتراضي"
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-center font-bold"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold">سعر البيع المقترح (ج.م)</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={sellingPrice}
+                    onChange={(e) => setSellingPrice(e.target.value)}
+                    placeholder="افتراضي"
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-center font-bold text-emerald-600"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="font-bold">تكلفة الشراء (ج.م)</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={costPrice}
-                  onChange={(e) => setCostPrice(e.target.value)}
-                  placeholder="افتراضي"
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-center font-bold"
-                />
+              <div className="pt-3 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+                <Button type="button" variant="outline" onClick={() => setIsNewSerialOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={isSaving} className="bg-sky-600 hover:bg-sky-700 text-white font-bold">
+                  تأكيد حفظ الجهاز
+                </Button>
               </div>
-
-              <div className="space-y-1">
-                <Label className="font-bold">سعر البيع المقترح (ج.م)</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                  placeholder="افتراضي"
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-center font-bold text-emerald-600"
-                />
-              </div>
-            </div>
-
-            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
-              <Button type="button" variant="outline" onClick={() => setIsNewSerialOpen(false)}>
-                إلغاء
-              </Button>
-              <Button type="submit" disabled={isSaving} className="bg-sky-600 hover:bg-sky-700 text-white font-bold">
-                تأكيد حفظ الجهاز
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </AppShell>
   );
 }

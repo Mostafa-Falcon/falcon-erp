@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 /**
  * 🦅 LOGIXA FALCON ERP - PRODUCT SERIAL / IMEI REPOSITORY
  * Manages IMEI / Serial numbers for mobile phones, devices, warranty, and trade-in.
@@ -137,9 +138,9 @@ export class ProductSerialRepository {
       .where('org_id')
       .equals(orgId)
       .filter((s) =>
-        s.serial_number.toLowerCase().includes(q) ||
-        (s.imei2 || '').toLowerCase().includes(q) ||
-        (s.product_name || '').toLowerCase().includes(q)
+        safeLower(s.serial_number).includes(q) ||
+        safeLower(s.imei2).includes(q) ||
+        safeLower(s.product_name).includes(q)
       )
       .limit(30)
       .toArray();

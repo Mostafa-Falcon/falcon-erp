@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 import { ProductRepository } from'@/modules/inventory/product_repository';
 import { db } from'@/core/db/app_database';
 import { getSubscriptionPermissions } from'@/core/constants/subscription_profiles';
@@ -120,7 +121,7 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
 
  let baseU = units.find((u) =>
  itemTypeMode ==='weight'
- ? u.name.includes('كيلو') || u.symbol.toLowerCase() ==='kg'
+ ? u.name.includes('كيلو') || safeLower(u.symbol) ==='kg'
  : u.name === unitLevels[0]?.unitName?.trim()
  );
 

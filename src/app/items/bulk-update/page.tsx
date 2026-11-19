@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -60,8 +61,8 @@ function BulkUpdateContent() {
  const matchCat = selectedCategory ==='all'|| p.category_id === selectedCategory;
  const matchQ =
  !searchQuery ||
- p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+ safeLower(p.name).includes(searchQuery.toLowerCase()) ||
+ (p.sku && safeLower(p.sku).includes(searchQuery.toLowerCase()));
  return matchCat && matchQ;
  });
 

@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from'react';
 import { toast } from'sonner';
 import { ScaleManager, ScaleConfig } from'@/lib/scale_manager';
@@ -329,7 +330,7 @@ export function usePosCart({
  (p) =>
  p &&
  ((p.scale_code && p.scale_code.trim() === pluStr) ||
- (p.sku && p.sku.toLowerCase() === pluStr.toLowerCase()) ||
+ (p.sku && safeLower(p.sku) === pluStr.toLowerCase()) ||
  (rawPluStr && p.sku === rawPluStr))
  );
 
@@ -371,7 +372,7 @@ export function usePosCart({
 
  // Exact barcode or SKU match
  const exact = products.find(
- (p) => p && p.sku && p.sku.toLowerCase() === q.toLowerCase()
+ (p) => p && p.sku && safeLower(p.sku) === q.toLowerCase()
  );
 
  if (exact) {

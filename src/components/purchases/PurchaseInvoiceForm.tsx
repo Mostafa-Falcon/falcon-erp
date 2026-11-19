@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { PurchasesRepository } from '@/modules/purchases/purchases_repository';
 import { ContactsRepository } from '@/modules/contacts/contacts_repository';
 import { InventoryRepository } from '@/modules/inventory/inventory_repository';
 import { ProductRepository } from '@/modules/inventory/product_repository';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import {
   Select,
   SelectContent,
@@ -312,7 +312,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
     const q = productSearchQuery.trim().toLowerCase();
     if (!q) return [];
     return products
-      .filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+      .filter((p) => safeLower(p.name).includes(q) || safeLower(p.sku).includes(q))
       .slice(0, 8);
   }, [products, productSearchQuery]);
 
@@ -320,7 +320,7 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
   const filteredSuppliers = useMemo(() => {
     const q = supplierSearchQuery.trim().toLowerCase();
     if (!q) return suppliers;
-    return suppliers.filter((s) => s.name.toLowerCase().includes(q) || (s.phone && s.phone.includes(q)));
+    return suppliers.filter((s) => safeLower(s.name).includes(q) || (s.phone && s.phone.includes(q)));
   }, [suppliers, supplierSearchQuery]);
 
   // Select Supplier

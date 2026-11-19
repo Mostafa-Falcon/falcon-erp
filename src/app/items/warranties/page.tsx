@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -105,7 +106,7 @@ function WarrantiesContent() {
  };
 
  const filtered = warranties.filter((w) =>
- w.name.toLowerCase().includes(searchQuery.toLowerCase())
+ safeLower(w.name).includes(searchQuery.toLowerCase())
  );
 
  return (

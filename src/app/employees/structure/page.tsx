@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState, useMemo } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Button } from'@/components/ui/button';
@@ -161,7 +162,7 @@ export default function StructurePage() {
  const filteredDepts = useMemo(() => {
  const q = searchQuery.toLowerCase().trim();
  return departments.filter(d =>
- d.name.toLowerCase().includes(q) ||
+ safeLower(d.name).includes(q) ||
  (d.code ||'').toLowerCase().includes(q)
  );
  }, [departments, searchQuery]);
@@ -273,7 +274,7 @@ export default function StructurePage() {
  key={dept.id}
  dept={dept}
  managerName={manager?.full_name}
- empsCount={employees.filter(e => e.role === dept.name || e.username.includes(dept.name.toLowerCase())).length} // تجريبي للرقم
+ empsCount={employees.filter(e => e.role === dept.name || e.username.includes(safeLower(dept.name))).length} // تجريبي للرقم
  onEdit={() => handleOpenEdit(dept)}
  onDelete={() => handleDelete(dept.id)}
  />

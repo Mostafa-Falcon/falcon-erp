@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -19,7 +19,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import { toast } from 'sonner';
 
 interface Contractor {
@@ -121,7 +121,7 @@ export default function DecorContractorsPage() {
       const matchTrade = tradeFilter === 'all' || c.trade === tradeFilter;
       const matchSearch =
         !searchQuery.trim() ||
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        safeLower(c.name).includes(searchQuery.toLowerCase()) ||
         c.phone.includes(searchQuery) ||
         c.activeProject.toLowerCase().includes(searchQuery.toLowerCase());
       return matchTrade && matchSearch;

@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 import React, { useState } from'react';
 import { ShoppingBag, Layers, Receipt, Search, Award } from'lucide-react';
 import { Input } from'@/components/ui/input';
@@ -19,8 +20,8 @@ export function ShiftTopProductsTab({
 
  const filteredProducts = topProducts.filter(
  (item) =>
- item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
- item.barcode.toLowerCase().includes(searchTerm.toLowerCase())
+ safeLower(item.name).includes(searchTerm.toLowerCase()) ||
+ safeLower(item.barcode).includes(searchTerm.toLowerCase())
  );
 
  return (

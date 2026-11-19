@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { CrmRepository } from '@/modules/contacts/crm_repository';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import type { SalesRep } from '@/types';
 import { toast } from 'sonner';
 
@@ -100,7 +100,7 @@ function SalesRepsContent() {
   const filtered = useMemo(() => {
     return reps.filter(
       (r) =>
-        r.name.toLowerCase().includes(search.toLowerCase()) ||
+        safeLower(r.name).includes(search.toLowerCase()) ||
         r.phone.includes(search)
     );
   }, [reps, search]);

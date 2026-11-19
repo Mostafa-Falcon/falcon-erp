@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -115,7 +116,7 @@ function BrandsContent() {
   };
 
  const filteredBrands = brands.filter((b) =>
- b.name.toLowerCase().includes(searchQuery.toLowerCase())
+ safeLower(b.name).includes(searchQuery.toLowerCase())
  );
 
  return (

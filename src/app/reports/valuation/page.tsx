@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -37,7 +37,7 @@ import {
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { ProductRepository } from '@/modules/inventory/product_repository';
 import { InventoryRepository } from '@/modules/inventory/inventory_repository';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import type { Product, ProductCategory, StockLevel, Unit, Warehouse } from '@/types';
 
 function ValuationContent() {
@@ -106,7 +106,7 @@ function ValuationContent() {
       .filter(({ level, product }) => {
         if (warehouseFilter !== 'all' && level.warehouse_id !== warehouseFilter) return false;
         if (categoryFilter !== 'all' && product.category_id !== categoryFilter) return false;
-        if (q && !product.name.toLowerCase().includes(q) && !product.sku.toLowerCase().includes(q)) return false;
+        if (q && !safeLower(product.name).includes(q) && !safeLower(product.sku).includes(q)) return false;
         return true;
       })
       .sort((a, b) => a.product.name.localeCompare(b.product.name, 'ar'));

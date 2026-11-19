@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Suspense } from 'react';
@@ -19,7 +19,7 @@ import { useSessionStore } from '@/core/state/useSessionStore';
 import { db } from '@/core/db/app_database';
 import { ProductRepository } from '@/modules/inventory/product_repository';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import type { Product } from '@/types';
 import { Archive, Search, RotateCcw, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
@@ -92,8 +92,8 @@ function ArchiveContent() {
 
  const filteredProducts = archivedProducts.filter(
  (p) =>
- p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+ safeLower(p.name).includes(searchQuery.toLowerCase()) ||
+ (p.sku && safeLower(p.sku).includes(searchQuery.toLowerCase()))
  );
 
  return (

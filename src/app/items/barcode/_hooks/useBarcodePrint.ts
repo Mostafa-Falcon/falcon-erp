@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import { useState, useEffect, useMemo, useRef } from'react';
 import { useSearchParams } from'next/navigation';
 import { useSessionStore } from'@/core/state/useSessionStore';
@@ -301,8 +302,8 @@ export function useBarcodePrint() {
  if (!q) return printItems;
  return printItems.filter(
  (item) =>
- item.product.name.toLowerCase().includes(q) ||
- item.barcode.toLowerCase().includes(q)
+ (item.product?.name ? safeLower(item.product.name).includes(q) : false) ||
+ safeLower(item.barcode).includes(q)
  );
  }, [printItems, tableFilter]);
 

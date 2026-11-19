@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useState, useEffect, useMemo } from'react';
 import {
  Dialog,
@@ -69,8 +70,8 @@ export function AddSubstituteModal({
  if (!q) return allProducts;
  return allProducts.filter(
  (p) =>
- p.name.toLowerCase().includes(q) ||
- p.sku.toLowerCase().includes(q) ||
+ safeLower(p.name).includes(q) ||
+ safeLower(p.sku).includes(q) ||
  (p.name_en && p.name_en.toLowerCase().includes(q))
  );
  }, [allProducts, searchQuery]);

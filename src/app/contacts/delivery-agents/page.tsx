@@ -308,22 +308,20 @@ function DeliveryAgentsContent() {
         <div className="flex items-center gap-2 bg-slate-100/70 dark:bg-slate-900/60 p-1 rounded-xl w-fit border border-slate-200/60 dark:border-slate-800">
           <button
             onClick={() => setActiveTab('agents')}
-            className={`px-4 py-2 text-xs font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'agents'
-                ? 'bg-surface text-primary shadow-2xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`px-4 py-2 text-xs font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'agents'
+              ? 'bg-surface text-primary shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
           >
             <Bike className="w-4 h-4" />
             <span>طاقم المناديب ({agents.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 text-xs font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'orders'
-                ? 'bg-surface text-primary shadow-2xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`px-4 py-2 text-xs font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'orders'
+              ? 'bg-surface text-primary shadow-2xs'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
           >
             <Package className="w-4 h-4" />
             <span>طلبات الدليفري ({orders.length})</span>

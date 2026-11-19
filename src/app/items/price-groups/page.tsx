@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -112,8 +113,8 @@ function PriceGroupsContent() {
 
  const filteredGroups = priceGroups.filter(
  (g) =>
- g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- g.code.toLowerCase().includes(searchQuery.toLowerCase())
+ safeLower(g.name).includes(searchQuery.toLowerCase()) ||
+ safeLower(g.code).includes(searchQuery.toLowerCase())
  );
 
  return (

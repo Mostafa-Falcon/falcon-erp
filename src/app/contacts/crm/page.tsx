@@ -288,17 +288,17 @@ function CrmContent() {
             action={
               search || statusFilter !== 'all'
                 ? {
-                    label: 'إعادة ضبط الفلاتر',
-                    onClick: () => {
-                      setSearch('');
-                      setStatusFilter('all');
-                    },
-                  }
+                  label: 'إعادة ضبط الفلاتر',
+                  onClick: () => {
+                    setSearch('');
+                    setStatusFilter('all');
+                  },
+                }
                 : {
-                    label: 'إضافة أول عميل محتمل',
-                    onClick: () => setIsOpen(true),
-                    icon: <Plus className="w-4 h-4" />,
-                  }
+                  label: 'إضافة أول عميل محتمل',
+                  onClick: () => setIsOpen(true),
+                  icon: <Plus className="w-4 h-4" />,
+                }
             }
           />
         ) : (

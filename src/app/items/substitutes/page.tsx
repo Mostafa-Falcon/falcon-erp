@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -95,8 +96,8 @@ function SubstitutesContent() {
  const hasSubs = p.substitute_ids && p.substitute_ids.length > 0;
  const matchQ =
  !searchQuery ||
- p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+ safeLower(p.name).includes(searchQuery.toLowerCase()) ||
+ (p.sku && safeLower(p.sku).includes(searchQuery.toLowerCase()));
  return hasSubs && matchQ;
  });
 
@@ -294,7 +295,7 @@ function SubstitutesContent() {
  <div className="max-h-48 overflow-y-auto space-y-1 border border-slate-100 dark:border-slate-800 rounded-lg p-1">
  {products
  .filter((p) => p.id !== selectedMainProdId)
- .filter((p) => !subSearch || p.name.toLowerCase().includes(subSearch.toLowerCase()))
+ .filter((p) => !subSearch || safeLower(p.name).includes(subSearch.toLowerCase()))
  .slice(0, 15)
  .map((p) => (
  <div

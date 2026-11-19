@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import { useState, useEffect, useMemo } from'react';
 import { useSearchParams } from'next/navigation';
 import { useSessionStore } from'@/core/state/useSessionStore';

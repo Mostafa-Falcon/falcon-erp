@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 import { useState, useEffect, useMemo, useCallback } from'react';
 import { useSessionStore } from'@/core/state/useSessionStore';
 import type {
@@ -309,7 +310,7 @@ export function useMonitoringDashboard() {
  if (!shortageSearch.trim()) return stockShortages;
  const q = shortageSearch.toLowerCase();
  return stockShortages.filter((item) =>
- item.name.toLowerCase().includes(q) || item.sku.toLowerCase().includes(q)
+ safeLower(item.name).includes(q) || safeLower(item.sku).includes(q)
  );
  }, [stockShortages, shortageSearch]);
 
@@ -318,7 +319,7 @@ export function useMonitoringDashboard() {
  if (!expirySearch.trim()) return expiryItems;
  const q = expirySearch.toLowerCase();
  return expiryItems.filter((item) =>
- item.name.toLowerCase().includes(q) || item.batchNumber.toLowerCase().includes(q)
+ safeLower(item.name).includes(q) || safeLower(item.batchNumber).includes(q)
  );
  }, [expiryItems, expirySearch]);
 
@@ -326,14 +327,14 @@ export function useMonitoringDashboard() {
  const filteredCustomerDebts = useMemo(() => {
  if (!customerSearch.trim()) return customerDebts;
  const q = customerSearch.toLowerCase();
- return customerDebts.filter((c) => c.name.toLowerCase().includes(q));
+ return customerDebts.filter((c) => safeLower(c.name).includes(q));
  }, [customerDebts, customerSearch]);
 
  // Filtered Supplier Debts
  const filteredSupplierDebts = useMemo(() => {
  if (!supplierSearch.trim()) return supplierDebts;
  const q = supplierSearch.toLowerCase();
- return supplierDebts.filter((s) => s.name.toLowerCase().includes(q));
+ return supplierDebts.filter((s) => safeLower(s.name).includes(q));
  }, [supplierDebts, supplierSearch]);
 
  // Filtered Recent Invoices
@@ -342,8 +343,8 @@ export function useMonitoringDashboard() {
  if (!recentSearch.trim()) return displayedRecent;
  const q = recentSearch.toLowerCase();
  return displayedRecent.filter((item) =>
- item.invoiceNumber.toLowerCase().includes(q) ||
- item.partyName.toLowerCase().includes(q)
+ safeLower(item.invoiceNumber).includes(q) ||
+ safeLower(item.partyName).includes(q)
  );
  }, [displayedRecent, recentSearch]);
 
@@ -352,8 +353,8 @@ export function useMonitoringDashboard() {
  if (!deliverySearch.trim()) return deliveryShipments;
  const q = deliverySearch.toLowerCase();
  return deliveryShipments.filter((item) =>
- item.invoiceNumber.toLowerCase().includes(q) ||
- item.customerName.toLowerCase().includes(q)
+ safeLower(item.invoiceNumber).includes(q) ||
+ safeLower(item.customerName).includes(q)
  );
  }, [deliveryShipments, deliverySearch]);
 

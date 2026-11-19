@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
@@ -94,7 +95,7 @@ function CustomerGroupsContent() {
   };
 
   const filtered = useMemo(() => {
-    return groups.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
+    return groups.filter((g) => safeLower(g.name).includes(search.toLowerCase()));
   }, [groups, search]);
 
   const stats = useMemo(() => {

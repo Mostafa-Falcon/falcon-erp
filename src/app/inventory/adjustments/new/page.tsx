@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useMemo, useState, useRef } from'react';
 import { useRouter } from'next/navigation';
 import { AppShell } from'@/components/layout/AppShell';
@@ -243,7 +244,7 @@ export default function NewStocktakePage() {
  const queryLower = (typeof query === 'string' ? query : String(query ?? '')).toLowerCase();
  const found = allProducts.find((p) => {
  if (!p) return false;
- const skuMatch = typeof p.sku === 'string' && p.sku.toLowerCase() === queryLower;
+ const skuMatch = typeof p.sku === 'string' && safeLower(p.sku) === queryLower;
  const altMatch =
  Array.isArray(p.alternate_barcodes) &&
  p.alternate_barcodes.some((b) => typeof b === 'string' && b.toLowerCase() === queryLower);

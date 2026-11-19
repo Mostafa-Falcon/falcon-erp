@@ -34,7 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { InventoryRepository } from '@/modules/inventory/inventory_repository';
 import { ProductRepository } from '@/modules/inventory/product_repository';
-import { formatNumber, formatDateTime } from '@/lib/format';
+import { formatNumber, formatDateTime, safeLower } from '@/lib/format';
 import {
   SlidersHorizontal,
   Plus,
@@ -121,9 +121,9 @@ function AdjustmentsContent() {
       const prod = products.find((p) => p.id === t.product_id);
       const matchQuery =
         !q ||
-        prod?.name.toLowerCase().includes(q) ||
-        prod?.sku.toLowerCase().includes(q) ||
-        (t.notes && t.notes.toLowerCase().includes(q));
+        (prod?.name ? safeLower(prod.name).includes(q) : false) ||
+        (prod?.sku ? safeLower(prod.sku).includes(q) : false) ||
+        (t.notes ? safeLower(t.notes).includes(q) : false);
       const matchWarehouse = warehouseFilter === 'all' || t.warehouse_id === warehouseFilter;
       const matchType = typeFilter === 'all' || t.transaction_type === typeFilter;
       return matchQuery && matchWarehouse && matchType;

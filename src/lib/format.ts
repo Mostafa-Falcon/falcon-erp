@@ -1,4 +1,4 @@
-import type { InventoryTransactionType } from'@/types';
+﻿import type { InventoryTransactionType } from'@/types';
 
 const AR_NUM = {
 '0':'٠','1':'١','2':'٢','3':'٣','4':'٤',
@@ -69,6 +69,15 @@ export const ITEM_TYPE_LABELS: Record<string, string> = {
 
 export function toArabicDigits(input: string | number): string {
  return String(input).replace(/[0-9]/g, (d) => AR_NUM[d as keyof typeof AR_NUM]);
+}
+
+/**
+ * Null-safe lowercase for searchable Dexie records. Local/older rows can carry
+ * null-ish names/SKUs (bad imports, partial syncs) that would otherwise crash
+ * every search box across the app with "Cannot read properties of undefined".
+ */
+export function safeLower(value: unknown): string {
+  return (typeof value === 'string' ? value : value == null ? '' : String(value)).toLowerCase();
 }
 
 export function formatDate(iso?: string | null): string {

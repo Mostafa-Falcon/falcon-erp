@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
@@ -65,7 +66,7 @@ export class ProductRepository {
 			.where('org_id')
 			.equals(orgId)
 			.and(
-				(p) => p.is_active && (p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+				(p) => p.is_active && (safeLower(p.name).includes(q) || safeLower(p.sku).includes(q))
 			)
 			.limit(limit)
 			.toArray();

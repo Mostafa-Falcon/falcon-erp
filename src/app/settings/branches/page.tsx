@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { AppShell } from'@/components/layout/AppShell';
 import { Input } from'@/components/ui/input';
@@ -226,8 +227,8 @@ export default function BranchesSettingsPage() {
  const q = searchQuery.toLowerCase().trim();
  if (!q) return true;
  return (
- b.name.toLowerCase().includes(q) ||
- b.code.toLowerCase().includes(q) ||
+ safeLower(b.name).includes(q) ||
+ safeLower(b.code).includes(q) ||
  (b.address && b.address.toLowerCase().includes(q)) ||
  (b.phone && b.phone.includes(q))
  );

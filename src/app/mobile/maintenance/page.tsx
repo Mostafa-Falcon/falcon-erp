@@ -311,514 +311,514 @@ export default function MaintenancePage() {
     >
       <div className="space-y-6 text-right" dir="rtl">
         {/* Search & Filters Toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Search */}
-        <div className="relative col-span-2">
-          <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث برقم التكت، اسم العميل، الهاتف، موديل الجهاز، أو السيريال/IMEI..."
-            className="pr-10 h-11 rounded-2xl bg-surface text-xs font-semibold border-slate-200 dark:border-slate-800"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Search */}
+          <div className="relative col-span-2">
+            <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث برقم التكت، اسم العميل، الهاتف، موديل الجهاز، أو السيريال/IMEI..."
+              className="pr-10 h-11 rounded-2xl bg-surface text-xs font-semibold border-slate-200 dark:border-slate-800"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
+              <SelectValue placeholder="تصفية بالحالة..." />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800">
+              <SelectItem value="all">كافة حالات الصيانة</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([key, st]) => (
+                <SelectItem key={key} value={key}>
+                  {st.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Status Filter */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-11 rounded-2xl bg-surface text-xs font-bold border-slate-200 dark:border-slate-800">
-            <SelectValue placeholder="تصفية بالحالة..." />
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800">
-            <SelectItem value="all">كافة حالات الصيانة</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([key, st]) => (
-              <SelectItem key={key} value={key}>
-                {st.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Tickets List View */}
-      {isLoading ? (
-        <div className="py-20 text-center text-xs font-bold text-slate-400 flex flex-col items-center gap-2">
-          <Loader2 className="w-7 h-7 animate-spin text-amber-500" />
-          <span>جاري تحميل مركز أذونات الصيانة...</span>
-        </div>
-      ) : filteredTickets.length === 0 ? (
-        <div className="py-16 text-center text-xs font-bold text-slate-400 bg-surface rounded-3xl border border-slate-200 dark:border-slate-800">
-          لا توجد أذونات صيانة مطابقة لبيانات البحث
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTickets.map((t) => {
-            const st = STATUS_LABELS[t.status];
-            return (
-              <div
-                key={t.id}
-                onClick={() => loadTicketDetail(t)}
-                className="p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-surface hover:border-amber-400 transition-all space-y-3 cursor-pointer group shadow-2xs hover:shadow-xs"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-black text-sm text-slate-900 dark:text-white group-hover:text-amber-600 transition-colors">
-                    #{t.ticket_number}
-                  </span>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-2xs font-bold border flex items-center gap-1 ${st.color}`}
-                  >
-                    {st.icon}
-                    <span>{st.label}</span>
-                  </span>
-                </div>
-
-                {/* Device & Client */}
-                <div className="space-y-1 pt-1">
-                  <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{t.device_model}</span>
-                  </div>
-                  <div className="text-2xs text-slate-500 font-medium flex items-center gap-2">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {t.customer_name}
+        {/* Tickets List View */}
+        {isLoading ? (
+          <div className="py-20 text-center text-xs font-bold text-slate-400 flex flex-col items-center gap-2">
+            <Loader2 className="w-7 h-7 animate-spin text-amber-500" />
+            <span>جاري تحميل مركز أذونات الصيانة...</span>
+          </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="py-16 text-center text-xs font-bold text-slate-400 bg-surface rounded-3xl border border-slate-200 dark:border-slate-800">
+            لا توجد أذونات صيانة مطابقة لبيانات البحث
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTickets.map((t) => {
+              const st = STATUS_LABELS[t.status];
+              return (
+                <div
+                  key={t.id}
+                  onClick={() => loadTicketDetail(t)}
+                  className="p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-surface hover:border-amber-400 transition-all space-y-3 cursor-pointer group shadow-2xs hover:shadow-xs"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-black text-sm text-slate-900 dark:text-white group-hover:text-amber-600 transition-colors">
+                      #{t.ticket_number}
                     </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1 font-mono">
-                      <Phone className="w-3 h-3" />
-                      {t.customer_phone}
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-2xs font-bold border flex items-center gap-1 ${st.color}`}
+                    >
+                      {st.icon}
+                      <span>{st.label}</span>
                     </span>
                   </div>
-                  {t.imei_or_serial && (
-                    <div className="text-3xs font-mono text-slate-400">
-                      IMEI: {t.imei_or_serial}
+
+                  {/* Device & Client */}
+                  <div className="space-y-1 pt-1">
+                    <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{t.device_model}</span>
                     </div>
-                  )}
+                    <div className="text-2xs text-slate-500 font-medium flex items-center gap-2">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {t.customer_name}
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 font-mono">
+                        <Phone className="w-3 h-3" />
+                        {t.customer_phone}
+                      </span>
+                    </div>
+                    {t.imei_or_serial && (
+                      <div className="text-3xs font-mono text-slate-400">
+                        IMEI: {t.imei_or_serial}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Problem */}
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-2xs text-slate-600 dark:text-slate-400 font-medium line-clamp-2">
+                    {t.problem_description}
+                  </div>
+
+                  {/* Financial Footer */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-2xs text-slate-400 block font-semibold">الإجمالي:</span>
+                      <span className="font-mono font-black text-slate-900 dark:text-white">
+                        {formatNumber(t.total_amount)} ج.م
+                      </span>
+                    </div>
+                    {t.remaining_amount > 0 ? (
+                      <span className="px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 text-2xs font-mono font-bold">
+                        متبقي: {formatNumber(t.remaining_amount)}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 text-2xs font-bold">
+                        خالص السداد
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Ticket Detail Drawer/Modal */}
+        {selectedTicket && (
+          <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
+            <DialogContent
+              className="max-w-2xl max-h-[92vh] overflow-y-auto p-6 rounded-3xl border-slate-200 dark:border-slate-800 bg-surface shadow-2xl text-right"
+              dir="rtl"
+            >
+              <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 space-y-1">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>تفاصيل إذن صيانة</span>
+                    <span className="font-mono text-amber-600">#{selectedTicket.ticket_number}</span>
+                  </DialogTitle>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 ${STATUS_LABELS[selectedTicket.status].color}`}
+                  >
+                    {STATUS_LABELS[selectedTicket.status].icon}
+                    <span>{STATUS_LABELS[selectedTicket.status].label}</span>
+                  </span>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-4 pt-2 text-xs">
+                {/* Quick Status Buttons */}
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                  <span className="text-2xs font-black text-slate-500 block">تحديث حالة الصيانة:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(STATUS_LABELS).map(([key, st]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        disabled={selectedTicket.status === key}
+                        onClick={() => handleStatusChange(selectedTicket.id, key as RepairStatus)}
+                        className={`px-3 py-1.5 rounded-xl text-2xs font-bold border transition-all cursor-pointer disabled:opacity-40 ${st.color}`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Problem */}
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-2xs text-slate-600 dark:text-slate-400 font-medium line-clamp-2">
-                  {t.problem_description}
-                </div>
-
-                {/* Financial Footer */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                {/* Customer & Device Info Card */}
+                <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-surface-2 font-semibold">
                   <div>
-                    <span className="text-2xs text-slate-400 block font-semibold">الإجمالي:</span>
-                    <span className="font-mono font-black text-slate-900 dark:text-white">
-                      {formatNumber(t.total_amount)} ج.م
+                    <span className="text-slate-400 block text-3xs">العميل:</span>
+                    <span className="text-slate-900 dark:text-white text-xs font-bold">
+                      {selectedTicket.customer_name} ({selectedTicket.customer_phone})
                     </span>
                   </div>
-                  {t.remaining_amount > 0 ? (
-                    <span className="px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 text-2xs font-mono font-bold">
-                      متبقي: {formatNumber(t.remaining_amount)}
+                  <div>
+                    <span className="text-slate-400 block text-3xs">موديل الجهاز:</span>
+                    <span className="text-slate-900 dark:text-white text-xs font-bold">
+                      {selectedTicket.device_model}
                     </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 text-2xs font-bold">
-                      خالص السداد
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-3xs">IMEI / السيريال:</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-mono">
+                      {selectedTicket.imei_or_serial || '—'}
                     </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-3xs">رمز القفل / الباسكود:</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-mono font-bold">
+                      {selectedTicket.passcode_or_pattern || '—'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Spare Parts List */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                  <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      قطع الغيار المستهلكة ({ticketItems.length})
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsAddPartOpen(true)}
+                      className="h-7 px-3 text-2xs bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg cursor-pointer"
+                    >
+                      + إضافة قطعة غيار
+                    </Button>
+                  </div>
+                  <table className="w-full text-right text-2xs">
+                    <thead className="bg-slate-50/50 dark:bg-slate-900/30 font-bold text-slate-500">
+                      <tr>
+                        <th className="py-2 px-3">اسم القطعة</th>
+                        <th className="py-2 px-2 text-center">الكمية</th>
+                        <th className="py-2 px-3 text-center">السعر</th>
+                        <th className="py-2 px-3 text-left">الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                      {ticketItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-6 text-center text-slate-400">
+                            لم يتم إضافة قطع غيار لهذا الإذن بعد
+                          </td>
+                        </tr>
+                      ) : (
+                        ticketItems.map((item) => (
+                          <tr key={item.id}>
+                            <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">
+                              {item.product_name}
+                            </td>
+                            <td className="py-2 px-2 text-center font-mono">{item.quantity}</td>
+                            <td className="py-2 px-3 text-center font-mono">{formatNumber(item.unit_price)}</td>
+                            <td className="py-2 px-3 text-left font-mono font-bold text-amber-600">
+                              {formatNumber(item.total)} ج.م
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Financial Totals */}
+                <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-center justify-between">
+                  <div>
+                    <span className="text-2xs text-amber-800 dark:text-amber-300 font-bold block">
+                      المصنعية + قطع الغيار:
+                    </span>
+                    <span className="text-3xs text-slate-500">
+                      (مصنعية: {formatNumber(selectedTicket.labor_fee)} ج.م | قطع غيار: {formatNumber(selectedTicket.actual_parts_cost)} ج.م)
+                    </span>
+                  </div>
+                  <span className="text-lg font-mono font-black text-amber-600 dark:text-amber-400">
+                    {formatNumber(selectedTicket.total_amount)} ج.م
+                  </span>
+                </div>
+
+                {/* Actions: Pay / Deliver */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => window.print()}
+                    className="h-10 px-4 rounded-xl text-xs font-bold gap-1.5 cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>طباعة إيصال صيانة</span>
+                  </Button>
+
+                  {selectedTicket.remaining_amount > 0 && (
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setPayAmount(String(selectedTicket.remaining_amount));
+                        setIsPayOpen(true);
+                      }}
+                      className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <DollarSign className="w-4 h-4" />
+                      <span>تحصيل النقدية وتسليم الجهاز ({formatNumber(selectedTicket.remaining_amount)} ج.م)</span>
+                    </Button>
                   )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </DialogContent>
+          </Dialog>
+        )}
 
-      {/* Ticket Detail Drawer/Modal */}
-      {selectedTicket && (
-        <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
+        {/* Modal: New Maintenance Ticket */}
+        <Dialog open={isNewTicketOpen} onOpenChange={setIsNewTicketOpen}>
           <DialogContent
             className="max-w-2xl max-h-[92vh] overflow-y-auto p-6 rounded-3xl border-slate-200 dark:border-slate-800 bg-surface shadow-2xl text-right"
             dir="rtl"
           >
-            <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 space-y-1">
-              <div className="flex items-center justify-between">
-                <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>تفاصيل إذن صيانة</span>
-                  <span className="font-mono text-amber-600">#{selectedTicket.ticket_number}</span>
-                </DialogTitle>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 ${STATUS_LABELS[selectedTicket.status].color}`}
-                >
-                  {STATUS_LABELS[selectedTicket.status].icon}
-                  <span>{STATUS_LABELS[selectedTicket.status].label}</span>
-                </span>
-              </div>
+            <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <DialogTitle className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-amber-500" />
+                <span>إنشاء إذن صيانة جديد (استلام جهاز)</span>
+              </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4 pt-2 text-xs">
-              {/* Quick Status Buttons */}
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-                <span className="text-2xs font-black text-slate-500 block">تحديث حالة الصيانة:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(STATUS_LABELS).map(([key, st]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      disabled={selectedTicket.status === key}
-                      onClick={() => handleStatusChange(selectedTicket.id, key as RepairStatus)}
-                      className={`px-3 py-1.5 rounded-xl text-2xs font-bold border transition-all cursor-pointer disabled:opacity-40 ${st.color}`}
-                    >
-                      {st.label}
-                    </button>
-                  ))}
+            <form onSubmit={handleCreateTicket} className="space-y-4 pt-2 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold">اسم العميل *</Label>
+                  <Input
+                    required
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="اسم الزبون بالكامل..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold">رقم الهاتف *</Label>
+                  <Input
+                    required
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="01xxxxxxxx..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold">نوع وموديل الجهاز *</Label>
+                  <Input
+                    required
+                    value={deviceModel}
+                    onChange={(e) => setDeviceModel(e.target.value)}
+                    placeholder="مثال: iPhone 13 Pro Max 128GB أسود..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold">IMEI / السيريال (اختياري)</Label>
+                  <Input
+                    value={imeiOrSerial}
+                    onChange={(e) => setImeiOrSerial(e.target.value)}
+                    placeholder="رقم الـ IMEI للجهاز..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold">رمز القفل / النمط</Label>
+                  <Input
+                    value={passcodeOrPattern}
+                    onChange={(e) => setPasscodeOrPattern(e.target.value)}
+                    placeholder="مثال: 1234 أو النمط حرف Z..."
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-amber-600"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold">رسوم المصنعية التقديرية (ج.م)</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={laborFee}
+                    onChange={(e) => setLaborFee(e.target.value)}
+                    placeholder="0.00"
+                    className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono font-bold"
+                  />
                 </div>
               </div>
 
-              {/* Customer & Device Info Card */}
-              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-surface-2 font-semibold">
-                <div>
-                  <span className="text-slate-400 block text-3xs">العميل:</span>
-                  <span className="text-slate-900 dark:text-white text-xs font-bold">
-                    {selectedTicket.customer_name} ({selectedTicket.customer_phone})
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-3xs">موديل الجهاز:</span>
-                  <span className="text-slate-900 dark:text-white text-xs font-bold">
-                    {selectedTicket.device_model}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-3xs">IMEI / السيريال:</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-mono">
-                    {selectedTicket.imei_or_serial || '—'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-3xs">رمز القفل / الباسكود:</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-mono font-bold">
-                    {selectedTicket.passcode_or_pattern || '—'}
-                  </span>
-                </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold">وصف المشكلة والعيوب الملحوظة *</Label>
+                <Input
+                  required
+                  value={problemDescription}
+                  onChange={(e) => setProblemDescription(e.target.value)}
+                  placeholder="مثال: تغيير شاشة، لا يشحن، تهنيج عند الفتح..."
+                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
+                />
               </div>
 
-              {/* Spare Parts List */}
-              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    قطع الغيار المستهلكة ({ticketItems.length})
-                  </span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setIsAddPartOpen(true)}
-                    className="h-7 px-3 text-2xs bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg cursor-pointer"
-                  >
-                    + إضافة قطعة غيار
-                  </Button>
-                </div>
-                <table className="w-full text-right text-2xs">
-                  <thead className="bg-slate-50/50 dark:bg-slate-900/30 font-bold text-slate-500">
-                    <tr>
-                      <th className="py-2 px-3">اسم القطعة</th>
-                      <th className="py-2 px-2 text-center">الكمية</th>
-                      <th className="py-2 px-3 text-center">السعر</th>
-                      <th className="py-2 px-3 text-left">الإجمالي</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                    {ticketItems.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-slate-400">
-                          لم يتم إضافة قطع غيار لهذا الإذن بعد
-                        </td>
-                      </tr>
-                    ) : (
-                      ticketItems.map((item) => (
-                        <tr key={item.id}>
-                          <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">
-                            {item.product_name}
-                          </td>
-                          <td className="py-2 px-2 text-center font-mono">{item.quantity}</td>
-                          <td className="py-2 px-3 text-center font-mono">{formatNumber(item.unit_price)}</td>
-                          <td className="py-2 px-3 text-left font-mono font-bold text-amber-600">
-                            {formatNumber(item.total)} ج.م
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold">الملحقات المستلمة مع الجهاز</Label>
+                <Input
+                  value={accessoriesReceived}
+                  onChange={(e) => setAccessoriesReceived(e.target.value)}
+                  placeholder="مثال: شاحن، جراب شفاف، بدون بيت الخط..."
+                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
+                />
               </div>
 
-              {/* Financial Totals */}
-              <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-center justify-between">
-                <div>
-                  <span className="text-2xs text-amber-800 dark:text-amber-300 font-bold block">
-                    المصنعية + قطع الغيار:
-                  </span>
-                  <span className="text-3xs text-slate-500">
-                    (مصنعية: {formatNumber(selectedTicket.labor_fee)} ج.م | قطع غيار: {formatNumber(selectedTicket.actual_parts_cost)} ج.م)
-                  </span>
-                </div>
-                <span className="text-lg font-mono font-black text-amber-600 dark:text-amber-400">
-                  {formatNumber(selectedTicket.total_amount)} ج.م
-                </span>
-              </div>
-
-              {/* Actions: Pay / Deliver */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => window.print()}
-                  className="h-10 px-4 rounded-xl text-xs font-bold gap-1.5 cursor-pointer"
+                  onClick={() => setIsNewTicketOpen(false)}
+                  className="h-10 px-4 rounded-xl text-xs font-bold cursor-pointer"
                 >
-                  <Printer className="w-4 h-4" />
-                  <span>طباعة إيصال صيانة</span>
+                  إلغاء
                 </Button>
-
-                {selectedTicket.remaining_amount > 0 && (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setPayAmount(String(selectedTicket.remaining_amount));
-                      setIsPayOpen(true);
-                    }}
-                    className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    <DollarSign className="w-4 h-4" />
-                    <span>تحصيل النقدية وتسليم الجهاز ({formatNumber(selectedTicket.remaining_amount)} ج.م)</span>
-                  </Button>
-                )}
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="h-10 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+                  <span>حفظ وطباعة إذن الاستلام</span>
+                </Button>
               </div>
-            </div>
+            </form>
           </DialogContent>
         </Dialog>
-      )}
 
-      {/* Modal: New Maintenance Ticket */}
-      <Dialog open={isNewTicketOpen} onOpenChange={setIsNewTicketOpen}>
-        <DialogContent
-          className="max-w-2xl max-h-[92vh] overflow-y-auto p-6 rounded-3xl border-slate-200 dark:border-slate-800 bg-surface shadow-2xl text-right"
-          dir="rtl"
-        >
-          <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <DialogTitle className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Wrench className="w-5 h-5 text-amber-500" />
-              <span>إنشاء إذن صيانة جديد (استلام جهاز)</span>
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleCreateTicket} className="space-y-4 pt-2 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+        {/* Modal: Add Spare Part */}
+        <Dialog open={isAddPartOpen} onOpenChange={setIsAddPartOpen}>
+          <DialogContent className="max-w-md p-6 rounded-3xl bg-surface text-right" dir="rtl">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-sm font-black">إضافة قطعة غيار لتكت الصيانة</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddSparePart} className="space-y-3 text-xs pt-1">
               <div className="space-y-1">
-                <Label className="text-xs font-bold">اسم العميل *</Label>
-                <Input
-                  required
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="اسم الزبون بالكامل..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
-                />
+                <Label>اختر قطعة الغيار من المخزن *</Label>
+                <Select value={selectedPartId} onValueChange={setSelectedPartId}>
+                  <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900">
+                    <SelectValue placeholder="اختر الصنف..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-56">
+                    {products.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} — سعر البيع: {formatNumber(p.sale_price)} ج.م
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-bold">رقم الهاتف *</Label>
-                <Input
-                  required
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="01xxxxxxxx..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label>الكمية المستهلكة</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={partQty}
+                    onChange={(e) => setPartQty(e.target.value)}
+                    className="h-10 rounded-xl font-mono text-center font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>سعر البيع للعميل (ج.م)</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={partPrice}
+                    onChange={(e) => setPartPrice(e.target.value)}
+                    placeholder="افتراضي"
+                    className="h-10 rounded-xl font-mono text-center font-bold"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-bold">نوع وموديل الجهاز *</Label>
-                <Input
-                  required
-                  value={deviceModel}
-                  onChange={(e) => setDeviceModel(e.target.value)}
-                  placeholder="مثال: iPhone 13 Pro Max 128GB أسود..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
-                />
+              <div className="pt-2 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsAddPartOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={isSaving || !selectedPartId} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                  تأكيد الإضافة والخصم
+                </Button>
               </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
+        {/* Modal: Pay Ticket */}
+        <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
+          <DialogContent className="max-w-md p-6 rounded-3xl bg-surface text-right" dir="rtl">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-sm font-black text-emerald-600">تحصيل نقدية صيانة وتسليم الجهاز</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handlePayTicket} className="space-y-3 text-xs pt-1">
               <div className="space-y-1">
-                <Label className="text-xs font-bold">IMEI / السيريال (اختياري)</Label>
-                <Input
-                  value={imeiOrSerial}
-                  onChange={(e) => setImeiOrSerial(e.target.value)}
-                  placeholder="رقم الـ IMEI للجهاز..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-bold">رمز القفل / النمط</Label>
-                <Input
-                  value={passcodeOrPattern}
-                  onChange={(e) => setPasscodeOrPattern(e.target.value)}
-                  placeholder="مثال: 1234 أو النمط حرف Z..."
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-amber-600"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-bold">رسوم المصنعية التقديرية (ج.م)</Label>
+                <Label>المبلغ المحصل من العميل (ج.م) *</Label>
                 <Input
                   type="number"
                   step="any"
-                  value={laborFee}
-                  onChange={(e) => setLaborFee(e.target.value)}
-                  placeholder="0.00"
-                  className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono font-bold"
+                  required
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  className="h-11 rounded-xl font-mono text-center font-black text-base text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs font-bold">وصف المشكلة والعيوب الملحوظة *</Label>
-              <Input
-                required
-                value={problemDescription}
-                onChange={(e) => setProblemDescription(e.target.value)}
-                placeholder="مثال: تغيير شاشة، لا يشحن، تهنيج عند الفتح..."
-                className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs font-bold">الملحقات المستلمة مع الجهاز</Label>
-              <Input
-                value={accessoriesReceived}
-                onChange={(e) => setAccessoriesReceived(e.target.value)}
-                placeholder="مثال: شاحن، جراب شفاف، بدون بيت الخط..."
-                className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900"
-              />
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsNewTicketOpen(false)}
-                className="h-10 px-4 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                إلغاء
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSaving}
-                className="h-10 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
-                <span>حفظ وطباعة إذن الاستلام</span>
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Add Spare Part */}
-      <Dialog open={isAddPartOpen} onOpenChange={setIsAddPartOpen}>
-        <DialogContent className="max-w-md p-6 rounded-3xl bg-surface text-right" dir="rtl">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-sm font-black">إضافة قطعة غيار لتكت الصيانة</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddSparePart} className="space-y-3 text-xs pt-1">
-            <div className="space-y-1">
-              <Label>اختر قطعة الغيار من المخزن *</Label>
-              <Select value={selectedPartId} onValueChange={setSelectedPartId}>
-                <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900">
-                  <SelectValue placeholder="اختر الصنف..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-56">
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} — سعر البيع: {formatNumber(p.sale_price)} ج.م
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label>الكمية المستهلكة</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={partQty}
-                  onChange={(e) => setPartQty(e.target.value)}
-                  className="h-10 rounded-xl font-mono text-center font-bold"
-                />
+                <Label>خزينة التحصيل *</Label>
+                <Select value={targetTreasuryId} onValueChange={setTargetTreasuryId}>
+                  <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-bold">
+                    <SelectValue placeholder="اختر الخزينة..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {treasuries.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} ({formatNumber(t.current_balance)} ج.م)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1">
-                <Label>سعر البيع للعميل (ج.م)</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={partPrice}
-                  onChange={(e) => setPartPrice(e.target.value)}
-                  placeholder="افتراضي"
-                  className="h-10 rounded-xl font-mono text-center font-bold"
-                />
+
+              <div className="pt-2 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsPayOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                  تأكيد التحصيل والتسليم
+                </Button>
               </div>
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsAddPartOpen(false)}>
-                إلغاء
-              </Button>
-              <Button type="submit" disabled={isSaving || !selectedPartId} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
-                تأكيد الإضافة والخصم
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Pay Ticket */}
-      <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
-        <DialogContent className="max-w-md p-6 rounded-3xl bg-surface text-right" dir="rtl">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-sm font-black text-emerald-600">تحصيل نقدية صيانة وتسليم الجهاز</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handlePayTicket} className="space-y-3 text-xs pt-1">
-            <div className="space-y-1">
-              <Label>المبلغ المحصل من العميل (ج.م) *</Label>
-              <Input
-                type="number"
-                step="any"
-                required
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                className="h-11 rounded-xl font-mono text-center font-black text-base text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label>خزينة التحصيل *</Label>
-              <Select value={targetTreasuryId} onValueChange={setTargetTreasuryId}>
-                <SelectTrigger className="h-10 rounded-xl bg-slate-50 dark:bg-slate-900 font-bold">
-                  <SelectValue placeholder="اختر الخزينة..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {treasuries.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name} ({formatNumber(t.current_balance)} ج.م)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsPayOpen(false)}>
-                إلغاء
-              </Button>
-              <Button type="submit" disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
-                تأكيد التحصيل والتسليم
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </AppShell>
   );
 }

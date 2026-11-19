@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState, Suspense } from'react';
 import { useRouter } from'next/navigation';
 import Link from'next/link';
@@ -94,8 +95,8 @@ function NewQuoteContent() {
 
  const filteredProducts = products.filter(
  (p) =>
- p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
- (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
+ safeLower(p.name).includes(productSearch.toLowerCase()) ||
+ (p.sku && safeLower(p.sku).includes(productSearch.toLowerCase()))
  );
 
  const handleAddProduct = (product: Product) => {

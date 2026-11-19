@@ -1,426 +1,426 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, Suspense } from'react';
-import Link from'next/link';
+import React, { useEffect, useMemo, useState, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AppShell } from'@/components/layout/AppShell';
-import { Button } from'@/components/ui/button';
-import { Badge } from'@/components/ui/badge';
-import { Input } from'@/components/ui/input';
+import { AppShell } from '@/components/layout/AppShell';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { KpiCard } from '@/components/ui/kpi-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
- Table,
- TableBody,
- TableCell,
- TableHead,
- TableHeader,
- TableRow,
-} from'@/components/ui/table';
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import {
- Select,
- SelectContent,
- SelectItem,
- SelectTrigger,
- SelectValue,
-} from'@/components/ui/select';
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
- Dialog,
- DialogContent,
- DialogHeader,
- DialogTitle,
-} from'@/components/ui/dialog';
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
- Plus,
- Search,
- ShoppingCart,
- Truck,
- CheckCircle2,
- Clock,
- Eye,
- DollarSign,
- PackageCheck,
-} from'lucide-react';
-import { useSessionStore } from'@/core/state/useSessionStore';
-import { PurchaseOrdersRepository } from'@/modules/purchases/purchase_orders_repository';
-import { formatNumber } from'@/lib/format';
-import type { PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus } from'@/types';
-import { toast } from'sonner';
+    Plus,
+    Search,
+    ShoppingCart,
+    Truck,
+    CheckCircle2,
+    Clock,
+    Eye,
+    DollarSign,
+    PackageCheck,
+} from 'lucide-react';
+import { useSessionStore } from '@/core/state/useSessionStore';
+import { PurchaseOrdersRepository } from '@/modules/purchases/purchase_orders_repository';
+import { formatNumber } from '@/lib/format';
+import type { PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus } from '@/types';
+import { toast } from 'sonner';
 
 function PurchaseOrdersContent() {
- const router = useRouter();
- const { currentUser } = useSessionStore();
- const orgId = currentUser?.org_id ||'';
+    const router = useRouter();
+    const { currentUser } = useSessionStore();
+    const orgId = currentUser?.org_id || '';
 
- const [orders, setOrders] = useState<PurchaseOrder[]>([]);
- const [isLoading, setIsLoading] = useState(true);
- const [search, setSearch] = useState('');
- const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
- // Detail Modal
- const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
- const [selectedItems, setSelectedItems] = useState<PurchaseOrderItem[]>([]);
- const [isDetailOpen, setIsDetailOpen] = useState(false);
+    // Detail Modal
+    const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+    const [selectedItems, setSelectedItems] = useState<PurchaseOrderItem[]>([]);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
 
- const loadData = async () => {
- if (!orgId) return;
- try {
- setIsLoading(true);
- const list = await PurchaseOrdersRepository.getPurchaseOrders(orgId);
- setOrders(list);
- } catch (err) {
- console.error(err);
- toast.error('حدث خطأ أثناء تحميل أوامر الشراء');
- } finally {
- setIsLoading(false);
- }
- };
+    const loadData = async () => {
+        if (!orgId) return;
+        try {
+            setIsLoading(true);
+            const list = await PurchaseOrdersRepository.getPurchaseOrders(orgId);
+            setOrders(list);
+        } catch (err) {
+            console.error(err);
+            toast.error('حدث خطأ أثناء تحميل أوامر الشراء');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
- useEffect(() => {
- loadData();
- }, [orgId]);
+    useEffect(() => {
+        loadData();
+    }, [orgId]);
 
- const filteredOrders = useMemo(() => {
- return orders.filter((po) => {
- const matchSearch =
- po.po_number.toLowerCase().includes(search.toLowerCase()) ||
- (po.supplier_name && po.supplier_name.toLowerCase().includes(search.toLowerCase()));
- const matchStatus = statusFilter ==='all'|| po.status === statusFilter;
- return matchSearch && matchStatus;
- });
- }, [orders, search, statusFilter]);
+    const filteredOrders = useMemo(() => {
+        return orders.filter((po) => {
+            const matchSearch =
+                po.po_number.toLowerCase().includes(search.toLowerCase()) ||
+                (po.supplier_name && po.supplier_name.toLowerCase().includes(search.toLowerCase()));
+            const matchStatus = statusFilter === 'all' || po.status === statusFilter;
+            return matchSearch && matchStatus;
+        });
+    }, [orders, search, statusFilter]);
 
- const stats = useMemo(() => {
- const totalCount = orders.length;
- const pendingCount = orders.filter((o) => o.status ==='sent'|| o.status ==='draft').length;
- const receivedCount = orders.filter((o) => o.status ==='received').length;
- const totalValue = orders.reduce((acc, o) => acc + o.total, 0);
- return { totalCount, pendingCount, receivedCount, totalValue };
- }, [orders]);
+    const stats = useMemo(() => {
+        const totalCount = orders.length;
+        const pendingCount = orders.filter((o) => o.status === 'sent' || o.status === 'draft').length;
+        const receivedCount = orders.filter((o) => o.status === 'received').length;
+        const totalValue = orders.reduce((acc, o) => acc + o.total, 0);
+        return { totalCount, pendingCount, receivedCount, totalValue };
+    }, [orders]);
 
- const handleOpenDetail = async (po: PurchaseOrder) => {
- setSelectedOrder(po);
- setIsDetailOpen(true);
- try {
- const items = await PurchaseOrdersRepository.getPurchaseOrderItems(po.id);
- setSelectedItems(items);
- } catch (e) {
- console.error(e);
- toast.error('تعذر تحميل تفاصيل أمر الشراء');
- }
- };
+    const handleOpenDetail = async (po: PurchaseOrder) => {
+        setSelectedOrder(po);
+        setIsDetailOpen(true);
+        try {
+            const items = await PurchaseOrdersRepository.getPurchaseOrderItems(po.id);
+            setSelectedItems(items);
+        } catch (e) {
+            console.error(e);
+            toast.error('تعذر تحميل تفاصيل أمر الشراء');
+        }
+    };
 
- const handleStatusChange = async (id: string, status: PurchaseOrderStatus) => {
- try {
- await PurchaseOrdersRepository.updateStatus(id, status);
- toast.success('تم تحديث حالة أمر الشراء بنجاح');
- loadData();
- if (selectedOrder && selectedOrder.id === id) {
- setSelectedOrder((prev) => (prev ? { ...prev, status } : null));
- }
- } catch (err) {
- console.error(err);
- toast.error('فشل تحديث حالة أمر الشراء');
- }
- };
+    const handleStatusChange = async (id: string, status: PurchaseOrderStatus) => {
+        try {
+            await PurchaseOrdersRepository.updateStatus(id, status);
+            toast.success('تم تحديث حالة أمر الشراء بنجاح');
+            loadData();
+            if (selectedOrder && selectedOrder.id === id) {
+                setSelectedOrder((prev) => (prev ? { ...prev, status } : null));
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('فشل تحديث حالة أمر الشراء');
+        }
+    };
 
- const handleConvertToInvoice = async (po: PurchaseOrder) => {
- if (!currentUser) return;
- try {
- const items = await PurchaseOrdersRepository.getPurchaseOrderItems(po.id);
- if (!items || items.length === 0) {
- toast.error('لا توجد أصناف في أمر الشراء هذا');
- return;
- }
+    const handleConvertToInvoice = async (po: PurchaseOrder) => {
+        if (!currentUser) return;
+        try {
+            const items = await PurchaseOrdersRepository.getPurchaseOrderItems(po.id);
+            if (!items || items.length === 0) {
+                toast.error('لا توجد أصناف في أمر الشراء هذا');
+                return;
+            }
 
- const { db } = await import('@/core/db/app_database');
- const { PurchasesRepository } = await import('@/modules/purchases/purchases_repository');
- const warehouse = (await db.warehouses.where('org_id').equals(orgId).first()) || { id: po.warehouse_id || currentUser.branch_id ||'' };
- const treasury = (await db.treasuries.where('org_id').equals(orgId).first()) || { id:'' };
+            const { db } = await import('@/core/db/app_database');
+            const { PurchasesRepository } = await import('@/modules/purchases/purchases_repository');
+            const warehouse = (await db.warehouses.where('org_id').equals(orgId).first()) || { id: po.warehouse_id || currentUser.branch_id || '' };
+            const treasury = (await db.treasuries.where('org_id').equals(orgId).first()) || { id: '' };
 
- const createdInvoice = await PurchasesRepository.createPurchaseInvoice({
- orgId,
- branchId: po.branch_id || currentUser.branch_id ||'',
- warehouseId: warehouse.id,
- supplierId: po.supplier_id ||'',
- supplierInvoiceNumber:`PUR-${po.po_number}`,
- paymentType:'credit',
- treasuryId: treasury.id,
- userId: currentUser.id,
- notes:`تحويل تلقائي من أمر شراء رقم #${po.po_number}`,
- items: items.map((it) => ({
- productId: it.product_id,
- unitId: it.unit_id ||'',
- conversionFactor: it.conversion_factor || 1,
- quantity: it.quantity,
- unitCost: it.unit_cost,
- })),
- });
+            const createdInvoice = await PurchasesRepository.createPurchaseInvoice({
+                orgId,
+                branchId: po.branch_id || currentUser.branch_id || '',
+                warehouseId: warehouse.id,
+                supplierId: po.supplier_id || '',
+                supplierInvoiceNumber: `PUR-${po.po_number}`,
+                paymentType: 'credit',
+                treasuryId: treasury.id,
+                userId: currentUser.id,
+                notes: `تحويل تلقائي من أمر شراء رقم #${po.po_number}`,
+                items: items.map((it) => ({
+                    productId: it.product_id,
+                    unitId: it.unit_id || '',
+                    conversionFactor: it.conversion_factor || 1,
+                    quantity: it.quantity,
+                    unitCost: it.unit_cost,
+                })),
+            });
 
- await PurchaseOrdersRepository.updateStatus(po.id,'received');
- toast.success(`تم تحويل أمر الشراء #${po.po_number} إلى فاتورة مشتريات #${createdInvoice.invoice_number} وزيادة الرصيد بالمخزن!`);
- loadData();
- setIsDetailOpen(false);
- } catch (e: any) {
- console.error(e);
- toast.error(e?.message ||'فشل تحويل أمر الشراء إلى فاتورة مشتريات');
- }
- };
+            await PurchaseOrdersRepository.updateStatus(po.id, 'received');
+            toast.success(`تم تحويل أمر الشراء #${po.po_number} إلى فاتورة مشتريات #${createdInvoice.invoice_number} وزيادة الرصيد بالمخزن!`);
+            loadData();
+            setIsDetailOpen(false);
+        } catch (e: any) {
+            console.error(e);
+            toast.error(e?.message || 'فشل تحويل أمر الشراء إلى فاتورة مشتريات');
+        }
+    };
 
- const getStatusBadge = (status: PurchaseOrderStatus) => {
- switch (status) {
- case'received':
- return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">تم الاستلام</Badge>;
- case'partially_received':
- return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-400">استلام جزئي</Badge>;
- case'cancelled':
- return <Badge className="bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-400">ملغي</Badge>;
- case'sent':
- default:
- return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400">قيد التوريد</Badge>;
- }
- };
+    const getStatusBadge = (status: PurchaseOrderStatus) => {
+        switch (status) {
+            case 'received':
+                return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">تم الاستلام</Badge>;
+            case 'partially_received':
+                return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-400">استلام جزئي</Badge>;
+            case 'cancelled':
+                return <Badge className="bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-400">ملغي</Badge>;
+            case 'sent':
+            default:
+                return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400">قيد التوريد</Badge>;
+        }
+    };
 
- return (
- <AppShell
- title="أوامر الشراء (Purchase Orders)"
- subtitle="متابعة أوامر الشراء الموجهة للموردين وحالة التوريد والاستلام"
- actions={
- <Link href="/purchases/orders/new">
- <Button className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer">
- <Plus className="w-4 h-4"/>
- <span>إنشاء أمر شراء جديد</span>
- </Button>
- </Link>
- }
- >
- <div className="space-y-5 text-right select-none" dir="rtl">
- {/* KPI Cards — Unified Design System */}
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
- <KpiCard
- label="إجمالي الأوامر"
- value={stats.totalCount}
- unit="أمر شراء"
- variant="blue"
- icon={<ShoppingCart className="w-5 h-5"/>}
- />
- <KpiCard
- label="أوامر قيد التوريد"
- value={stats.pendingCount}
- unit="قيد التوريد"
- variant="amber"
- icon={<Clock className="w-5 h-5"/>}
- />
- <KpiCard
- label="الأوامر المستلمة بالكامل"
- value={stats.receivedCount}
- unit="مكتمل"
- variant="emerald"
- icon={<CheckCircle2 className="w-5 h-5"/>}
- />
- <KpiCard
- label="القيمة الإجمالية للأوامر"
- value={formatNumber(stats.totalValue)}
- unit="ج.م"
- variant="indigo"
- icon={<DollarSign className="w-5 h-5"/>}
- />
- </div>
+    return (
+        <AppShell
+            title="أوامر الشراء (Purchase Orders)"
+            subtitle="متابعة أوامر الشراء الموجهة للموردين وحالة التوريد والاستلام"
+            actions={
+                <Link href="/purchases/orders/new">
+                    <Button className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer">
+                        <Plus className="w-4 h-4" />
+                        <span>إنشاء أمر شراء جديد</span>
+                    </Button>
+                </Link>
+            }
+        >
+            <div className="space-y-5 text-right select-none" dir="rtl">
+                {/* KPI Cards — Unified Design System */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <KpiCard
+                        label="إجمالي الأوامر"
+                        value={stats.totalCount}
+                        unit="أمر شراء"
+                        variant="blue"
+                        icon={<ShoppingCart className="w-5 h-5" />}
+                    />
+                    <KpiCard
+                        label="أوامر قيد التوريد"
+                        value={stats.pendingCount}
+                        unit="قيد التوريد"
+                        variant="amber"
+                        icon={<Clock className="w-5 h-5" />}
+                    />
+                    <KpiCard
+                        label="الأوامر المستلمة بالكامل"
+                        value={stats.receivedCount}
+                        unit="مكتمل"
+                        variant="emerald"
+                        icon={<CheckCircle2 className="w-5 h-5" />}
+                    />
+                    <KpiCard
+                        label="القيمة الإجمالية للأوامر"
+                        value={formatNumber(stats.totalValue)}
+                        unit="ج.م"
+                        variant="indigo"
+                        icon={<DollarSign className="w-5 h-5" />}
+                    />
+                </div>
 
- {/* Toolbar & Filter Bar */}
- <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
- <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
- <div className="relative flex-1 max-w-sm">
- <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
- <Input
- placeholder="البحث برقم أمر الشراء أو اسم المورد..."
- value={search}
- onChange={(e) => setSearch(e.target.value)}
- className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
- />
- </div>
- <div className="w-48">
- <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as any)}>
- <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
- <SelectValue placeholder="كافة الحالات"/>
- </SelectTrigger>
- <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
- <SelectItem value="all">كافة الحالات</SelectItem>
- <SelectItem value="sent">قيد التوريد</SelectItem>
- <SelectItem value="partially_received">استلام جزئي</SelectItem>
- <SelectItem value="received">تم الاستلام</SelectItem>
- <SelectItem value="cancelled">ملغي</SelectItem>
- </SelectContent>
- </Select>
- </div>
- </div>
- </div>
+                {/* Toolbar & Filter Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-2xl shadow-2xs">
+                    <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <Input
+                                placeholder="البحث برقم أمر الشراء أو اسم المورد..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="h-10 bg-slate-50/70 dark:bg-slate-900/70 text-xs font-semibold rounded-xl pr-10 border-slate-200/80 dark:border-slate-800"
+                            />
+                        </div>
+                        <div className="w-48">
+                            <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as any)}>
+                                <SelectTrigger className="w-full h-10 rounded-xl bg-slate-50/70 dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 text-xs font-bold">
+                                    <SelectValue placeholder="كافة الحالات" />
+                                </SelectTrigger>
+                                <SelectContent className="z-50 bg-popover border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-60">
+                                    <SelectItem value="all">كافة الحالات</SelectItem>
+                                    <SelectItem value="sent">قيد التوريد</SelectItem>
+                                    <SelectItem value="partially_received">استلام جزئي</SelectItem>
+                                    <SelectItem value="received">تم الاستلام</SelectItem>
+                                    <SelectItem value="cancelled">ملغي</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
 
- {/* Table */}
- <Card className="bg-surface border-slate-200 dark:border-slate-800 overflow-hidden">
- <Table>
- <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
- <TableRow>
- <TableHead className="text-right font-black">رقم الأمر</TableHead>
- <TableHead className="text-right font-black">المورد</TableHead>
- <TableHead className="text-right font-black">تاريخ الطلب</TableHead>
- <TableHead className="text-right font-black">التسليم المتوقع</TableHead>
- <TableHead className="text-right font-black">الإجمالي</TableHead>
- <TableHead className="text-center font-black">الحالة</TableHead>
- <TableHead className="text-center font-black">الإجراءات</TableHead>
- </TableRow>
- </TableHeader>
- <TableBody>
- {isLoading ? (
- <TableRow>
- <TableCell colSpan={7} className="text-center py-8 text-slate-500">
- جاري تحميل أوامر الشراء...
- </TableCell>
- </TableRow>
- ) : filteredOrders.length === 0 ? (
- <TableRow>
- <TableCell colSpan={7} className="text-center py-8 text-slate-500 font-bold">
- لا توجد أوامر شراء مطابقة للبحث
- </TableCell>
- </TableRow>
- ) : (
- filteredOrders.map((po) => (
- <TableRow key={po.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
- <TableCell className="font-bold text-slate-900 dark:text-white">
- {po.po_number}
- </TableCell>
- <TableCell className="font-bold text-slate-700 dark:text-slate-300">
- {po.supplier_name ||'مورد عام'}
- </TableCell>
- <TableCell className="text-xs text-slate-500">
- {new Date(po.order_date).toLocaleDateString('ar-EG')}
- </TableCell>
- <TableCell className="text-xs text-slate-500">
- {po.expected_delivery_date ? new Date(po.expected_delivery_date).toLocaleDateString('ar-EG') :'غير محدد'}
- </TableCell>
- <TableCell className="font-black text-slate-900 dark:text-white">
- {formatNumber(po.total)} ج.م
- </TableCell>
- <TableCell className="text-center">
- {getStatusBadge(po.status)}
- </TableCell>
- <TableCell className="text-center">
- <div className="flex items-center justify-center gap-1">
- <Button
- size="xs"
- variant="ghost"
- onClick={() => handleOpenDetail(po)}
- title="عرض التفاصيل"
- >
- <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300"/>
- </Button>
- {po.status ==='sent'&& (
- <Button
- size="xs"
- variant="ghost"
- className="text-emerald-600 hover:text-emerald-700"
- onClick={() => handleStatusChange(po.id,'received')}
- title="تأكيد الاستلام الكامل"
- >
- <PackageCheck className="w-4 h-4"/>
- </Button>
- )}
- </div>
- </TableCell>
- </TableRow>
- ))
- )}
- </TableBody>
- </Table>
- </Card>
+                {/* Table */}
+                <Card className="bg-surface border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                            <TableRow>
+                                <TableHead className="text-right font-black">رقم الأمر</TableHead>
+                                <TableHead className="text-right font-black">المورد</TableHead>
+                                <TableHead className="text-right font-black">تاريخ الطلب</TableHead>
+                                <TableHead className="text-right font-black">التسليم المتوقع</TableHead>
+                                <TableHead className="text-right font-black">الإجمالي</TableHead>
+                                <TableHead className="text-center font-black">الحالة</TableHead>
+                                <TableHead className="text-center font-black">الإجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                                        جاري تحميل أوامر الشراء...
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredOrders.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="text-center py-8 text-slate-500 font-bold">
+                                        لا توجد أوامر شراء مطابقة للبحث
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredOrders.map((po) => (
+                                    <TableRow key={po.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                                        <TableCell className="font-bold text-slate-900 dark:text-white">
+                                            {po.po_number}
+                                        </TableCell>
+                                        <TableCell className="font-bold text-slate-700 dark:text-slate-300">
+                                            {po.supplier_name || 'مورد عام'}
+                                        </TableCell>
+                                        <TableCell className="text-xs text-slate-500">
+                                            {new Date(po.order_date).toLocaleDateString('ar-EG')}
+                                        </TableCell>
+                                        <TableCell className="text-xs text-slate-500">
+                                            {po.expected_delivery_date ? new Date(po.expected_delivery_date).toLocaleDateString('ar-EG') : 'غير محدد'}
+                                        </TableCell>
+                                        <TableCell className="font-black text-slate-900 dark:text-white">
+                                            {formatNumber(po.total)} ج.م
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {getStatusBadge(po.status)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Button
+                                                    size="xs"
+                                                    variant="ghost"
+                                                    onClick={() => handleOpenDetail(po)}
+                                                    title="عرض التفاصيل"
+                                                >
+                                                    <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                                                </Button>
+                                                {po.status === 'sent' && (
+                                                    <Button
+                                                        size="xs"
+                                                        variant="ghost"
+                                                        className="text-emerald-600 hover:text-emerald-700"
+                                                        onClick={() => handleStatusChange(po.id, 'received')}
+                                                        title="تأكيد الاستلام الكامل"
+                                                    >
+                                                        <PackageCheck className="w-4 h-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </Card>
 
- {/* Details Dialog */}
- <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
- <DialogContent className="max-w-3xl">
- <DialogHeader>
- <DialogTitle className="flex items-center justify-between">
- <span>تفاصيل أمر الشراء: {selectedOrder?.po_number}</span>
- {selectedOrder && getStatusBadge(selectedOrder.status)}
- </DialogTitle>
- </DialogHeader>
+                {/* Details Dialog */}
+                <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                    <DialogContent className="max-w-3xl">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center justify-between">
+                                <span>تفاصيل أمر الشراء: {selectedOrder?.po_number}</span>
+                                {selectedOrder && getStatusBadge(selectedOrder.status)}
+                            </DialogTitle>
+                        </DialogHeader>
 
- {selectedOrder && (
- <div className="space-y-4">
- <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl text-xs">
- <div>
- <span className="text-slate-500 font-bold block">المورد:</span>
- <span className="font-black text-slate-900 dark:text-white">{selectedOrder.supplier_name ||'مورد عام'}</span>
- </div>
- <div>
- <span className="text-slate-500 font-bold block">تاريخ الطلب:</span>
- <span className="font-black text-slate-900 dark:text-white">{new Date(selectedOrder.order_date).toLocaleDateString('ar-EG')}</span>
- </div>
- <div>
- <span className="text-slate-500 font-bold block">التسليم المتوقع:</span>
- <span className="font-black text-slate-900 dark:text-white">{selectedOrder.expected_delivery_date ? new Date(selectedOrder.expected_delivery_date).toLocaleDateString('ar-EG') :'غير محدد'}</span>
- </div>
- </div>
+                        {selectedOrder && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl text-xs">
+                                    <div>
+                                        <span className="text-slate-500 font-bold block">المورد:</span>
+                                        <span className="font-black text-slate-900 dark:text-white">{selectedOrder.supplier_name || 'مورد عام'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 font-bold block">تاريخ الطلب:</span>
+                                        <span className="font-black text-slate-900 dark:text-white">{new Date(selectedOrder.order_date).toLocaleDateString('ar-EG')}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 font-bold block">التسليم المتوقع:</span>
+                                        <span className="font-black text-slate-900 dark:text-white">{selectedOrder.expected_delivery_date ? new Date(selectedOrder.expected_delivery_date).toLocaleDateString('ar-EG') : 'غير محدد'}</span>
+                                    </div>
+                                </div>
 
- {/* Items Table */}
- <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
- <Table>
- <TableHeader className="bg-slate-100 dark:bg-slate-800">
- <TableRow>
- <TableHead className="text-right font-black">الصنف</TableHead>
- <TableHead className="text-center font-black">الكمية المطلوبة</TableHead>
- <TableHead className="text-right font-black">تكلفة الوحدة</TableHead>
- <TableHead className="text-right font-black">الإجمالي</TableHead>
- </TableRow>
- </TableHeader>
- <TableBody>
- {selectedItems.map((item) => (
- <TableRow key={item.id}>
- <TableCell className="font-bold">{item.product_name}</TableCell>
- <TableCell className="text-center font-bold">{item.quantity}</TableCell>
- <TableCell>{formatNumber(item.unit_cost)} د.ع</TableCell>
- <TableCell className="font-black">{formatNumber(item.total)} د.ع</TableCell>
- </TableRow>
- ))}
- </TableBody>
- </Table>
- </div>
+                                {/* Items Table */}
+                                <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-slate-100 dark:bg-slate-800">
+                                            <TableRow>
+                                                <TableHead className="text-right font-black">الصنف</TableHead>
+                                                <TableHead className="text-center font-black">الكمية المطلوبة</TableHead>
+                                                <TableHead className="text-right font-black">تكلفة الوحدة</TableHead>
+                                                <TableHead className="text-right font-black">الإجمالي</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {selectedItems.map((item) => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell className="font-bold">{item.product_name}</TableCell>
+                                                    <TableCell className="text-center font-bold">{item.quantity}</TableCell>
+                                                    <TableCell>{formatNumber(item.unit_cost)} د.ع</TableCell>
+                                                    <TableCell className="font-black">{formatNumber(item.total)} د.ع</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
 
- {/* Summary & Actions */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t pt-3">
- <Button
- type="button"
- onClick={() => handleConvertToInvoice(selectedOrder)}
- className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 cursor-pointer"
- >
- <PackageCheck className="w-4 h-4" />
- <span>تحويل إلى فاتورة مشتريات وتأكيد الرصيد بالمخزن</span>
- </Button>
+                                {/* Summary & Actions */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t pt-3">
+                                    <Button
+                                        type="button"
+                                        onClick={() => handleConvertToInvoice(selectedOrder)}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 cursor-pointer"
+                                    >
+                                        <PackageCheck className="w-4 h-4" />
+                                        <span>تحويل إلى فاتورة مشتريات وتأكيد الرصيد بالمخزن</span>
+                                    </Button>
 
- <div className="flex flex-col items-end gap-1 font-semibold">
- <div className="flex justify-between w-60">
- <span className="text-slate-500">المجموع الفرعي:</span>
- <span className="font-mono">{formatNumber(selectedOrder.subtotal)} ج.م</span>
- </div>
- <div className="flex justify-between w-60 text-base font-black border-t pt-1 text-primary">
- <span>الإجمالي النهائي:</span>
- <span className="font-mono text-emerald-600">{formatNumber(selectedOrder.total)} ج.م</span>
- </div>
- </div>
- </div>
- </div>
- )}
- </DialogContent>
- </Dialog>
- </div>
- </AppShell>
- );
+                                    <div className="flex flex-col items-end gap-1 font-semibold">
+                                        <div className="flex justify-between w-60">
+                                            <span className="text-slate-500">المجموع الفرعي:</span>
+                                            <span className="font-mono">{formatNumber(selectedOrder.subtotal)} ج.م</span>
+                                        </div>
+                                        <div className="flex justify-between w-60 text-base font-black border-t pt-1 text-primary">
+                                            <span>الإجمالي النهائي:</span>
+                                            <span className="font-mono text-emerald-600">{formatNumber(selectedOrder.total)} ج.م</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </AppShell>
+    );
 }
 
 export default function PurchaseOrdersPage() {
- return (
- <Suspense fallback={<div className="p-8 text-center font-bold text-slate-500">جاري تحميل أوامر الشراء...</div>}>
- <PurchaseOrdersContent />
- </Suspense>
- );
+    return (
+        <Suspense fallback={<div className="p-8 text-center font-bold text-slate-500">جاري تحميل أوامر الشراء...</div>}>
+            <PurchaseOrdersContent />
+        </Suspense>
+    );
 }

@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -148,7 +149,7 @@ function DiscountsContent() {
 
  const filtered = discounts.filter(
  (d) =>
- d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+ safeLower(d.name).includes(searchQuery.toLowerCase()) ||
  (d.notes && d.notes.toLowerCase().includes(searchQuery.toLowerCase()))
  );
 

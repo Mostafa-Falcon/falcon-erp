@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { AccountingRepository } from '@/modules/accounting/accounting_repository';
-import { formatNumber } from '@/lib/format';
+import { safeLower, formatNumber } from '@/lib/format';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Account } from '@/types';
@@ -879,7 +879,7 @@ function AccountBranchNode({
 
   const matchesSelf =
     !query ||
-    node.name.toLowerCase().includes(query.toLowerCase()) ||
+    safeLower(node.name).includes(query.toLowerCase()) ||
     (node.name_en && node.name_en.toLowerCase().includes(query.toLowerCase())) ||
     node.code.includes(query);
 

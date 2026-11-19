@@ -1,3 +1,4 @@
+﻿import { safeLower } from '@/lib/format';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -87,8 +88,8 @@ export function useNewStockTransfer() {
       const filtered = allProducts
         .filter(
           (p: Product) =>
-            p.name.toLowerCase().includes(q) ||
-            (p.sku && p.sku.toLowerCase().includes(q)) ||
+            safeLower(p.name).includes(q) ||
+            (p.sku && safeLower(p.sku).includes(q)) ||
             (p.scientific_name && p.scientific_name.toLowerCase().includes(q))
         )
         .slice(0, 10);

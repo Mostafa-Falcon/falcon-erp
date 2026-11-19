@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import React, { useEffect, useState } from'react';
 import { Suspense } from'react';
 import { AppShell } from'@/components/layout/AppShell';
@@ -108,8 +109,8 @@ function ProductTypesContent() {
  };
 
  const filteredTypes = types.filter((t) =>
- t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (t.code && t.code.toLowerCase().includes(searchQuery.toLowerCase()))
+ safeLower(t.name).includes(searchQuery.toLowerCase()) ||
+ (t.code && safeLower(t.code).includes(searchQuery.toLowerCase()))
  );
 
  return (

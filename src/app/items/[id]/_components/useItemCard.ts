@@ -1,5 +1,6 @@
-'use client';
+﻿'use client';
 
+import { safeLower } from '@/lib/format';
 import { useState, useEffect, useMemo, useCallback } from'react';
 import { useRouter } from'next/navigation';
 import { useSessionStore } from'@/core/state/useSessionStore';
@@ -324,8 +325,8 @@ export function useItemCard(productId: string) {
  if (q) {
  result = result.filter(
  (s) =>
- s.name.toLowerCase().includes(q) ||
- s.sku.toLowerCase().includes(q) ||
+ safeLower(s.name).includes(q) ||
+ safeLower(s.sku).includes(q) ||
  (s.name_en && s.name_en.toLowerCase().includes(q))
  );
  }
