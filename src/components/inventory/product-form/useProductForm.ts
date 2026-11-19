@@ -578,7 +578,8 @@ export function useProductForm({
             onSaved();
         } catch (err) {
             console.error(err);
-            toast.error('حدث خطأ أثناء حفظ الصنف.');
+            const msg = err instanceof Error ? err.message : (typeof err === 'string' ? err : String(err));
+            toast.error(`حدث خطأ أثناء حفظ الصنف: ${msg}`);
         } finally {
             setIsSaving(false);
         }
