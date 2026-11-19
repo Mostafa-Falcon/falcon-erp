@@ -1,5 +1,5 @@
-import { db } from'@/core/db/app_database';
-import type { Account, JournalEntry, JournalEntryLine } from'@/types';
+import { db } from '@/core/db/app_database';
+import type { Account, JournalEntry, JournalEntryLine } from '@/types';
 
 /**
  * 🦅 FALCON UNIVERSAL ERP - ACCOUNTING REPORTS
@@ -11,696 +11,735 @@ import type { Account, JournalEntry, JournalEntryLine } from'@/types';
  */
 
 export interface LedgerEntry {
- entry: JournalEntry;
- lines: JournalEntryLine[];
+	entry: JournalEntry;
+	lines: JournalEntryLine[];
 }
 
 export interface TrialBalanceRow {
- account: Account;
- opening: number; // signed (natural side)
- periodDebit: number;
- periodCredit: number;
- closing: number; // signed
+	account: Account;
+	opening: number; // signed (natural side)
+	periodDebit: number;
+	periodCredit: number;
+	closing: number; // signed
 }
 
 export interface BalanceSheetAccount {
- account: Account;
- amount: number; // signed (assets positive on debit, liabilities/equity positive on credit)
+	account: Account;
+	amount: number; // signed (assets positive on debit, liabilities/equity positive on credit)
 }
 
 export interface BalanceSheetNode extends BalanceSheetAccount {
- children: BalanceSheetNode[];
+	children: BalanceSheetNode[];
 }
 
 export interface BalanceSheetSection {
- account: Account;
- children: BalanceSheetNode[];
- total: number;
+	account: Account;
+	children: BalanceSheetNode[];
+	total: number;
 }
 
 export interface IncomeRow {
- code: string;
- name: string;
- type:'revenue'|'expense';
- period: number; // revenue: credit - debit (positive); expense: debit - credit (positive)
+	code: string;
+	name: string;
+	type: 'revenue' | 'expense';
+	period: number; // revenue: credit - debit (positive); expense: debit - credit (positive)
 }
 
 export interface LedgerRow {
- date: string;
- entryNo: string;
- description: string;
- reference?: string;
- debit: number;
- credit: number;
- running: number; // signed on the account's natural side
+	date: string;
+	entryNo: string;
+	description: string;
+	reference?: string;
+	debit: number;
+	credit: number;
+	running: number; // signed on the account's natural side
 }
 
 /** Loads all posted (non-reversal) entries + lines for an org, ordered by date. */
 async function loadLedger(orgId: string): Promise<LedgerEntry[]> {
- const entries = await db.journal_entries
- .where('org_id')
- .equals(orgId)
- .sortBy('entry_date');
+	const entries = await db.journal_entries.where('org_id').equals(orgId).sortBy('entry_date');
 
- if (entries.length === 0) return [];
+	if (entries.length === 0) return [];
 
- const lines: JournalEntryLine[] = [];
- const chunkSize = 500;
- for (let i = 0; i < entries.length; i += chunkSize) {
- const chunkIds = entries.slice(i, i + chunkSize).map((e) => e.id);
- const chunkLines = await db.journal_entry_lines.where('entry_id').anyOf(chunkIds).toArray();
- lines.push(...chunkLines);
- }
+	const lines: JournalEntryLine[] = [];
+	const chunkSize = 500;
+	for (let i = 0; i < entries.length; i += chunkSize) {
+		const chunkIds = entries.slice(i, i + chunkSize).map((e) => e.id);
+		const chunkLines = await db.journal_entry_lines.where('entry_id').anyOf(chunkIds).toArray();
+		lines.push(...chunkLines);
+	}
 
- const byEntry = new Map<string, LedgerEntry>();
- for (const e of entries) {
- byEntry.set(e.id, { entry: e, lines: [] });
- }
- for (const l of lines) {
- byEntry.get(l.entry_id)?.lines.push(l);
- }
+	const byEntry = new Map<string, LedgerEntry>();
+	for (const e of entries) {
+		byEntry.set(e.id, { entry: e, lines: [] });
+	}
+	for (const l of lines) {
+		byEntry.get(l.entry_id)?.lines.push(l);
+	}
 
- return entries.map((e) => byEntry.get(e.id)!).filter((l) => l.lines.length > 0);
+	return entries.map((e) => byEntry.get(e.id)!).filter((l) => l.lines.length > 0);
 }
 
 function inRange(date: string, from?: string | null, to?: string | null): boolean {
- if (from && date < from) return false;
- if (to && date > to) return false;
- return true;
+	if (from && date < from) return false;
+	if (to && date > to) return false;
+	return true;
 }
 
 const signedBalance = (account: Account, debit: number, credit: number): number => {
- const signed = debit - credit;
- return account.type ==='asset'|| account.type ==='expense'? signed : -signed;
+	const signed = debit - credit;
+	return account.type === 'asset' || account.type === 'expense' ? signed : -signed;
 };
 
 /** Trial Balance for the period (with opening balances). */
 export async function getTrialBalance(
- orgId: string,
- from?: string | null,
- to?: string | null
+	orgId: string,
+	from?: string | null,
+	to?: string | null
 ): Promise<{ rows: TrialBalanceRow[]; totalDebit: number; totalCredit: number }> {
- const ledger = await loadLedger(orgId);
- const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
+	const ledger = await loadLedger(orgId);
+	const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
 
- const rows = new Map<string, TrialBalanceRow>();
- for (const acc of accounts) {
- rows.set(acc.id, {
- account: acc,
- opening: 0,
- periodDebit: 0,
- periodCredit: 0,
- closing: 0,
- });
- }
+	const rows = new Map<string, TrialBalanceRow>();
+	for (const acc of accounts) {
+		rows.set(acc.id, {
+			account: acc,
+			opening: 0,
+			periodDebit: 0,
+			periodCredit: 0,
+			closing: 0
+		});
+	}
 
- for (const { entry, lines } of ledger) {
- for (const line of lines) {
- const row = rows.get(line.account_id);
- if (!row) continue;
- if (inRange(entry.entry_date, from, to)) {
- row.periodDebit += line.debit;
- row.periodCredit += line.credit;
- } else if (!from && !to) {
- row.periodDebit += line.debit;
- row.periodCredit += line.credit;
- } else if (from && entry.entry_date < from) {
- row.opening += signedBalance(row.account, line.debit, line.credit);
- } else if (to && entry.entry_date > to) {
- // beyond period: ignore
- } else {
- row.periodDebit += line.debit;
- row.periodCredit += line.credit;
- }
- }
- }
+	for (const { entry, lines } of ledger) {
+		for (const line of lines) {
+			const row = rows.get(line.account_id);
+			if (!row) continue;
+			if (inRange(entry.entry_date, from, to)) {
+				row.periodDebit += line.debit;
+				row.periodCredit += line.credit;
+			} else if (!from && !to) {
+				row.periodDebit += line.debit;
+				row.periodCredit += line.credit;
+			} else if (from && entry.entry_date < from) {
+				row.opening += signedBalance(row.account, line.debit, line.credit);
+			} else if (to && entry.entry_date > to) {
+				// beyond period: ignore
+			} else {
+				row.periodDebit += line.debit;
+				row.periodCredit += line.credit;
+			}
+		}
+	}
 
- let totalDebit = 0;
- let totalCredit = 0;
- const finalRows: TrialBalanceRow[] = [];
+	let totalDebit = 0;
+	let totalCredit = 0;
+	const finalRows: TrialBalanceRow[] = [];
 
- for (const row of rows.values()) {
- row.periodDebit = Math.round(row.periodDebit * 100) / 100;
- row.periodCredit = Math.round(row.periodCredit * 100) / 100;
- row.closing = Math.round((row.opening + row.periodDebit - row.periodCredit) * 100) / 100;
+	for (const row of rows.values()) {
+		row.periodDebit = Math.round(row.periodDebit * 100) / 100;
+		row.periodCredit = Math.round(row.periodCredit * 100) / 100;
+		row.closing = Math.round((row.opening + row.periodDebit - row.periodCredit) * 100) / 100;
 
- if (row.periodDebit !== 0 || row.periodCredit !== 0 || row.opening !== 0) {
- // opening is already signed; derive opening debit/credit for rendering
- finalRows.push(row);
- totalDebit += row.periodDebit;
- totalCredit += row.periodCredit;
- }
- }
+		if (row.periodDebit !== 0 || row.periodCredit !== 0 || row.opening !== 0) {
+			// opening is already signed; derive opening debit/credit for rendering
+			finalRows.push(row);
+			totalDebit += row.periodDebit;
+			totalCredit += row.periodCredit;
+		}
+	}
 
- finalRows.sort((a, b) => Number(a.account.code) - Number(b.account.code));
- return {
- rows: finalRows,
- totalDebit: Math.round(totalDebit * 100) / 100,
- totalCredit: Math.round(totalCredit * 100) / 100,
- };
+	finalRows.sort((a, b) => Number(a.account.code) - Number(b.account.code));
+	return {
+		rows: finalRows,
+		totalDebit: Math.round(totalDebit * 100) / 100,
+		totalCredit: Math.round(totalCredit * 100) / 100
+	};
 }
 
 /** Income statement for a period from the journal. */
 export async function getIncomeStatement(
- orgId: string,
- from?: string | null,
- to?: string | null
-): Promise<{ rows: IncomeRow[]; grossSales: number; returns: number; cogs: number; grossProfit: number; operatingExpenses: number; netIncome: number }> {
- const ledger = await loadLedger(orgId);
- const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
- const accById = new Map(accounts.map((a) => [a.id, a]));
+	orgId: string,
+	from?: string | null,
+	to?: string | null
+): Promise<{
+	rows: IncomeRow[];
+	grossSales: number;
+	returns: number;
+	cogs: number;
+	grossProfit: number;
+	operatingExpenses: number;
+	netIncome: number;
+}> {
+	const ledger = await loadLedger(orgId);
+	const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
+	const accById = new Map(accounts.map((a) => [a.id, a]));
 
- const rows: IncomeRow[] = [];
- const sums = new Map<string, { debit: number; credit: number }>();
+	const rows: IncomeRow[] = [];
+	const sums = new Map<string, { debit: number; credit: number }>();
 
- for (const { entry, lines } of ledger) {
- if (!inRange(entry.entry_date, from, to)) continue;
- for (const line of lines) {
- const acc = accById.get(line.account_id);
- if (!acc) continue;
- if (acc.type !=='revenue'&& acc.type !=='expense') continue;
- const s = sums.get(acc.id) ?? { debit: 0, credit: 0 };
- s.debit += line.debit;
- s.credit += line.credit;
- sums.set(acc.id, s);
- }
- }
+	for (const { entry, lines } of ledger) {
+		if (!inRange(entry.entry_date, from, to)) continue;
+		for (const line of lines) {
+			const acc = accById.get(line.account_id);
+			if (!acc) continue;
+			if (acc.type !== 'revenue' && acc.type !== 'expense') continue;
+			const s = sums.get(acc.id) ?? { debit: 0, credit: 0 };
+			s.debit += line.debit;
+			s.credit += line.credit;
+			sums.set(acc.id, s);
+		}
+	}
 
- for (const acc of accounts) {
- const s = sums.get(acc.id);
- if (!s) continue;
- if (acc.type ==='revenue') {
- rows.push({ code: acc.code, name: acc.name, type:'revenue', period: s.credit - s.debit });
- } else {
- rows.push({ code: acc.code, name: acc.name, type:'expense', period: s.debit - s.credit });
- }
- }
+	for (const acc of accounts) {
+		const s = sums.get(acc.id);
+		if (!s) continue;
+		if (acc.type === 'revenue') {
+			rows.push({ code: acc.code, name: acc.name, type: 'revenue', period: s.credit - s.debit });
+		} else {
+			rows.push({ code: acc.code, name: acc.name, type: 'expense', period: s.debit - s.credit });
+		}
+	}
 
- rows.sort((a, b) => Number(a.code) - Number(b.code));
+	rows.sort((a, b) => Number(a.code) - Number(b.code));
 
- const amountOf = (code: string, type:'revenue'|'expense') => {
- const row = rows.find((r) => r.code === code && r.type === type);
- return row ? Math.max(0, Math.round(row.period * 100) / 100) : 0;
- };
+	const amountOf = (code: string, type: 'revenue' | 'expense') => {
+		const row = rows.find((r) => r.code === code && r.type === type);
+		return row ? Math.max(0, Math.round(row.period * 100) / 100) : 0;
+	};
 
-  const ledgerGrossSales = amountOf('4100', 'revenue');
-  const ledgerCogs = amountOf('5100', 'expense');
+	const ledgerGrossSales = amountOf('4100', 'revenue');
+	const ledgerCogs = amountOf('5100', 'expense');
 
-  // Fallback to active sales invoices & items if ledger is not fully populated
-  const activeInvoices = await db.sales_invoices
-    .where('org_id')
-    .equals(orgId)
-    .filter((inv) => !inv.is_deleted && inv.status !== 'cancelled')
-    .toArray();
-  const actualSales = activeInvoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
-  const grossSales = ledgerGrossSales > 0 ? ledgerGrossSales : actualSales;
+	// Fallback to active sales invoices & items if ledger is not fully populated
+	const activeInvoices = await db.sales_invoices
+		.where('org_id')
+		.equals(orgId)
+		.filter((inv) => !inv.is_deleted && inv.status !== 'cancelled')
+		.toArray();
+	const actualSales = activeInvoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
+	const grossSales = ledgerGrossSales > 0 ? ledgerGrossSales : actualSales;
 
-  const validInvIds = new Set(activeInvoices.map((i) => i.id));
-  const allInvoiceItems = await db.sales_invoice_items.toArray();
-  const actualCogs = allInvoiceItems
-    .filter((it) => validInvIds.has(it.invoice_id))
-    .reduce((sum, it) => sum + ((Number(it.quantity) || 0) * (Number(it.unit_cost) || 0)), 0);
-  const cogs = ledgerCogs > 0 ? ledgerCogs : actualCogs;
+	const validInvIds = new Set(activeInvoices.map((i) => i.id));
+	const allInvoiceItems = await db.sales_invoice_items.toArray();
+	const actualCogs = allInvoiceItems
+		.filter((it) => validInvIds.has(it.invoice_id))
+		.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unit_cost) || 0), 0);
+	const cogs = ledgerCogs > 0 ? ledgerCogs : actualCogs;
 
-  const returns = amountOf('4110', 'revenue');
-  const operatingExpenses = amountOf('5200', 'expense')
-    + amountOf('5301', 'expense')
-    + amountOf('5400', 'expense');
+	const returns = amountOf('4110', 'revenue');
+	const operatingExpenses =
+		amountOf('5200', 'expense') + amountOf('5301', 'expense') + amountOf('5400', 'expense');
 
-  const grossProfit = grossSales - returns - cogs;
-  const netIncome = grossProfit - operatingExpenses;
+	const grossProfit = grossSales - returns - cogs;
+	const netIncome = grossProfit - operatingExpenses;
 
-  return {
-    rows: rows.map((r) => ({ ...r, period: Math.round(r.period * 100) / 100 })),
-    grossSales: Math.round(grossSales * 100) / 100,
-    returns: Math.round(returns * 100) / 100,
-    cogs: Math.round(cogs * 100) / 100,
-    grossProfit: Math.round(grossProfit * 100) / 100,
-    operatingExpenses: Math.round(operatingExpenses * 100) / 100,
-    netIncome: Math.round(netIncome * 100) / 100,
-  };
+	return {
+		rows: rows.map((r) => ({ ...r, period: Math.round(r.period * 100) / 100 })),
+		grossSales: Math.round(grossSales * 100) / 100,
+		returns: Math.round(returns * 100) / 100,
+		cogs: Math.round(cogs * 100) / 100,
+		grossProfit: Math.round(grossProfit * 100) / 100,
+		operatingExpenses: Math.round(operatingExpenses * 100) / 100,
+		netIncome: Math.round(netIncome * 100) / 100
+	};
 }
 
 /** Balance sheet as of a date (assets / liabilities / equity + net income). */
-export async function getBalanceSheet(orgId: string, asOf?: string | null): Promise<{
-  assets: BalanceSheetNode[];
-  assetsTotal: number;
-  liabilities: BalanceSheetNode[];
-  liabilitiesTotal: number;
-  equity: BalanceSheetNode[];
-  equityTotal: number;
-  netIncome: number;
+export async function getBalanceSheet(
+	orgId: string,
+	asOf?: string | null
+): Promise<{
+	assets: BalanceSheetNode[];
+	assetsTotal: number;
+	liabilities: BalanceSheetNode[];
+	liabilitiesTotal: number;
+	equity: BalanceSheetNode[];
+	equityTotal: number;
+	netIncome: number;
 }> {
-  // 1. Live Current Assets Calculation
-  const [treasuries, salesInvoices, contacts, products, stockLevels] = await Promise.all([
-    db.treasuries.where('org_id').equals(orgId).toArray(),
-    db.sales_invoices.where('org_id').equals(orgId).filter((s) => !s.is_deleted && s.status !== 'cancelled').toArray(),
-    db.contacts.where('org_id').equals(orgId).toArray(),
-    db.products.where('org_id').equals(orgId).toArray(),
-    db.stock_levels.toArray(),
-  ]);
+	// 1. Live Current Assets Calculation
+	const [treasuries, salesInvoices, contacts, products, stockLevels] = await Promise.all([
+		db.treasuries.where('org_id').equals(orgId).toArray(),
+		db.sales_invoices
+			.where('org_id')
+			.equals(orgId)
+			.filter((s) => !s.is_deleted && s.status !== 'cancelled')
+			.toArray(),
+		db.contacts.where('org_id').equals(orgId).toArray(),
+		db.products.where('org_id').equals(orgId).toArray(),
+		db.stock_levels.toArray()
+	]);
 
-  // Total Treasuries Balance = 520.00 LE (370 Cash + 150 Card deposited into Main Treasury)
-  const totalTreasuryBalance = treasuries.reduce((sum, t) => sum + (Number(t.current_balance) || 0), 0);
+	// Total Treasuries Balance = 520.00 LE (370 Cash + 150 Card deposited into Main Treasury)
+	const totalTreasuryBalance = treasuries.reduce(
+		(sum, t) => sum + (Number(t.current_balance) || 0),
+		0
+	);
 
-  // Card Sales Total = 150.00 LE
-  const cardSalesTotal = salesInvoices
-    .filter((s) => s.payment_type === 'card' || (s.card_amount && s.card_amount > 0))
-    .reduce((sum, s) => sum + (Number(s.card_amount || s.total) || 0), 0);
+	// Card Sales Total = 150.00 LE
+	const cardSalesTotal = salesInvoices
+		.filter((s) => s.payment_type === 'card' || (s.card_amount && s.card_amount > 0))
+		.reduce((sum, s) => sum + (Number(s.card_amount || s.total) || 0), 0);
 
-  // Cash in Safes (#1110) = Net Cash in Treasuries (370.00 LE)
-  const cashInSafes = Math.max(0, totalTreasuryBalance - cardSalesTotal);
+	// Cash in Safes (#1110) = Net Cash in Treasuries (370.00 LE)
+	const cashInSafes = Math.max(0, totalTreasuryBalance - cardSalesTotal);
 
-  // Accounts Receivable / Customer Debts (#1130)
-  const customerDebts = contacts
-    .filter((c) => c.type === 'customer' || c.type === 'both')
-    .reduce((sum, c) => sum + Math.max(0, Number(c.current_balance) || 0), 0);
+	// Accounts Receivable / Customer Debts (#1130)
+	const customerDebts = contacts
+		.filter((c) => c.type === 'customer' || c.type === 'both')
+		.reduce((sum, c) => sum + Math.max(0, Number(c.current_balance) || 0), 0);
 
-  // Inventory Value (#1140) = 39,246.00 LE
-  const productPriceMap = new Map(products.map((p) => [p.id, Number(p.purchase_price || p.cost_price || p.sale_price) || 0]));
-  const inventoryValue = stockLevels
-    .filter((sl) => Number(sl.available_quantity) > 0)
-    .reduce((sum, sl) => sum + ((Number(sl.available_quantity) || 0) * (productPriceMap.get(sl.product_id) || 0)), 0);
+	// Inventory Value (#1140) = 39,246.00 LE
+	const productPriceMap = new Map(
+		products.map((p) => [p.id, Number(p.purchase_price || p.cost_price || p.sale_price) || 0])
+	);
+	const inventoryValue = stockLevels
+		.filter((sl) => Number(sl.available_quantity) > 0)
+		.reduce(
+			(sum, sl) =>
+				sum + (Number(sl.available_quantity) || 0) * (productPriceMap.get(sl.product_id) || 0),
+			0
+		);
 
-  // Total Assets = Cash (370) + Card (150) + Debts (0) + Inventory (39,246) = 39,766.00 LE
-  const assetsTotal = Math.round((cashInSafes + cardSalesTotal + customerDebts + inventoryValue) * 100) / 100;
+	// Total Assets = Cash (370) + Card (150) + Debts (0) + Inventory (39,246) = 39,766.00 LE
+	const assetsTotal =
+		Math.round((cashInSafes + cardSalesTotal + customerDebts + inventoryValue) * 100) / 100;
 
-  // 2. Liabilities Calculation (Supplier Payables)
-  const supplierPayables = contacts
-    .filter((c) => c.type === 'supplier' || c.type === 'both')
-    .reduce((sum, c) => sum + Math.abs(Math.min(0, Number(c.current_balance) || 0)), 0);
+	// 2. Liabilities Calculation (Supplier Payables)
+	const supplierPayables = contacts
+		.filter((c) => c.type === 'supplier' || c.type === 'both')
+		.reduce((sum, c) => sum + Math.abs(Math.min(0, Number(c.current_balance) || 0)), 0);
 
-  const liabilitiesTotal = Math.round(supplierPayables * 100) / 100;
+	const liabilitiesTotal = Math.round(supplierPayables * 100) / 100;
 
-  // 3. Period Net Income Calculation = 154.00 LE
-  const incomeState = await getIncomeStatement(orgId, null, asOf);
-  const netIncome = Math.round(incomeState.netIncome * 100) / 100;
+	// 3. Period Net Income Calculation = 154.00 LE
+	const incomeState = await getIncomeStatement(orgId, null, asOf);
+	const netIncome = Math.round(incomeState.netIncome * 100) / 100;
 
-  // 4. Equity Total to ensure fundamental accounting equation Assets = Liabilities + Equity (39,612.00 LE)
-  const equityTotal = Math.round((assetsTotal - liabilitiesTotal - netIncome) * 100) / 100;
+	// 4. Equity Total to ensure fundamental accounting equation Assets = Liabilities + Equity (39,612.00 LE)
+	const equityTotal = Math.round((assetsTotal - liabilitiesTotal - netIncome) * 100) / 100;
 
-  // 5. Build Tree Nodes for Display
-  const makeNode = (code: string, name: string, amount: number): BalanceSheetNode => ({
-    account: {
-      id: `acc_${code}`,
-      org_id: orgId,
-      code,
-      name,
-      type: code.startsWith('1') ? 'asset' : code.startsWith('2') ? 'liability' : 'equity',
-      account_type: 'leaf',
-      current_balance: amount,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    amount,
-    children: [],
-  });
+	// 5. Build Tree Nodes for Display
+	const makeNode = (code: string, name: string, amount: number): BalanceSheetNode => ({
+		account: {
+			id: `acc_${code}`,
+			org_id: orgId,
+			code,
+			name,
+			type: code.startsWith('1') ? 'asset' : code.startsWith('2') ? 'liability' : 'equity',
+			account_type: 'leaf',
+			current_balance: amount,
+			is_active: true,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString()
+		},
+		amount,
+		children: []
+	});
 
-  const assetsNodes: BalanceSheetNode[] = [
-    {
-      account: {
-        id: 'acc_1000',
-        org_id: orgId,
-        code: '1000',
-        name: 'الأصول المتداولة',
-        type: 'asset',
-        account_type: 'parent',
-        current_balance: assetsTotal,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      amount: assetsTotal,
-      children: [
-        makeNode('1110', 'النقدية بالخزائن', cashInSafes),
-        makeNode('1120', 'حسابات البنوك والشبكة', cardSalesTotal),
-        makeNode('1130', 'العملاء وحسابات القبض', customerDebts),
-        makeNode('1140', 'مخزون السلع والمنتجات', Math.round(inventoryValue * 100) / 100),
-      ],
-    },
-  ];
+	const assetsNodes: BalanceSheetNode[] = [
+		{
+			account: {
+				id: 'acc_1000',
+				org_id: orgId,
+				code: '1000',
+				name: 'الأصول المتداولة',
+				type: 'asset',
+				account_type: 'parent',
+				current_balance: assetsTotal,
+				is_active: true,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			},
+			amount: assetsTotal,
+			children: [
+				makeNode('1110', 'النقدية بالخزائن', cashInSafes),
+				makeNode('1120', 'حسابات البنوك والشبكة', cardSalesTotal),
+				makeNode('1130', 'العملاء وحسابات القبض', customerDebts),
+				makeNode('1140', 'مخزون السلع والمنتجات', Math.round(inventoryValue * 100) / 100)
+			]
+		}
+	];
 
-  const liabilitiesNodes: BalanceSheetNode[] = [
-    {
-      account: {
-        id: 'acc_2000',
-        org_id: orgId,
-        code: '2000',
-        name: 'الخصوم والالتزامات',
-        type: 'liability',
-        account_type: 'parent',
-        current_balance: liabilitiesTotal,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      amount: liabilitiesTotal,
-      children: [
-        makeNode('2110', 'الموردون وحسابات الدفع', supplierPayables),
-      ],
-    },
-  ];
+	const liabilitiesNodes: BalanceSheetNode[] = [
+		{
+			account: {
+				id: 'acc_2000',
+				org_id: orgId,
+				code: '2000',
+				name: 'الخصوم والالتزامات',
+				type: 'liability',
+				account_type: 'parent',
+				current_balance: liabilitiesTotal,
+				is_active: true,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			},
+			amount: liabilitiesTotal,
+			children: [makeNode('2110', 'الموردون وحسابات الدفع', supplierPayables)]
+		}
+	];
 
-  const equityNodes: BalanceSheetNode[] = [
-    {
-      account: {
-        id: 'acc_3000',
-        org_id: orgId,
-        code: '3000',
-        name: 'حقوق الملكية والأرباح',
-        type: 'equity',
-        account_type: 'parent',
-        current_balance: equityTotal,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      amount: equityTotal,
-      children: [
-        makeNode('3100', 'رأس المال المترحل', equityTotal),
-      ],
-    },
-  ];
+	const equityNodes: BalanceSheetNode[] = [
+		{
+			account: {
+				id: 'acc_3000',
+				org_id: orgId,
+				code: '3000',
+				name: 'حقوق الملكية والأرباح',
+				type: 'equity',
+				account_type: 'parent',
+				current_balance: equityTotal,
+				is_active: true,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			},
+			amount: equityTotal,
+			children: [makeNode('3100', 'رأس المال المترحل', equityTotal)]
+		}
+	];
 
-  return {
-    assets: assetsNodes,
-    assetsTotal,
-    liabilities: liabilitiesNodes,
-    liabilitiesTotal,
-    equity: equityNodes,
-    equityTotal,
-    netIncome,
-  };
+	return {
+		assets: assetsNodes,
+		assetsTotal,
+		liabilities: liabilitiesNodes,
+		liabilitiesTotal,
+		equity: equityNodes,
+		equityTotal,
+		netIncome
+	};
 }
 
 /** General ledger / account statement for a single account with running balance. */
 export async function getGeneralLedger(
- orgId: string,
- accountId: string,
- from?: string | null,
- to?: string | null
+	orgId: string,
+	accountId: string,
+	from?: string | null,
+	to?: string | null
 ): Promise<{ rows: LedgerRow[]; opening: number }> {
- const account = await db.accounts.get(accountId);
- if (!account || account.org_id !== orgId) {
- return { rows: [], opening: 0 };
- }
+	const account = await db.accounts.get(accountId);
+	if (!account || account.org_id !== orgId) {
+		return { rows: [], opening: 0 };
+	}
 
- const ledger = await loadLedger(orgId);
- const rows: LedgerRow[] = [];
- let opening = 0;
+	const ledger = await loadLedger(orgId);
+	const rows: LedgerRow[] = [];
+	let opening = 0;
 
- for (const { entry, lines } of ledger) {
- for (const line of lines) {
- if (line.account_id !== accountId) continue;
- if (from && entry.entry_date < from) {
- opening += signedBalance(account, line.debit, line.credit);
- continue;
- }
- if (to && entry.entry_date > to) continue;
- rows.push({
- date: entry.entry_date,
- entryNo: entry.entry_no,
- description: line.description || entry.description,
- reference: entry.reference_type ?`${entry.reference_type}:${entry.reference_id ??''}`: undefined,
- debit: line.debit,
- credit: line.credit,
- running: 0,
- });
- }
- }
+	for (const { entry, lines } of ledger) {
+		for (const line of lines) {
+			if (line.account_id !== accountId) continue;
+			if (from && entry.entry_date < from) {
+				opening += signedBalance(account, line.debit, line.credit);
+				continue;
+			}
+			if (to && entry.entry_date > to) continue;
+			rows.push({
+				date: entry.entry_date,
+				entryNo: entry.entry_no,
+				description: line.description || entry.description,
+				reference: entry.reference_type
+					? `${entry.reference_type}:${entry.reference_id ?? ''}`
+					: undefined,
+				debit: line.debit,
+				credit: line.credit,
+				running: 0
+			});
+		}
+	}
 
- rows.sort((a, b) => a.date.localeCompare(b.date));
- let running = opening;
- for (const r of rows) {
- running += signedBalance(account, r.debit, r.credit);
- r.running = Math.round(running * 100) / 100;
- }
+	rows.sort((a, b) => a.date.localeCompare(b.date));
+	let running = opening;
+	for (const r of rows) {
+		running += signedBalance(account, r.debit, r.credit);
+		r.running = Math.round(running * 100) / 100;
+	}
 
- return { rows, opening: Math.round(opening * 100) / 100 };
+	return { rows, opening: Math.round(opening * 100) / 100 };
 }
 
 /** Account-statement flavor grouped per entry (debit/credit columns resolved). */
 export async function getAccountStatement(
- orgId: string,
- accountId: string,
- from?: string | null,
- to?: string | null
+	orgId: string,
+	accountId: string,
+	from?: string | null,
+	to?: string | null
 ): Promise<{ rows: LedgerRow[]; opening: number; closing: number }> {
- const result = await getGeneralLedger(orgId, accountId, from, to);
- const closing = result.rows.length > 0 ? result.rows[result.rows.length - 1].running : result.opening;
- return { rows: result.rows, opening: result.opening, closing };
+	const result = await getGeneralLedger(orgId, accountId, from, to);
+	const closing =
+		result.rows.length > 0 ? result.rows[result.rows.length - 1].running : result.opening;
+	return { rows: result.rows, opening: result.opening, closing };
 }
 
 export interface CashFlowCategory {
- title: string;
- items: { description: string; amount: number }[];
- total: number;
+	title: string;
+	items: { description: string; amount: number }[];
+	total: number;
 }
 
 export interface CashFlowStatement {
- operating: CashFlowCategory;
- investing: CashFlowCategory;
- financing: CashFlowCategory;
- openingCash: number;
- netCashFlow: number;
- closingCash: number;
+	operating: CashFlowCategory;
+	investing: CashFlowCategory;
+	financing: CashFlowCategory;
+	openingCash: number;
+	netCashFlow: number;
+	closingCash: number;
 }
 
 export interface AgingBucket {
- contactId: string;
- contactName: string;
- contactPhone?: string;
- current0_30: number;
- days31_60: number;
- days61_90: number;
- days90Plus: number;
- totalBalance: number;
+	contactId: string;
+	contactName: string;
+	contactPhone?: string;
+	current0_30: number;
+	days31_60: number;
+	days61_90: number;
+	days90Plus: number;
+	totalBalance: number;
 }
 
 export interface AgingReport {
- type:'receivables'|'payables';
- rows: AgingBucket[];
- totals: {
- current0_30: number;
- days31_60: number;
- days61_90: number;
- days90Plus: number;
- totalBalance: number;
- };
+	type: 'receivables' | 'payables';
+	rows: AgingBucket[];
+	totals: {
+		current0_30: number;
+		days31_60: number;
+		days61_90: number;
+		days90Plus: number;
+		totalBalance: number;
+	};
 }
 
 /** Cash Flow Statement (قائمة التدفقات النقدية) */
 export async function getCashFlowStatement(
- orgId: string,
- from?: string | null,
- to?: string | null
+	orgId: string,
+	from?: string | null,
+	to?: string | null
 ): Promise<CashFlowStatement> {
- const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
- const accMap = new Map(accounts.map((a) => [a.id, a]));
+	const accounts = await db.accounts.where('org_id').equals(orgId).toArray();
+	const accMap = new Map(accounts.map((a) => [a.id, a]));
 
- // Cash and Bank account IDs
- const cashAccounts = accounts.filter(
- (a) => a.code.startsWith('111') || a.code.startsWith('112') || a.name.includes('خزينة') || a.name.includes('بنك') || a.name.includes('نقد')
- );
- const cashAccountIds = new Set(cashAccounts.map((a) => a.id));
+	// Cash and Bank account IDs
+	const cashAccounts = accounts.filter(
+		(a) =>
+			a.code.startsWith('111') ||
+			a.code.startsWith('112') ||
+			a.name.includes('خزينة') ||
+			a.name.includes('بنك') ||
+			a.name.includes('نقد')
+	);
+	const cashAccountIds = new Set(cashAccounts.map((a) => a.id));
 
- const ledger = await loadLedger(orgId);
+	const ledger = await loadLedger(orgId);
 
- let openingCash = 0;
- const opItems: { description: string; amount: number }[] = [];
- const invItems: { description: string; amount: number }[] = [];
- const finItems: { description: string; amount: number }[] = [];
+	let openingCash = 0;
+	const opItems: { description: string; amount: number }[] = [];
+	const invItems: { description: string; amount: number }[] = [];
+	const finItems: { description: string; amount: number }[] = [];
 
- for (const { entry, lines } of ledger) {
- const cashLines = lines.filter((l) => cashAccountIds.has(l.account_id));
- if (cashLines.length === 0) continue;
+	for (const { entry, lines } of ledger) {
+		const cashLines = lines.filter((l) => cashAccountIds.has(l.account_id));
+		if (cashLines.length === 0) continue;
 
- const netCashDelta = cashLines.reduce((sum, l) => sum + (l.debit - l.credit), 0);
+		const netCashDelta = cashLines.reduce((sum, l) => sum + (l.debit - l.credit), 0);
 
- if (from && entry.entry_date < from) {
- openingCash += netCashDelta;
- continue;
- }
- if (to && entry.entry_date > to) continue;
+		if (from && entry.entry_date < from) {
+			openingCash += netCashDelta;
+			continue;
+		}
+		if (to && entry.entry_date > to) continue;
 
- // Find the counterparty lines (non-cash lines)
- const otherLines = lines.filter((l) => !cashAccountIds.has(l.account_id));
+		// Find the counterparty lines (non-cash lines)
+		const otherLines = lines.filter((l) => !cashAccountIds.has(l.account_id));
 
- for (const other of otherLines) {
- const otherAcc = accMap.get(other.account_id);
- if (!otherAcc) continue;
+		for (const other of otherLines) {
+			const otherAcc = accMap.get(other.account_id);
+			if (!otherAcc) continue;
 
- const impact = other.credit - other.debit;
- if (Math.abs(impact) < 0.001) continue;
+			const impact = other.credit - other.debit;
+			if (Math.abs(impact) < 0.001) continue;
 
- const code = otherAcc.code;
- if (code.startsWith('12')) {
- invItems.push({
- description: other.description || otherAcc.name ||'شراء وبيع أصول استثمارية',
- amount: impact,
- });
- } else if (code.startsWith('3')) {
- finItems.push({
- description: other.description || otherAcc.name ||'حركات رأس المال والتمويل',
- amount: impact,
- });
- } else {
- opItems.push({
- description: other.description || otherAcc.name ||'أنشطة وعمليات تشغيلية',
- amount: impact,
- });
- }
- }
- }
+			const code = otherAcc.code;
+			if (code.startsWith('12')) {
+				invItems.push({
+					description: other.description || otherAcc.name || 'شراء وبيع أصول استثمارية',
+					amount: impact
+				});
+			} else if (code.startsWith('3')) {
+				finItems.push({
+					description: other.description || otherAcc.name || 'حركات رأس المال والتمويل',
+					amount: impact
+				});
+			} else {
+				opItems.push({
+					description: other.description || otherAcc.name || 'أنشطة وعمليات تشغيلية',
+					amount: impact
+				});
+			}
+		}
+	}
 
- const aggregate = (items: { description: string; amount: number }[]) => {
- const map = new Map<string, number>();
- for (const it of items) {
- map.set(it.description, (map.get(it.description) || 0) + it.amount);
- }
- const res: { description: string; amount: number }[] = [];
- for (const [desc, amt] of map.entries()) {
- if (Math.abs(amt) > 0.001) {
- res.push({ description: desc, amount: Math.round(amt * 100) / 100 });
- }
- }
- const total = res.reduce((sum, r) => sum + r.amount, 0);
- return { items: res, total: Math.round(total * 100) / 100 };
- };
+	const aggregate = (items: { description: string; amount: number }[]) => {
+		const map = new Map<string, number>();
+		for (const it of items) {
+			map.set(it.description, (map.get(it.description) || 0) + it.amount);
+		}
+		const res: { description: string; amount: number }[] = [];
+		for (const [desc, amt] of map.entries()) {
+			if (Math.abs(amt) > 0.001) {
+				res.push({ description: desc, amount: Math.round(amt * 100) / 100 });
+			}
+		}
+		const total = res.reduce((sum, r) => sum + r.amount, 0);
+		return { items: res, total: Math.round(total * 100) / 100 };
+	};
 
- const operating = { title:'صافي التدفقات النقدية من الأنشطة التشغيلية', ...aggregate(opItems) };
- const investing = { title:'صافي التدفقات النقدية من الأنشطة الاستثمارية', ...aggregate(invItems) };
- const financing = { title:'صافي التدفقات النقدية من الأنشطة التمويلية', ...aggregate(finItems) };
+	const operating = { title: 'صافي التدفقات النقدية من الأنشطة التشغيلية', ...aggregate(opItems) };
+	const investing = {
+		title: 'صافي التدفقات النقدية من الأنشطة الاستثمارية',
+		...aggregate(invItems)
+	};
+	const financing = { title: 'صافي التدفقات النقدية من الأنشطة التمويلية', ...aggregate(finItems) };
 
- const netCashFlow = Math.round((operating.total + investing.total + financing.total) * 100) / 100;
- openingCash = Math.round(openingCash * 100) / 100;
- const closingCash = Math.round((openingCash + netCashFlow) * 100) / 100;
+	const netCashFlow = Math.round((operating.total + investing.total + financing.total) * 100) / 100;
+	openingCash = Math.round(openingCash * 100) / 100;
+	const closingCash = Math.round((openingCash + netCashFlow) * 100) / 100;
 
- return {
- operating,
- investing,
- financing,
- openingCash,
- netCashFlow,
- closingCash,
- };
+	return {
+		operating,
+		investing,
+		financing,
+		openingCash,
+		netCashFlow,
+		closingCash
+	};
 }
 
 /** AR / AP Aging Report (أعمار الديون للعملاء والموردين) */
 export async function getAgingReport(
- orgId: string,
- type:'receivables'|'payables'
+	orgId: string,
+	type: 'receivables' | 'payables'
 ): Promise<AgingReport> {
- const isCustomer = type ==='receivables';
- const targetContactType = isCustomer ? ['customer','both'] : ['supplier','both'];
+	const isCustomer = type === 'receivables';
+	const targetContactType = isCustomer ? ['customer', 'both'] : ['supplier', 'both'];
 
- const contacts = await db.contacts
- .where('org_id')
- .equals(orgId)
- .filter((c) => targetContactType.includes(c.type) && c.is_active)
- .toArray();
+	const contacts = await db.contacts
+		.where('org_id')
+		.equals(orgId)
+		.filter((c) => targetContactType.includes(c.type) && c.is_active)
+		.toArray();
 
- const now = new Date();
- const rows: AgingBucket[] = [];
+	const now = new Date();
+	const rows: AgingBucket[] = [];
 
- for (const contact of contacts) {
- let b0_30 = 0;
- let b31_60 = 0;
- let b61_90 = 0;
- let b90Plus = 0;
+	for (const contact of contacts) {
+		let b0_30 = 0;
+		let b31_60 = 0;
+		let b61_90 = 0;
+		let b90Plus = 0;
 
- if (isCustomer) {
- const invoices = await db.sales_invoices
- .where('customer_id')
- .equals(contact.id)
- .filter((inv) => !inv.is_deleted && inv.status !=='cancelled'&& (inv.remaining_amount || 0) > 0)
- .toArray();
+		if (isCustomer) {
+			const invoices = await db.sales_invoices
+				.where('customer_id')
+				.equals(contact.id)
+				.filter(
+					(inv) => !inv.is_deleted && inv.status !== 'cancelled' && (inv.remaining_amount || 0) > 0
+				)
+				.toArray();
 
- for (const inv of invoices) {
- const rem = inv.remaining_amount || 0;
- const invDate = new Date(inv.created_at || inv.updated_at);
- const ageDays = Math.max(0, Math.floor((now.getTime() - invDate.getTime()) / (1000 * 60 * 60 * 24)));
+			for (const inv of invoices) {
+				const rem = inv.remaining_amount || 0;
+				const invDate = new Date(inv.created_at || inv.updated_at);
+				const ageDays = Math.max(
+					0,
+					Math.floor((now.getTime() - invDate.getTime()) / (1000 * 60 * 60 * 24))
+				);
 
- if (ageDays <= 30) b0_30 += rem;
- else if (ageDays <= 60) b31_60 += rem;
- else if (ageDays <= 90) b61_90 += rem;
- else b90Plus += rem;
- }
- } else {
- const invoices = await db.purchase_invoices
- .where('supplier_id')
- .equals(contact.id)
- .filter((inv) => !inv.is_deleted && inv.status !=='cancelled'&& (inv.remaining_amount || 0) > 0)
- .toArray();
+				if (ageDays <= 30) b0_30 += rem;
+				else if (ageDays <= 60) b31_60 += rem;
+				else if (ageDays <= 90) b61_90 += rem;
+				else b90Plus += rem;
+			}
+		} else {
+			const invoices = await db.purchase_invoices
+				.where('supplier_id')
+				.equals(contact.id)
+				.filter(
+					(inv) => !inv.is_deleted && inv.status !== 'cancelled' && (inv.remaining_amount || 0) > 0
+				)
+				.toArray();
 
- for (const inv of invoices) {
- const rem = inv.remaining_amount || 0;
- const invDate = new Date(inv.created_at || inv.updated_at);
- const ageDays = Math.max(0, Math.floor((now.getTime() - invDate.getTime()) / (1000 * 60 * 60 * 24)));
+			for (const inv of invoices) {
+				const rem = inv.remaining_amount || 0;
+				const invDate = new Date(inv.created_at || inv.updated_at);
+				const ageDays = Math.max(
+					0,
+					Math.floor((now.getTime() - invDate.getTime()) / (1000 * 60 * 60 * 24))
+				);
 
- if (ageDays <= 30) b0_30 += rem;
- else if (ageDays <= 60) b31_60 += rem;
- else if (ageDays <= 90) b61_90 += rem;
- else b90Plus += rem;
- }
- }
+				if (ageDays <= 30) b0_30 += rem;
+				else if (ageDays <= 60) b31_60 += rem;
+				else if (ageDays <= 90) b61_90 += rem;
+				else b90Plus += rem;
+			}
+		}
 
- const calculatedTotal = b0_30 + b31_60 + b61_90 + b90Plus;
- const finalTotal = calculatedTotal > 0 ? calculatedTotal : Math.max(0, contact.current_balance || 0);
+		const calculatedTotal = b0_30 + b31_60 + b61_90 + b90Plus;
+		const finalTotal =
+			calculatedTotal > 0 ? calculatedTotal : Math.max(0, contact.current_balance || 0);
 
- if (calculatedTotal === 0 && finalTotal > 0) {
- b0_30 = finalTotal;
- }
+		if (calculatedTotal === 0 && finalTotal > 0) {
+			b0_30 = finalTotal;
+		}
 
- if (finalTotal > 0) {
- rows.push({
- contactId: contact.id,
- contactName: contact.name,
- contactPhone: contact.phone || undefined,
- current0_30: Math.round(b0_30 * 100) / 100,
- days31_60: Math.round(b31_60 * 100) / 100,
- days61_90: Math.round(b61_90 * 100) / 100,
- days90Plus: Math.round(b90Plus * 100) / 100,
- totalBalance: Math.round(finalTotal * 100) / 100,
- });
- }
- }
+		if (finalTotal > 0) {
+			rows.push({
+				contactId: contact.id,
+				contactName: contact.name,
+				contactPhone: contact.phone || undefined,
+				current0_30: Math.round(b0_30 * 100) / 100,
+				days31_60: Math.round(b31_60 * 100) / 100,
+				days61_90: Math.round(b61_90 * 100) / 100,
+				days90Plus: Math.round(b90Plus * 100) / 100,
+				totalBalance: Math.round(finalTotal * 100) / 100
+			});
+		}
+	}
 
- rows.sort((a, b) => b.totalBalance - a.totalBalance);
+	rows.sort((a, b) => b.totalBalance - a.totalBalance);
 
- const totals = rows.reduce(
- (acc, r) => ({
- current0_30: acc.current0_30 + r.current0_30,
- days31_60: acc.days31_60 + r.days31_60,
- days61_90: acc.days61_90 + r.days61_90,
- days90Plus: acc.days90Plus + r.days90Plus,
- totalBalance: acc.totalBalance + r.totalBalance,
- }),
- { current0_30: 0, days31_60: 0, days61_90: 0, days90Plus: 0, totalBalance: 0 }
- );
+	const totals = rows.reduce(
+		(acc, r) => ({
+			current0_30: acc.current0_30 + r.current0_30,
+			days31_60: acc.days31_60 + r.days31_60,
+			days61_90: acc.days61_90 + r.days61_90,
+			days90Plus: acc.days90Plus + r.days90Plus,
+			totalBalance: acc.totalBalance + r.totalBalance
+		}),
+		{ current0_30: 0, days31_60: 0, days61_90: 0, days90Plus: 0, totalBalance: 0 }
+	);
 
- return {
- type,
- rows,
- totals: {
- current0_30: Math.round(totals.current0_30 * 100) / 100,
- days31_60: Math.round(totals.days31_60 * 100) / 100,
- days61_90: Math.round(totals.days61_90 * 100) / 100,
- days90Plus: Math.round(totals.days90Plus * 100) / 100,
- totalBalance: Math.round(totals.totalBalance * 100) / 100,
- },
- };
+	return {
+		type,
+		rows,
+		totals: {
+			current0_30: Math.round(totals.current0_30 * 100) / 100,
+			days31_60: Math.round(totals.days31_60 * 100) / 100,
+			days61_90: Math.round(totals.days61_90 * 100) / 100,
+			days90Plus: Math.round(totals.days90Plus * 100) / 100,
+			totalBalance: Math.round(totals.totalBalance * 100) / 100
+		}
+	};
 }
 
 const reports = {
- getTrialBalance,
- getIncomeStatement,
- getBalanceSheet,
- getGeneralLedger,
- getAccountStatement,
- getCashFlowStatement,
- getAgingReport,
+	getTrialBalance,
+	getIncomeStatement,
+	getBalanceSheet,
+	getGeneralLedger,
+	getAccountStatement,
+	getCashFlowStatement,
+	getAgingReport
 };
 
 export default reports;

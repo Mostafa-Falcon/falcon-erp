@@ -16,7 +16,7 @@
  * offline -> pure Dexie local reads + queued writes
  */
 
-import { supabaseUrl } from'@/core/supabase/supabase_client';
+import { supabaseUrl, supabaseAnonKey } from '@/core/supabase/supabase_client';
 
 type NetworkStatusCallback = (isOnline: boolean) => void;
 
@@ -94,6 +94,7 @@ class NetworkListener {
  const response = await fetch(`${supabaseUrl}/rest/v1/`, {
  method:'GET',
  cache:'no-store',
+ headers: supabaseAnonKey ? { apikey: supabaseAnonKey } : undefined,
  signal: controller.signal,
  });
  void response;

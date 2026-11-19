@@ -368,13 +368,10 @@ export async function saveProductData(payload: SaveProductPayload): Promise<void
  await ProductRepository.saveProductBatches(initial.id, orgId, preparedBatches);
  }
  } else {
- const savedProduct = await ProductRepository.createProduct(
+ await ProductRepository.createProduct(
  baseProductData,
  secondaryUnitsData,
  preparedBatches
  );
- if (preparedBatches.length > 0) {
- await ProductRepository.saveProductBatches(savedProduct.id, orgId, preparedBatches);
- }
  }
 }

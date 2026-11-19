@@ -123,7 +123,7 @@ function ImportContent() {
  }
  }
 
- await db.transaction('rw', [db.products, db.stock_levels, db.product_units, db.sync_queue], async () => {
+ await db.transaction('rw', [db.products, db.stock_levels, db.product_units, db.warehouses, db.sync_queue], async () => {
  for (let i = 0; i < rows.length; i++) {
  const row = rows[i];
  const prodId = uuidv4();

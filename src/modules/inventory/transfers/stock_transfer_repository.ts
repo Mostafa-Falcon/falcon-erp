@@ -226,6 +226,7 @@ export class StockTransferRepository {
  db.stock_levels,
  db.inventory_transactions,
  db.product_batches,
+ db.products,
  db.sync_queue,
  ],
  async () => {
