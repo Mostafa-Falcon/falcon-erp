@@ -127,7 +127,7 @@ export class ProductRepository {
 
 		await db.transaction(
 			'rw',
-			[db.products, db.product_units, db.product_batches, db.stock_levels, db.warehouses, db.inventory_transactions, db.sync_queue],
+			[db.products, db.product_units, db.product_batches, db.stock_levels, db.warehouses, db.units, db.inventory_transactions, db.sync_queue],
 			async () => {
 				await db.products.add(product);
 				await SyncQueueManager.enqueue('products', productId, 'insert', product);

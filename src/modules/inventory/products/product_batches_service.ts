@@ -29,7 +29,7 @@ export class ProductBatchesService {
 		const now = new Date().toISOString();
 		await db.transaction(
 			'rw',
-			[db.product_batches, db.stock_levels, db.inventory_transactions, db.sync_queue],
+			[db.product_batches, db.stock_levels, db.inventory_transactions, db.products, db.units, db.sync_queue],
 			async () => {
 				const product = await db.products.get(productId);
 				const baseUnit = product?.base_unit_id ? await db.units.get(product.base_unit_id) : undefined;
