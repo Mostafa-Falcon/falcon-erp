@@ -105,6 +105,18 @@ export class ReconciliationCoordinator {
 				console.warn('[Reconcile] Journal backfill error:', err);
 			}
 
+			// 2.6 Purchase + sale-return journals (offline flows never emitted any journal)
+			try {
+				const { data, error } = await supabase.rpc('falcon_backfill_missing_purchase_journals', { p_org_id: orgId });
+				if (error) console.warn('[Reconcile] Purchase journal backfill:', error.message);
+				else if (data?.ok) steps.push('purchase-journal-backfill');
+			} catch (err) { console.warn('[Reconcile] Purchase journal backfill error:', err); }
+			try {
+				const { data, error } = await supabase.rpc('falcon_backfill_missing_sales_return_journals', { p_org_id: orgId });
+				if (error) console.warn('[Reconcile] Sales-return journal backfill:', error.message);
+				else if (data?.ok) steps.push('return-journal-backfill');
+			} catch (err) { console.warn('[Reconcile] Sales-return journal backfill error:', err); }
+
 			try {
 				const { data, error } = await supabase.rpc('falcon_backfill_shift_totals', {
 					p_org_id: orgId
