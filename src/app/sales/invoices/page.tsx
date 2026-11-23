@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Suspense } from 'react';
@@ -68,6 +68,7 @@ import { toast } from 'sonner';
 import { InvoiceDetailModal } from '@/components/sales/invoices/InvoiceDetailModal';
 import { EditInvoiceModal } from '@/components/sales/invoices/EditInvoiceModal';
 import { DeleteInvoiceDialog } from '@/components/sales/invoices/DeleteInvoiceDialog';
+import { safeLower } from '@/lib/format';
 
 function InvoicesContent() {
   const router = useRouter();
@@ -186,7 +187,7 @@ function InvoicesContent() {
       // Search
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        const numMatch = inv.invoice_number.toLowerCase().includes(q);
+        const numMatch = safeLower(inv.invoice_number).includes(q);
         const custMatch = getCustomerName(inv.customer_id).toLowerCase().includes(q);
         const userMatch = getUserName(inv.created_by).toLowerCase().includes(q);
         return numMatch || custMatch || userMatch;

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -42,6 +42,7 @@ import type {
   SerialStatus,
 } from '@/types';
 import { toast } from 'sonner';
+import { safeLower } from '@/lib/format';
 
 const STATUS_LABELS: Record<SerialStatus, { label: string; color: string }> = {
   in_stock: { label: 'متوفر بالمخزن', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300' },
@@ -115,7 +116,7 @@ export default function SerialsPage() {
     return serials.filter((s) => {
       const matchesSearch =
         !q ||
-        s.serial_number.toLowerCase().includes(q) ||
+        safeLower(s.serial_number).includes(q) ||
         (s.imei2 || '').toLowerCase().includes(q) ||
         (s.product_name || '').toLowerCase().includes(q);
 

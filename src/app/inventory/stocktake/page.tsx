@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { db } from '@/core/db/app_database';
-import { formatNumber, formatDateTime } from '@/lib/format';
+import { formatNumber, formatDateTime, safeLower } from '@/lib/format';
 import type { StocktakeSession, Warehouse } from '@/types';
 import {
   ClipboardCheck,
@@ -80,7 +80,7 @@ function StocktakeContent() {
       const matchQuery =
         !q ||
         s.session_number.toLowerCase().includes(q) ||
-        (s.notes && s.notes.toLowerCase().includes(q));
+        (s.notes && safeLower(s.notes).includes(q));
       const matchStatus = statusFilter === 'all' || s.status === statusFilter;
       const matchWarehouse = warehouseFilter === 'all' || s.warehouse_id === warehouseFilter;
       return matchQuery && matchStatus && matchWarehouse;

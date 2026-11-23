@@ -53,7 +53,7 @@ begin
   ) values (
     v_entry_id, v_inv.org_id, v_inv.branch_id, v_entry_no ->> 'number',
     coalesce(v_inv.created_at, now()), 'purchases',
-    'قيد مشتريات ' || coalesce(v_inv.invoice_number, ''),
+    'ظ‚ظٹط¯ ظ…ط´طھط±ظٹط§طھ ' || coalesce(v_inv.invoice_number, ''),
     'purchase_invoice', p_invoice_id, round(coalesce(v_inv.total, 0), 2), false,
     v_inv.created_by, coalesce(v_inv.created_at, now())
   );
@@ -122,8 +122,8 @@ begin
     reference_type, reference_id, total_amount, is_reversed, created_by, created_at
   ) values (
     v_entry_id, v_ret.org_id, v_ret.branch_id, v_entry_no ->> 'number',
-    coalesce(v_ret.created_at, now()), 'sale_return',
-    'قيد مرتجع مبيعات ' || coalesce(v_ret.return_number, ''),
+    coalesce(v_ret.created_at, now()), 'sales',
+    'ظ‚ظٹط¯ ظ…ط±طھط¬ط¹ ظ…ط¨ظٹط¹ط§طھ ' || coalesce(v_ret.return_number, ''),
     'sale_return', p_return_id, abs(coalesce(v_ret.total, 0)), false,
     v_ret.created_by, coalesce(v_ret.created_at, now())
   );

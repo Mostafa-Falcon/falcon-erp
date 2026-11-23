@@ -274,7 +274,7 @@ export function useItemCard(productId: string) {
  result = result.filter(
  (tx) =>
  (tx.reference_id && tx.reference_id.toLowerCase().includes(q)) ||
- (tx.notes && tx.notes.toLowerCase().includes(q))
+ (tx.notes && safeLower(tx.notes).includes(q))
  );
  }
  return [...result].sort((a, b) => {

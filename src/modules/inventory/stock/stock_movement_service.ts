@@ -1,8 +1,9 @@
-import Dexie from 'dexie';
+﻿import Dexie from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/core/db/app_database';
 import { SyncQueueManager } from '@/core/sync/sync_queue_manager';
 import { roundQty, roundMoney } from '@/lib/decimal';
+import { safeLower } from '@/lib/format';
 import type {
 	InventoryTransaction,
 	InventoryTransactionType,
@@ -49,7 +50,7 @@ export class StockMovementService {
 			.and(
 				(b) =>
 					b.warehouse_id === params.warehouseId &&
-					b.batch_number.toLowerCase() === params.batchNumber.toLowerCase()
+					safeLower(b.batch_number) === safeLower(params.batchNumber)
 			)
 			.first();
 

@@ -150,7 +150,7 @@ function DiscountsContent() {
  const filtered = discounts.filter(
  (d) =>
  safeLower(d.name).includes(searchQuery.toLowerCase()) ||
- (d.notes && d.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+ (d.notes && safeLower(d.notes).includes(searchQuery.toLowerCase()))
  );
 
  return (

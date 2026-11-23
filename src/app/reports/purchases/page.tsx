@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { useSessionStore } from '@/core/state/useSessionStore';
 import { PurchasesRepository } from '@/modules/purchases/purchases_repository';
-import { formatNumber, formatDate } from '@/lib/format';
+import { formatNumber, formatDate, safeLower } from '@/lib/format';
 import { exportToCsv, triggerReportPrint } from '@/lib/export';
 import type { Contact, PurchaseInvoice } from '@/types';
 import {
@@ -79,7 +79,7 @@ export default function PurchasesReportPage() {
       const suppName = (supplierMap[inv.supplier_id || ''] || '').toLowerCase();
       const matchQuery =
         !q ||
-        inv.invoice_number.toLowerCase().includes(q) ||
+        safeLower(inv.invoice_number).includes(q) ||
         suppName.includes(q);
 
       const matchStatus =
