@@ -451,6 +451,233 @@ export class PurchasesRepository {
  return updatedInvoice;
  }
 
+// ============================================================
+// FULL PURCHASE INVOICE EDIT — helper injected after updatePurchaseInvoice via edit script
+// ============================================================
+
+ /**
+ * Full edit of a purchase invoice including line items.
+ *
+ * Financial integrity rule: we never mutate stock/money in place. We first
+ * REVERSE every effect of the original document (stock movements, treasury,
+ * supplier ledger, journal entry) using the same logic as void, then RE-APPLY
+ * all effects from the edited document — inside ONE Dexie transaction. If any
+ * step fails the whole transaction rolls back, so the invoice stays valid.
+ *
+ * Linked purchase returns are blocked (same rule as void) to avoid orphaned
+ * return documents pointing at an edited invoice.
+ */
+ public static async updatePurchaseInvoiceFull(params: {
+ invoiceId: string;
+ userId: string;
+ supplierId: string;
+ warehouseId: string;
+ treasuryId: string | null;
+ supplierInvoiceNumber: string;
+ invoiceDate?: string;
+ items: {
+ productId: string;
+ batchNumber?: string;
+ expiryDate?: string | null;
+ unitId: string;
+ conversionFactor: number;
+ quantity: number;
+ unitCost: number;
+ salePrice?: number;
+ taxRate?: number;
+ }[];
+ discountAmount?: number;
+ discountPercent?: number;
+ paymentType: InvoicePaymentType;
+ paidAmount?: number;
+ notes?: string;
+ }): Promise<PurchaseInvoice> {
+ const invoice = await db.purchase_invoices.get(params.invoiceId);
+ if (!invoice) throw new Error('الفاتورة غير موجودة.');
+ if (invoice.is_deleted || invoice.status === 'cancelled') {
+ throw new Error('لا يمكن تعديل فاتورة ملغاة أو مؤرشفة.');
+ }
+ const linkedReturns = await db.purchase_returns
+ .where('original_invoice_id').equals(params.invoiceId).count();
+ if (linkedReturns > 0) {
+ throw new Error('لا يمكن تعديل فاتورة لها مرتجعات مرتبطة. ألغِ المرتجع أولًا.');
+ }
+ if (!params.items || params.items.length === 0) {
+ throw new Error('يجب أن تحتوي الفاتورة على صنف واحد على الأقل.');
+ }
+
+ const now = new Date().toISOString();
+ const oldItems = await this.getPurchaseInvoiceItems(params.invoiceId);
+
+ // Recompute totals from the edited lines (same math as createPurchaseInvoice)
+ let subtotal = 0, totalTax = 0;
+ const newItems: PurchaseInvoiceItem[] = params.items.map((item) => {
+ const lineCost = roundMoney(item.quantity * item.unitCost);
+ const taxRate = item.taxRate || 0;
+ const taxAmount = roundMoney((lineCost * taxRate) / 100);
+ subtotal += lineCost; totalTax += taxAmount;
+ return {
+ id: uuidv4(),
+ invoice_id: params.invoiceId,
+ product_id: item.productId,
+ batch_number: item.batchNumber,
+ expiry_date: item.expiryDate,
+ unit_id: item.unitId,
+ conversion_factor: item.conversionFactor,
+ quantity: item.quantity,
+ base_quantity: item.quantity * item.conversionFactor,
+ unit_cost: item.unitCost,
+ sale_price: item.salePrice,
+ tax_rate: taxRate,
+ tax_amount: taxAmount,
+ total: roundMoney(lineCost + taxAmount),
+ };
+ });
+ const discount = params.discountPercent && params.discountPercent > 0
+ ? roundMoney((roundMoney(subtotal) * params.discountPercent) / 100)
+ : roundMoney(params.discountAmount || 0);
+ const finalTotal = roundMoney(Math.max(0, roundMoney(subtotal) - discount + roundMoney(totalTax)));
+ const paid = params.paymentType === 'cash' ? finalTotal : roundMoney(params.paidAmount || 0);
+ const remaining = roundMoney(Math.max(0, finalTotal - paid));
+
+ const updated: PurchaseInvoice = {
+ ...invoice,
+ supplier_id: params.supplierId,
+ warehouse_id: params.warehouseId,
+ treasury_id: params.treasuryId,
+ invoice_number: params.supplierInvoiceNumber || invoice.invoice_number,
+ invoice_date: params.invoiceDate || invoice.invoice_date,
+ subtotal: roundMoney(subtotal),
+ discount_amount: discount,
+ discount_percent: params.discountPercent || 0,
+ tax_amount: roundMoney(totalTax),
+ total: finalTotal,
+ paid_amount: paid,
+ remaining_amount: remaining,
+ payment_type: params.paymentType,
+ notes: params.notes,
+ updated_at: now,
+ sync_status: 'pending',
+ };
+
+ await db.transaction('rw', [
+ db.purchase_invoices,
+ db.purchase_invoice_items,
+ db.stock_levels,
+ db.inventory_transactions,
+ db.product_batches,
+ db.product_units,
+ db.products,
+ db.units,
+ db.app_settings,
+ db.treasuries,
+ db.contacts,
+ db.contact_transactions,
+ db.sync_queue,
+ ], async () => {
+ // ---- A. REVERSE old effects (mirror of deletePurchaseInvoice, without voiding) ----
+ for (const item of oldItems) {
+ const rr = await InventoryRepository.recordStockMovement({
+ orgId: invoice.org_id,
+ warehouseId: invoice.warehouse_id,
+ productId: item.product_id,
+ batchNumber: item.batch_number,
+ expiryDate: item.expiry_date,
+ transactionType: 'purchase_return',
+ quantity: -item.quantity,
+ unitId: item.unit_id,
+ conversionFactor: item.conversion_factor,
+ unitCost: item.unit_cost,
+ referenceType: 'purchase_invoice',
+ referenceId: invoice.id,
+ userId: params.userId,
+ notes: 'عكس أثر فاتورة قبل التعديل',
+ });
+ if (!rr.success) throw new Error(rr.error || 'تعذر عكس حركة المخزون القديمة.');
+ }
+ if (invoice.paid_amount > 0 && invoice.treasury_id) {
+ await TreasuryRepository.adjustBalance(invoice.treasury_id, invoice.paid_amount);
+ }
+ if (invoice.remaining_amount > 0) {
+ await ContactsRepository.adjustBalance({
+ orgId: invoice.org_id,
+ contactId: invoice.supplier_id,
+ referenceType: 'purchase_invoice',
+ referenceId: invoice.id,
+ debit: invoice.remaining_amount,
+ credit: 0,
+ notes: 'عكس ذمة المورد قبل التعديل',
+ });
+ }
+ await AccountingRepository.reverseDocument(
+ invoice.org_id, 'purchase_invoice', invoice.id, 'عكس القيد قبل تعديل الفاتورة', params.userId
+ );
+ for (const item of oldItems) {
+ await db.purchase_invoice_items.delete(item.id);
+ }
+
+ // ---- B. APPLY new effects ----
+ await db.purchase_invoices.put(updated);
+ await db.purchase_invoice_items.bulkAdd(newItems);
+ await SyncQueueManager.enqueue('purchase_invoices', invoice.id, 'update', updated);
+ for (const item of newItems) {
+ await SyncQueueManager.enqueue('purchase_invoice_items', item.id, 'insert', item);
+ }
+ for (const item of newItems) {
+ await InventoryRepository.recordStockMovement({
+ orgId: updated.org_id,
+ warehouseId: updated.warehouse_id,
+ productId: item.product_id,
+ batchNumber: item.batch_number,
+ expiryDate: item.expiry_date,
+ transactionType: 'purchase',
+ quantity: item.quantity,
+ unitId: item.unit_id,
+ conversionFactor: item.conversion_factor,
+ unitCost: item.unit_cost,
+ referenceType: 'purchase_invoice',
+ referenceId: invoice.id,
+ userId: params.userId,
+ notes: 'توريد بعد تعديل الفاتورة',
+ });
+ }
+ if (paid > 0 && params.treasuryId) {
+ await TreasuryRepository.adjustBalance(params.treasuryId, -paid);
+ }
+ if (remaining > 0) {
+ await ContactsRepository.adjustBalance({
+ orgId: updated.org_id,
+ contactId: params.supplierId,
+ referenceType: 'purchase_invoice',
+ referenceId: invoice.id,
+ debit: 0,
+ credit: remaining,
+ notes: 'ذمة مورد بعد تعديل الفاتورة',
+ });
+ }
+ });
+
+ // ---- C. Re-post the accounting journal after the transaction commits ----
+ try {
+ await AccountingRepository.postPurchaseInvoice({
+ orgId: updated.org_id,
+ branchId: updated.branch_id,
+ invoiceId: invoice.id,
+ invoiceNumber: updated.system_invoice_number,
+ date: updated.invoice_date,
+ netPurchase: roundMoney(subtotal - discount),
+ taxAmount: totalTax,
+ paidAmount: paid,
+ creditAmount: remaining,
+ treasuryId: params.treasuryId,
+ userId: params.userId,
+ });
+ } catch (err) {
+ console.warn('[Purchases] Failed to re-post edited invoice journal:', err);
+ }
+
+ return updated;
+ }
  // ==========================================
  // PURCHASE RETURNS
  // ==========================================

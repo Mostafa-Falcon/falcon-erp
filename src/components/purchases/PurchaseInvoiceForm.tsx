@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,7 @@ interface Line {
   taxRate: string;
 }
 
-export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) => void }) {
+export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invoiceId: string) => void; editInvoiceId?: string }) {
   const { currentUser, activeBranchId } = useSessionStore();
   const orgId = currentUser?.org_id || '';
   const branchId = activeBranchId || currentUser?.branch_id || '';
@@ -306,6 +306,50 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
     Promise.resolve().then(loadData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, branchId]);
+  // Load existing invoice when editing - prefill every field and line
+  useEffect(() => {
+    if (!editInvoiceId || !orgId || isLoading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { db } = await import('@/core/db/app_database');
+        const inv = await db.purchase_invoices.get(editInvoiceId);
+        if (!inv || cancelled) return;
+        const invItems = await db.purchase_invoice_items.where('invoice_id').equals(editInvoiceId).toArray();
+        if (cancelled) return;
+        setSupplierId(inv.supplier_id || '');
+        setWarehouseId(inv.warehouse_id || '');
+        setTreasuryId(inv.treasury_id || '');
+        setSupplierInvoiceNumber(inv.invoice_number || '');
+        if (inv.invoice_date) setPurchaseDate(String(inv.invoice_date).slice(0, 10));
+        setPaymentType((inv.payment_type as 'cash' | 'credit' | 'split') || 'cash');
+        setCustomPaidAmount(String(inv.paid_amount || 0));
+        setAdditionalDiscount(String(inv.discount_amount || 0));
+        setNotes(inv.notes || '');
+        setLines(invItems.map((it) => ({
+          id: it.id,
+          productId: it.product_id,
+          productName: products.find((p) => p.id === it.product_id)?.name || 'صنف',
+          sku: products.find((p) => p.id === it.product_id)?.sku || '',
+          batchNumber: it.batch_number || '',
+          expiryDate: it.expiry_date || '',
+          unitId: it.unit_id,
+          conversionFactor: it.conversion_factor || 1,
+          qty: String(it.quantity || 0),
+          cost: String(it.unit_cost || 0),
+          discountPercent: '0',
+          salePrice: String(it.sale_price || 0),
+          taxRate: String(it.tax_rate || 0),
+        })));
+        setHasDraftNotice(false);
+      } catch (err) {
+        console.error('Load purchase invoice for edit failed:', err);
+        toast.error('تعذر تحميل بيانات الفاتورة للتعديل.');
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editInvoiceId, orgId, isLoading, products]);
 
   // Product Search Suggestions Filter
   const filteredProductSuggestions = useMemo(() => {
@@ -528,7 +572,24 @@ export function PurchaseInvoiceForm({ onSaved }: { onSaved: (invoiceId: string) 
     try {
       const actualPaymentType = (paidVal >= total && total > 0) ? 'cash' : (paidVal <= 0) ? 'credit' : 'split';
 
-      const invoice = await PurchasesRepository.createPurchaseInvoice({
+      const invoice = editInvoiceId
+        ? await PurchasesRepository.updatePurchaseInvoiceFull({
+            invoiceId: editInvoiceId,
+            userId: currentUser.id,
+            supplierId,
+            warehouseId,
+            treasuryId: paidVal > 0 ? treasuryId : null,
+            supplierInvoiceNumber: supplierInvoiceNumber.trim() || '',
+            invoiceDate: purchaseDate,
+            items,
+            discountAmount: appliedDiscount,
+            discountPercent: 0,
+            paymentType: actualPaymentType,
+            paidAmount: paidVal,
+            notes: [notes.trim(), 'حالة الاستلام: ' + (receiptStatus === 'received' ? 'تم الاستلام' : 'قيد الانتظار')]
+              .filter(Boolean).join(' | ') || undefined,
+          })
+        : await PurchasesRepository.createPurchaseInvoice({
         orgId,
         branchId,
         warehouseId,

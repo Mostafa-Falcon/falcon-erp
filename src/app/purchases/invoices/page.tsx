@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Suspense } from 'react';
@@ -138,9 +138,7 @@ function InvoicesContent() {
   };
 
   const openEdit = (inv: PurchaseInvoice) => {
-    setEditId(inv.id);
-    setEInvoiceNumber(inv.invoice_number || '');
-    setENotes(inv.notes || '');
+    router.push('/purchases/invoices/' + inv.id + '/edit');
   };
 
   const saveEdit = async () => {
