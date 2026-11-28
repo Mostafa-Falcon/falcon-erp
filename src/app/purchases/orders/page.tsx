@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { playSuccessSound } from '@/lib/success_sound';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -160,6 +161,7 @@ function PurchaseOrdersContent() {
 
             await PurchaseOrdersRepository.updateStatus(po.id, 'received');
             toast.success(`تم تحويل أمر الشراء #${po.po_number} إلى فاتورة مشتريات #${createdInvoice.invoice_number} وزيادة الرصيد بالمخزن!`);
+            void playSuccessSound('purchase', orgId);
             loadData();
             setIsDetailOpen(false);
         } catch (e: any) {

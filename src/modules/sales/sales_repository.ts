@@ -499,6 +499,29 @@ export class SalesRepository {
         }
       );
 
+      // The offline path has no server-side RPC, so it must post its own journal
+      // (the online path posts it inside falcon_create_sales_invoice).
+      try {
+        await AccountingRepository.postSalesInvoice({
+          orgId: params.orgId,
+          branchId: params.branchId,
+          invoiceId,
+          invoiceNumber,
+          date: now,
+          netRevenue: roundMoney(subtotal - totalDiscount),
+          taxAmount: roundMoney(totalTax),
+          shipping,
+          cashPaid: cashAmt,
+          cardPaid: cardAmt,
+          creditAmount: remaining,
+          cogs: roundMoney(invoiceItems.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0)),
+          treasuryId: params.treasuryId,
+          userId: params.userId,
+        });
+      } catch (accountingError) {
+        console.warn('[Accounting] Failed to post sales invoice:', accountingError);
+      }
+
       return invoice;
     })();
 

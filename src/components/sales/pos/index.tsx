@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { safeLower } from '@/lib/format';
+import { playSuccessSound } from '@/lib/success_sound';
 import React, { useEffect, useState, useMemo } from 'react';
 import { RestaurantCafePosView } from './domains/RestaurantCafePosView';
 import { MobilePosView } from './domains/MobilePosView';
@@ -420,6 +421,7 @@ export function POS() {
 
       setSuccessInvoice(invoice);
       toast.success(`تم حفظ وطباعة الفاتورة #${invoice.invoice_number} بنجاح!`);
+      void playSuccessSound('sale', orgId);
       setCart([]);
       setGlobalDiscount(0);
       setShippingFee(0);

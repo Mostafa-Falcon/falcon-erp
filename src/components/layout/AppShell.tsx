@@ -120,7 +120,8 @@ export const AppShell: React.FC<AppShellProps> = ({
         // سحب أولاً (تحديث الحالة من السحابة) ثم دفع العمليات المعلقة
         const reconcile = async () => {
             await PullSyncService.pullAll(orgId).catch(console.warn);
-            await syncCoordinator.triggerSync().catch(console.error);
+            // Pull already done above — push only, so each cycle makes one full pull.
+            await syncCoordinator.triggerSync({ skipPull: true }).catch(console.error);
             notifyCloudDataChanged();
         };
 

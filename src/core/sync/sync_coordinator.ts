@@ -1142,24 +1142,15 @@ export function unpackCloudProduct(cloudProduct: Record<string, unknown>): Recor
 export class SyncCoordinator {
 	private static instance: SyncCoordinator;
 	private isSyncing = false;
-	private syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
 	private constructor() {
-		// مراقبة عودة الاتصال بالإنترنت
+		// AppShell owns the periodic pull/push cycle. On reconnect it calls
+		// reconcile() (pull + push), so here we only flush the pending queue.
 		networkListener.subscribe((isOnline) => {
 			if (isOnline) {
-				this.triggerSync();
+				void this.triggerSync({ skipPull: true });
 			}
 		});
-
-		// دورة مزامنة تلقائية احتياطية كل 20 ثانية
-		if (typeof window !== 'undefined') {
-			this.syncIntervalId = setInterval(() => {
-				if (networkListener.getStatus()) {
-					this.triggerSync();
-				}
-			}, 20000);
-		}
 	}
 
 	public static getInstance(): SyncCoordinator {
@@ -1172,7 +1163,7 @@ export class SyncCoordinator {
 	/**
 	 * إطلاق المزامنة الفورية
 	 */
-	public async triggerSync(): Promise<{ success: boolean; pushed: number; error?: string }> {
+	public async triggerSync(options: { skipPull?: boolean } = {}): Promise<{ success: boolean; pushed: number; error?: string }> {
 		return Dexie.ignoreTransaction(async () => {
 			if (this.isSyncing) {
 				return { success: false, pushed: 0, error: 'Sync already in progress' };
@@ -1195,7 +1186,9 @@ export class SyncCoordinator {
 						})
 						.catch(() => {});
 
-					PullSyncService.pullAll(currentAuthUser.org_id).catch(() => {});
+					if (!options.skipPull) {
+						PullSyncService.pullAll(currentAuthUser.org_id).catch(() => {});
+					}
 				}
 
 				// جلب العناصر المعلقة

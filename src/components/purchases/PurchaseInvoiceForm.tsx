@@ -10,6 +10,7 @@ import { ContactsRepository } from '@/modules/contacts/contacts_repository';
 import { InventoryRepository } from '@/modules/inventory/inventory_repository';
 import { ProductRepository } from '@/modules/inventory/product_repository';
 import { safeLower, formatNumber } from '@/lib/format';
+import { playSuccessSound } from '@/lib/success_sound';
 import {
   Select,
   SelectContent,
@@ -604,6 +605,7 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
 
       clearDraft();
       toast.success(`تم حفظ واعتماد فاتورة المشتريات #${invoice.invoice_number} بنجاح!`);
+      void playSuccessSound('purchase', orgId);
       onSaved(invoice.id);
     } catch (err: any) {
       console.error(err);

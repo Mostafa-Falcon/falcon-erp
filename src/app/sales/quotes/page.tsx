@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState, Suspense } from'react';
 import Link from'next/link';
 import { useRouter } from 'next/navigation';
+import { playSuccessSound } from '@/lib/success_sound';
 import { KpiCard } from '@/components/ui/kpi-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AppShell } from'@/components/layout/AppShell';
@@ -190,6 +191,7 @@ function QuotesContent() {
 
  await QuotationsRepository.updateStatus(quote.id,'accepted');
  toast.success(`تم تحويل عرض السعر #${quote.quotation_number} إلى فاتورة مبيعات #${createdInvoice.invoice_number} بنجاح!`);
+ void playSuccessSound('sale', orgId);
  loadData();
  setIsDetailOpen(false);
  } catch (e: any) {
