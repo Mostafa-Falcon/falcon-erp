@@ -35,6 +35,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
         setItemTypeMode,
         name,
         setName,
+        existingNames,
         nameEn,
         setNameEn,
         scientificName,
@@ -105,6 +106,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
         canUploadProductImages,
         // Actions & state
         isSaving,
+        isDuplicateName,
         handleGenerateRandomBarcode,
         handleAddAlternateBarcode,
         handleUpdateAlternateBarcode,
@@ -151,6 +153,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
                 canUploadProductImages={canUploadProductImages}
                 name={name}
                 setName={setName}
+                existingNames={existingNames}
                 scientificName={scientificName}
                 setScientificName={setScientificName}
                 nameEn={nameEn}
@@ -257,6 +260,7 @@ export const ProductForm: React.FC<ProductFormProps> = (props) => {
             {/* 6. شريط الإجراءات السفلي */}
             <FormActions
                 isSaving={isSaving}
+                isDuplicateName={isDuplicateName}
                 onCancel={onCancel}
                 handleResetForm={handleResetForm}
                 isPharmacy={isPharmacy}

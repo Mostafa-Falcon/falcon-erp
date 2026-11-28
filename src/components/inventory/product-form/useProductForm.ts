@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { safeLower } from '@/lib/format';
 import { db } from '@/core/db/app_database';
 import { ProductRepository } from '@/modules/inventory/product_repository';
 import type { ProductBatch } from '@/types';
@@ -100,7 +101,25 @@ export function useProductForm({
         return initial?.measurement_type || 'unit';
     });
     const [name, setName] = useState(initial?.name || '');
+    const [existingNames, setExistingNames] = useState<{ id: string; name: string; sku: string }[]>([]);
     const [nameEn, setNameEn] = useState(initial?.name_en || '');
+
+    // Existing active item names are used for autocomplete and duplicate prevention.
+    useEffect(() => {
+        if (!orgId) return;
+        let cancelled = false;
+        ProductRepository.getAll(orgId)
+            .then((list) => {
+                if (cancelled) return;
+                setExistingNames(
+                    list
+                        .filter((p) => p.id !== initial?.id)
+                        .map((p) => ({ id: p.id, name: p.name, sku: p.sku || '' }))
+                );
+            })
+            .catch(() => setExistingNames([]));
+        return () => { cancelled = true; };
+    }, [orgId, initial?.id]);
     const [scientificName, setScientificName] = useState(initial?.scientific_name || '');
     const [sku, setSku] = useState(initial?.sku || '');
     const [alternateBarcodes, setAlternateBarcodes] = useState<string[]>(
@@ -504,6 +523,17 @@ export function useProductForm({
             return;
         }
 
+        const normalizedName = safeLower(name).replace(/\s+/g, ' ').trim();
+        const duplicateMatches = await ProductRepository.search(normalizedName, orgId, 20);
+        if (
+            duplicateMatches.some(
+                (p) => p.id !== initial?.id && safeLower(p.name).replace(/\s+/g, ' ').trim() === normalizedName
+            )
+        ) {
+            toast.error('هذا الصنف مسجّل بالفعل. اختر الاسم من القائمة المقترحة بدل إنشاء صنف مكرر.');
+            return;
+        }
+
         setIsSaving(true);
         try {
             // حساب أسعار الشراء والبيع تلقائياً للوحدات الفرعية إن لم يدخلها المستخدم
@@ -585,9 +615,17 @@ export function useProductForm({
         }
     };
 
+    const normalizedNameForCheck = safeLower(name).replace(/\s+/g, ' ').trim();
+    const isDuplicateName =
+        normalizedNameForCheck.length > 0 &&
+        existingNames.some(
+            (p) => safeLower(p.name).replace(/\s+/g, ' ').trim() === normalizedNameForCheck
+        );
+
     return {
         isEdit,
         isPharmacy,
+        isDuplicateName,
         fileInputRef,
         // Bar
         showSpecs,
@@ -605,6 +643,7 @@ export function useProductForm({
         setItemTypeMode,
         name,
         setName,
+        existingNames,
         nameEn,
         setNameEn,
         scientificName,

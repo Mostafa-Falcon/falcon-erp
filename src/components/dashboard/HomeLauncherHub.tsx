@@ -12,7 +12,7 @@ import {
   ShoppingCart,
   Truck,
   Receipt,
-  ShieldCheck,
+  AlertTriangle,
   PlusCircle,
   QrCode,
   ArrowLeftRight,
@@ -240,11 +240,11 @@ export const HomeLauncherHub: React.FC = () => {
             </Link>
 
             <Link
-              href="/inventory/status"
+              href="/items?filter=low_stock"
               className="h-14 rounded-xl bg-slate-50/70 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-800/70 border border-slate-200/70 dark:border-slate-800 flex flex-col items-center justify-center gap-1 text-center transition-all cursor-pointer group"
             >
-              <ShieldCheck className="w-4 h-4 text-slate-500 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">حالة الرصيد</span>
+              <AlertTriangle className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">النواقص</span>
             </Link>
 
             <Link

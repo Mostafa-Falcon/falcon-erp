@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { safeLower } from '@/lib/format';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import {
     Plus,
     X,
     MapPin,
+    Check,
 } from 'lucide-react';
 
 interface BasicInfoSectionProps {
@@ -21,6 +23,7 @@ interface BasicInfoSectionProps {
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     name: string;
     setName: (val: string) => void;
+    existingNames: { id: string; name: string; sku: string }[];
     scientificName: string;
     setScientificName: (val: string) => void;
     nameEn: string;
@@ -46,6 +49,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
     handleImageUpload,
     name,
     setName,
+    existingNames,
     scientificName,
     setScientificName,
     nameEn,
@@ -62,8 +66,20 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
     isPharmacy = false,
     canUploadProductImages = false,
 }) => {
+    const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+
+    const nameSuggestions = useMemo(() => {
+        const q = safeLower(name).replace(/\s+/g, ' ').trim();
+        const matches = existingNames.filter((p) => safeLower(p.name).includes(q));
+        return matches.slice(0, 8);
+    }, [existingNames, name]);
+
+    const exactNameExists = nameSuggestions.some(
+        (p) => safeLower(p.name).replace(/\s+/g, ' ').trim() === safeLower(name).replace(/\s+/g, ' ').trim()
+    );
+
     return (
-        <Card className="border border-slate-200/90 dark:border-slate-800 bg-surface shadow-xs overflow-hidden rounded-2xl">
+        <Card className="border border-slate-200/90 dark:border-slate-800 bg-surface shadow-xs rounded-2xl">
             <CardContent className="p-4 sm:p-5">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                     {/* الحقول الأساسية: الاسم والباركود والرف والمواصفات / المادة الفعالة */}
@@ -73,7 +89,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                             className={`grid grid-cols-1 ${showSpecs ? 'sm:grid-cols-3' : 'sm:grid-cols-1'
                                 } gap-3`}
                         >
-                            <div>
+                            <div className="relative">
                                 <Label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
                                     {isPharmacy ? 'اسم الدواء / التجاري *' : 'اسم الصنف / الخامة *'}
                                 </Label>
@@ -81,7 +97,13 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                                     type="text"
                                     required
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    autoComplete="off"
+                                    onFocus={() => setShowNameSuggestions(true)}
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        setShowNameSuggestions(true);
+                                    }}
+                                    onBlur={() => setShowNameSuggestions(false)}
                                     placeholder={
                                         isPharmacy
                                             ? 'مثال: بنادول إكسترا 500 مجم / Panadol Extra...'
@@ -89,6 +111,47 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                                     }
                                     className="h-11 text-xs font-bold rounded-xl"
                                 />
+                                {showNameSuggestions && nameSuggestions.length > 0 && (
+                                    <div className="absolute right-0 left-0 top-full mt-1 z-50 max-h-64 overflow-y-auto rounded-xl border-2 border-blue-500/70 bg-surface shadow-2xl">
+                                        <div className="px-3 py-1.5 text-3xs font-bold text-slate-500">
+                                            أسماء مسجّلة مسبقًا — اضغط لاستخدام الاسم بالضبط
+                                        </div>
+                                        {nameSuggestions.map((p) => {
+                                            const isExact =
+                                                safeLower(p.name).replace(/\s+/g, ' ').trim() ===
+                                                safeLower(name).replace(/\s+/g, ' ').trim();
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={p.id}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setName(p.name);
+                                                        setShowNameSuggestions(false);
+                                                    }}
+                                                    className="w-full flex items-center justify-between gap-2 px-3 py-2 text-right text-xs hover:bg-blue-50 dark:hover:bg-blue-950/40 border-t border-slate-100 dark:border-slate-800 first:border-0"
+                                                >
+                                                    <span className="font-black text-slate-800 dark:text-slate-100">{p.name}</span>
+                                                    <span className="flex items-center gap-2 shrink-0">
+                                                        {p.sku && (
+                                                            <span className="font-mono text-3xs text-slate-400">{p.sku}</span>
+                                                        )}
+                                                        {isExact && (
+                                                            <span className="text-3xs font-black text-rose-600 flex items-center gap-1">
+                                                                <Check className="w-3 h-3" /> موجود بالفعل
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {exactNameExists && !showNameSuggestions && (
+                                    <p className="mt-1 text-3xs font-black text-rose-600">
+                                        هذا الاسم مسجّل بالفعل — سيُمنع الحفظ لتجنب التكرار.
+                                    </p>
+                                )}
                             </div>
 
                             {showSpecs && (

@@ -42,7 +42,15 @@ export function useItemsCatalog() {
  const [isLoading, setIsLoading] = useState(true);
 
  // Filters
- const [quickFilter, setQuickFilter] = useState<QuickFilterType>('all');
+ const quickFilterParam = searchParams.get('filter');
+ const initialQuickFilter: QuickFilterType =
+ quickFilterParam === 'low_stock' ||
+ quickFilterParam === 'near_expiry' ||
+ quickFilterParam === 'out_of_stock' ||
+ quickFilterParam === 'quick_pos'
+ ? quickFilterParam
+ : 'all';
+ const [quickFilter, setQuickFilter] = useState<QuickFilterType>(initialQuickFilter);
  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
  const [searchQuery, setSearchQuery] = useState('');
  const [categoryFilter, setCategoryFilter] = useState('all');

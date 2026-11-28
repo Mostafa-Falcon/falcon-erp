@@ -4,6 +4,7 @@ import { Check, Trash2 } from 'lucide-react';
 
 interface FormActionsProps {
     isSaving: boolean;
+    isDuplicateName?: boolean;
     onCancel: () => void;
     handleResetForm: () => void;
     isPharmacy?: boolean;
@@ -11,6 +12,7 @@ interface FormActionsProps {
 
 export const FormActions: React.FC<FormActionsProps> = ({
     isSaving,
+    isDuplicateName = false,
     onCancel,
     handleResetForm,
     isPharmacy = false,
@@ -20,11 +22,18 @@ export const FormActions: React.FC<FormActionsProps> = ({
             <div className="flex flex-1 items-center gap-2.5 sm:gap-3">
                 <Button
                     type="submit"
-                    disabled={isSaving}
-                    className="flex-1 sm:flex-initial h-11 px-8 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-2"
+                    disabled={isSaving || isDuplicateName}
+                    title={isDuplicateName ? 'اسم الصنف مسجّل بالفعل — غيّر الاسم أو اختر واحدًا جديدًا' : undefined}
+                    className={`flex-1 sm:flex-initial h-11 px-8 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${
+                        isDuplicateName
+                            ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed opacity-70 shadow-none'
+                            : 'bg-emerald-700 hover:bg-emerald-800 cursor-pointer'
+                    }`}
                 >
                     {isSaving ? (
                         <span>جاري الحفظ...</span>
+                    ) : isDuplicateName ? (
+                        <span>الاسم مسجّل بالفعل</span>
                     ) : (
                         <>
                             <Check className="w-4 h-4" />

@@ -87,7 +87,6 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
   const [autoInvoiceNumber, setAutoInvoiceNumber] = useState('');
   const [purchaseDate, setPurchaseDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [receiptStatus, setReceiptStatus] = useState<'received' | 'pending'>('received');
-  const [paymentType, setPaymentType] = useState<'cash' | 'credit' | 'split'>('cash');
   const [customPaidAmount, setCustomPaidAmount] = useState('0');
   const [additionalDiscount, setAdditionalDiscount] = useState('0');
   const [notes, setNotes] = useState('');
@@ -144,7 +143,6 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
         supplierInvoiceNumber,
         purchaseDate,
         receiptStatus,
-        paymentType,
         customPaidAmount,
         additionalDiscount,
         notes,
@@ -163,7 +161,6 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
     supplierInvoiceNumber,
     purchaseDate,
     receiptStatus,
-    paymentType,
     customPaidAmount,
     additionalDiscount,
     notes,
@@ -194,7 +191,6 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
         if (parsed.supplierInvoiceNumber) setSupplierInvoiceNumber(parsed.supplierInvoiceNumber);
         if (parsed.purchaseDate) setPurchaseDate(parsed.purchaseDate);
         if (parsed.receiptStatus) setReceiptStatus(parsed.receiptStatus);
-        if (parsed.paymentType) setPaymentType(parsed.paymentType);
         if (parsed.customPaidAmount) setCustomPaidAmount(parsed.customPaidAmount);
         if (parsed.additionalDiscount) setAdditionalDiscount(parsed.additionalDiscount);
         if (parsed.notes) setNotes(parsed.notes);
@@ -322,7 +318,6 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
         setTreasuryId(inv.treasury_id || '');
         setSupplierInvoiceNumber(inv.invoice_number || '');
         if (inv.invoice_date) setPurchaseDate(String(inv.invoice_date).slice(0, 10));
-        setPaymentType((inv.payment_type as 'cash' | 'credit' | 'split') || 'cash');
         setCustomPaidAmount(String(inv.paid_amount || 0));
         setAdditionalDiscount(String(inv.discount_amount || 0));
         setNotes(inv.notes || '');
@@ -468,11 +463,11 @@ export function PurchaseInvoiceForm({ onSaved, editInvoiceId }: { onSaved: (invo
   const appliedDiscount = Math.max(0, Number(additionalDiscount) || 0);
   const total = Math.max(0, subtotal - appliedDiscount);
 
+  // المبلغ اللي صاحب المنشأة كتبه هو المصدر الوحيد للدفع الفعلي.
+  // لا يتم اعتبار الفاتورة مدفوعة كاملًا إلا لو أدخل المبلغ بنفسه.
   const paidVal = useMemo(() => {
-    if (paymentType === 'cash') return total;
-    if (paymentType === 'credit') return 0;
     return Math.min(total, Math.max(0, Number(customPaidAmount) || 0));
-  }, [paymentType, total, customPaidAmount]);
+  }, [total, customPaidAmount]);
 
   const remainingVal = useMemo(() => {
     return Math.max(0, total - paidVal);
